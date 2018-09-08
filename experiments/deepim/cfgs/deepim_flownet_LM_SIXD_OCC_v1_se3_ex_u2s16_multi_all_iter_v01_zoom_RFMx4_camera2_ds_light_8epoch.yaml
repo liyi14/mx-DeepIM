@@ -1,0 +1,130 @@
+---
+MXNET_VERSION: "mxnet_v00_0303"
+CUDA9: True
+output_path: "./output/deepim_release/"
+symbol: flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask
+NUM_GPUS: 1
+SCALES:
+- 480
+- 640
+FLOW_CLASS_AGNOSTIC: True
+default:
+  frequent: 20
+  kvstore: device
+dataset:
+  NUM_CLASSES: 1
+  dataset: LM6D_occ_v1+LM6D_occ_DSM_v1
+  dataset_path: "./data/LINEMOD_6D/LM6d_occ_render_v1"
+  image_set: train_+train_
+  root_path: "./data/"
+#  test_image_set: train_
+  test_image_set: yu_val_
+#  test_image_set: my_val_
+  DEPTH_FACTOR: 1000
+  NORMALIZE_FLOW: 20.0
+  NORMALIZE_ROT: 1.0
+  NORMALIZE_TRANS: 1.0
+  NORMALIZE_LABEL: True
+  model_dir: './data/LINEMOD_6D/models/'
+  class_name:
+  - 'ape'
+  - 'can'
+  - 'cat'
+  - 'driller'
+  - 'duck'
+  - 'eggbox'
+  - 'glue'
+  - 'holepuncher'
+  INTRINSIC_MATRIX:
+  - 572.4114
+  - 0.0
+  - 325.2611
+  - 0.0
+  - 573.57043
+  - 242.04899
+  - 0.0
+  - 0.0
+  - 1.0
+  trans_means:
+  - 0.0
+  - 0.0
+  - 0.0
+  trans_stds:
+  - 1.0
+  - 1.0
+  - 1.0
+  MASK_GT: False
+network:
+  FIXED_PARAMS:
+  PIXEL_MEANS:
+  - 123.68
+  - 116.779
+  - 103.939
+  pretrained: "./model/pretrained_model/flownet"
+  pretrained_epoch: 0
+  init_from_flownet: True
+  skip_initialize: False
+  INPUT_DEPTH: False
+  ROT_TYPE: QUAT
+  STANDARD_FLOW_REP: False
+  TRAIN_ITER: True
+  TRAIN_ITER_SIZE: 4
+  PRED_FLOW: True
+  PRED_MASK: True
+  ROT_COORD: 'CAMERA'
+train_iter0:
+  SE3_DIST_LOSS: False
+  LW_ROT: 0.0
+  LW_TRANS: 0.0
+  SE3_PM_LOSS: True
+  LW_PM: 0.1
+  LW_MASK: 0.03
+  NUM_3D_SAMPLE: 3000
+  LW_FLOW: 0.25
+TRAIN:
+  ONLINE_MASK_SYN: False
+  optimizer: sgd
+#  warmup: True
+  warmup: False
+  warmup_lr: 0.00001
+  # typically we will use 200 warmup step for single GPU
+#  warmup_step: 800 # 4 gpus
+  warmup_step: 200 # 1 gpu
+  begin_epoch: 0
+  end_epoch: 8
+  lr: 0.0001
+  lr_step: '4,6'
+  momentum: 0.975
+  model_prefix: "flownet_SE3_ex_occLM_v1"
+  # whether flip image
+  FLIP_IMG: False
+  FLIP_PAIR: False
+  # size of images for each device
+  BATCH_PAIRS: 16
+#  BATCH_PAIRS: 4 # 4 gpus
+  # wheter crop image during training
+  ENABLE_CROP: False
+  # whether resume training
+  RESUME: False
+  # whether shuffle image
+  SHUFFLE: true
+  WEIGHT_TYPE: viz
+  VISUALIZE: False
+#  VISUALIZE: True
+  INIT_MASK: 'box_gt'
+  MASK_DILATE: True
+  USE_MASK_PRED: False
+  REPLACE_REAL_BG_RATIO: 0.0
+TEST:
+  # size of images for each device
+  BATCH_PAIRS: 1
+  test_epoch: 8
+  VISUALIZE: False
+  test_iter: 4
+  FLIP_PAIR: False
+  AVERAGE_ITERS: True
+  VIS_VIDEO: False
+#  INIT_MASK: 'box_real_est'
+  INIT_MASK: 'box_rendered'
+  UPDATE_MASK: 'box_rendered'
+  USE_MASK_PRED: True
