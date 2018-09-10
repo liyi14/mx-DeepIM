@@ -1,5 +1,5 @@
 ---
-MXNET_VERSION: "mxnet_v00_0303"
+MXNET_VERSION: "mxnet"
 CUDA9: True
 output_path: "./output/deepim_release/"
 symbol: flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask
@@ -27,6 +27,18 @@ dataset:
   NORMALIZE_ROT: 1.0
   class_name:
   - 'ape'
+  - 'benchviseblue'
+  - 'camera'
+  - 'can'
+  - 'cat'
+  - 'driller'
+  - 'duck'
+  - 'eggbox'
+  - 'glue'
+  - 'holepuncher'
+  - 'iron'
+  - 'lamp'
+  - 'phone'
   INTRINSIC_MATRIX:
   - 572.4114
   - 0.0
