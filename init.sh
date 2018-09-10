@@ -7,8 +7,9 @@ mkdir -p ./model/pretrained_model
 
 
 cd lib/flow_c
-# python setup_linux.py build_ext --inplace
-# in python3, need to install pytorch first to use jit compile
-pwd
-sh build.sh
+python setup_linux.py build_ext --inplace
+## in python3, if problems with setup_linux.py,
+## install pytorch first to use jit compile by uncomment the folowing lines
+#pwd
+#sh build.sh
 cd ../..

@@ -69,16 +69,21 @@ We tested our code on [MXNet@(commit fc9e70b)](https://github.com/apache/incubat
 2. Python 2.7. We recommend using Anaconda. (python 3.x should also be OK.) 
 3. GLFW for OpenGL: 
 `sudo apt-get install libglfw3-dev libglfw3` (on Ubuntu 16.04)   
-4. Python packages might missing: cython, opencv-python >= 3.2.0, easydict. If `pip` is set up on your system, those packages should be able to be fetched and installed by running
+4. Python packages might missing: 
 	```
+	conda install scipy
 	pip install Cython
-	pip install opencv-python==3.2.0.6
-	pip install easydict==1.6
+	pip install opencv-python
+	pip install easydict
+	pip install pyyaml
 	```
    glumpy:
    ```
-   pip install pyopengl packaging appdirs pyopengl triangle cython glfw pyqt5
-   pip install glumpy
+   pip install pyopengl packaging appdirs pyopengl triangle cython glfw
+   # clone the lastest glumpy (there is a bug in the pip version)
+   git clone https://github.com/glumpy/glumpy.git
+   cd glumpy
+   pip install .
    ``` 	
 
 5. (Optional) Use tensorboard to visualize loss: 
