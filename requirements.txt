@@ -1,0 +1,10 @@
+Cython
+easydict
+glfw
+mxboard
+mxnet-cu90
+opencv-python
+pyyaml
+#tensorflow
+#torch==0.4.1
+tqdm
