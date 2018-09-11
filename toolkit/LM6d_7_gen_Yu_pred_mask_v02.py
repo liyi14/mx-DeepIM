@@ -5,15 +5,15 @@
 # --------------------------------------------------------
 from __future__ import print_function, division
 import numpy as np
-import os
-from shutil import copyfile
 from lib.utils.mkdir_if_missing import *
-from lib.render_glumpy.render_py import Render_Py
 import scipy.io as sio
 import cv2
 from tqdm import tqdm
 
 if __name__=='__main__':
+    GEN_EGGBOX = False
+    # GEN_EGGBOX = True # change this line for eggbox, because eggbox in the first version is wrong
+
     big_idx2class = {
         1: 'ape',
         2: 'benchviseblue',
@@ -40,8 +40,10 @@ if __name__=='__main__':
 
     # config for Yu's results
     keyframe_path = "%s/{}_test.txt"%(os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted/LM6d_render_v1/image_set/real'))
-    yu_pred_dir = os.path.join(cur_path, '../data/LINEMOD_6D/results_frcnn_linemod')
-    # yu_pred_dir = os.path.join(cur_path, '../data/LINEMOD_6D/frcnn_LM6d_eggbox_yu_val_v02_fix')
+    if not GEN_EGGBOX:
+        yu_pred_dir = os.path.join(cur_path, '../data/LINEMOD_6D/results_frcnn_linemod')
+    else:
+        yu_pred_dir = os.path.join(cur_path, '../data/LINEMOD_6D/frcnn_LM6d_eggbox_yu_val_v02_fix')
 
     # config for renderer
     width = 640
@@ -59,7 +61,13 @@ if __name__=='__main__':
     mkdir_if_missing(rendered_root_dir)
     mkdir_if_missing(pair_set_dir)
     all_pair = []
-    for small_class_idx, class_name in enumerate(class_name_list):
+    for small_class_idx, class_name in enumerate(tqdm(class_name_list)):
+        if GEN_EGGBOX:
+            if class_name != 'eggbox': # eggbox is wrong in the first version
+                continue
+        else:
+            if class_name == 'eggbox':
+                continue
         big_class_idx = class2big_idx[class_name]
         with open(keyframe_path.format(class_name)) as f:
             real_index_list = [x.strip() for x in f.readlines()]

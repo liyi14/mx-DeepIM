@@ -15,6 +15,9 @@ import cv2
 from tqdm import tqdm
 
 if __name__=='__main__':
+    GEN_EGGBOX = False
+    # GEN_EGGBOX = True # change this line for eggbox, because eggbox in the first version is wrong
+
     big_idx2class = {
         1: 'ape',
         2: 'benchviseblue',
@@ -41,8 +44,10 @@ if __name__=='__main__':
 
     # config for Yu's results
     keyframe_path = "%s/{}_test.txt"%(os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted/LM6d_render_v1/image_set/real'))
-    yu_pred_dir = os.path.join(cur_path, '../data/LINEMOD_6D/results_frcnn_linemod')
-    # yu_pred_dir = os.path.join(cur_path, '../data/LINEMOD_6D/frcnn_LM6d_eggbox_yu_val_v02_fix')
+    if not GEN_EGGBOX:
+        yu_pred_dir = os.path.join(cur_path, '../data/LINEMOD_6D/results_frcnn_linemod')
+    else:
+        yu_pred_dir = os.path.join(cur_path, '../data/LINEMOD_6D/frcnn_LM6d_eggbox_yu_val_v02_fix')
 
     # config for renderer
     width = 640
@@ -63,6 +68,12 @@ if __name__=='__main__':
     mkdir_if_missing(pair_set_dir)
     all_pair = []
     for small_class_idx, class_name in enumerate(tqdm(class_name_list)):
+        if GEN_EGGBOX:
+            if class_name != 'eggbox': # eggbox is wrong in the first version
+                continue
+        else:
+            if class_name == 'eggbox':
+                continue
         big_class_idx = class2big_idx[class_name]
         # init render
         model_dir = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted/models/{}'.format(class_name))
@@ -92,7 +103,7 @@ if __name__=='__main__':
                     proposal_idx = np.where(labels == 1)
                     assert len(proposal_idx) == 1
                     pose_ori_q = yu_pred['poses'][proposal_idx].reshape(7)
-               
+
                     pose_ori_m = RT_transform.se3_q2m(pose_ori_q)
                     pose_ori_q[:4] = RT_transform.mat2quat(pose_ori_m[:, :3])
 
@@ -109,7 +120,7 @@ if __name__=='__main__':
                     if gen_images:
                         rgb_gl, depth_gl = render_machine.render(pose_ori_q[:4], pose_ori_q[4:])
                         depth_gl = (depth_gl * depth_factor).astype(np.uint16)
-                        
+
                         segmentation = np.zeros(depth_gl.shape)
                         segmentation[depth_gl != 0] = 1
                         cv2.imwrite(image_file, rgb_gl)

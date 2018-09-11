@@ -86,8 +86,8 @@ def write_pose_file(pose_file, class_idx, pose_ori_m):
 def gen_render_real():
     for cls_idx, cls_name in idx2class.items():
         print(cls_idx, cls_name)
-        if cls_name != 'ape': # NB: comment here to generate for all classes
-            continue
+        # if cls_name != 'ape': # NB: comment here to generate for all classes
+            # continue
         with open(os.path.join(real_set_dir, '{}_all.txt'.format(cls_name)), 'r') as f:
             all_indices = [line.strip('\r\n') for line in f.readlines()]
 

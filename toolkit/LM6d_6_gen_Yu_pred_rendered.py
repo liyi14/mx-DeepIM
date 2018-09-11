@@ -65,8 +65,10 @@ if __name__=='__main__':
     for small_class_idx, class_name in enumerate(class_name_list):
         if class_name in ['__back_ground__']:
             continue
+        # if class_name != 'ape': # comment here to generate for all classes
+        #     continue
         big_class_idx = class2big_idx[class_name]
-        
+
         # init render
         model_dir = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted/models/{}'.format(class_name))
         if gen_images:

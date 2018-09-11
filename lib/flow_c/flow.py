@@ -39,14 +39,14 @@ if __name__ == '__main__':
     depth_path = os.path.join(cur_dir, '../../data/render_v5/data/render_real/%s/0006/{}-depth.png' % (class_name))
 
     # prepare input data
-    v_depth_imgn = np.zeros((batch_size, 1, height, width), dtype=np.float32)
+    v_depth_rendered = np.zeros((batch_size, 1, height, width), dtype=np.float32)
     v_depth_real = np.zeros((batch_size, 1, height, width), dtype=np.float32)
     v_pose_src = np.array([np.loadtxt(pose_path.format(x), skiprows=1) for x in src_img_idx])
     v_pose_tgt = np.array([np.loadtxt(pose_path.format(x), skiprows=1) for x in tgt_img_idx])
     KT_array = np.zeros((batch_size, 3, 4))
 
     for i in range(batch_size):
-        v_depth_imgn[i, 0, :, :] = cv2.imread(depth_path.format(src_img_idx[i]),
+        v_depth_rendered[i, 0, :, :] = cv2.imread(depth_path.format(src_img_idx[i]),
                                               cv2.IMREAD_UNCHANGED) / DEPTH_FACTOR
         v_depth_real[i, 0, :, :] = cv2.imread(depth_path.format(tgt_img_idx[i]),
                                               cv2.IMREAD_UNCHANGED) / DEPTH_FACTOR
@@ -62,7 +62,7 @@ if __name__ == '__main__':
     for i in range(10):
         t = time()
         flow, valid = \
-            gpu_flow_machine(v_depth_imgn.astype(np.float32),
+            gpu_flow_machine(v_depth_rendered.astype(np.float32),
                              v_depth_real.astype(np.float32),
                              KT_array.astype(np.float32),
                              np.array(Kinv).astype(np.float32))
