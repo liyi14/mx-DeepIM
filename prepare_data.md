@@ -1,24 +1,25 @@
 ## Prepare data
 The `./toolkit` folder contains scripts to prepare data.
 ### LINEMOD(LINEMOD_6D)
+Download the dataset from [http://ptak.felk.cvut.cz/6DB/public/datasets/hinterstoisser/](http://ptak.felk.cvut.cz/6DB/public/datasets/hinterstoisser/).
 
 Run these commands successively to prepare `LM6d_render_v1`:
 
 Check the ``version``, the paths and class names first.
-Our train/val split can be found on [Google Drive](https://drive.google.com/open?id=1sdBoEmO8UXnkXRoaGUFUai6E3Od6O2e-).  
+Our train/val split can be found on [Google Drive](https://drive.google.com/open?id=1sdBoEmO8UXnkXRoaGUFUai6E3Od6O2e-).
 ```
 python toolkit/LM6d_devkit/LM6d_0_rescale_models.py
 # convert .ply models to .obj and .xyz models using meshlab
 python toolkit/LM6d_devkit/LM6d_adapt_real.py
 python toolkit/LM6d_devkit/LM6d_2_calc_extents.py  # (To be more precise, use diameters in models_info.txt)
 # generate train/val indexes (randomly 15% for train)
-# put the real images and image_set to data/LM6d_render_v1 
+# put the real images and image_set to data/LM6d_render_v1
 # (check LM6d_1_gen_render_real.py for the paths)
 python toolkit/LM6d_1_gen_render_real.py
 python toolkit/LM6d_2_gen_rendered_pose.py
 python toolkit/LM6d_3_gen_rendered.py
 python toolkit/LM6d_6_gen_Yu_pred_rendered.py
-python toolkit/LM6d_6_gen_Yu_pred_rendered_v02.py # uncomment eggbox path to generate eggbox 
+python toolkit/LM6d_6_gen_Yu_pred_rendered_v02.py # uncomment eggbox path to generate eggbox
 python toolkit/LM6d_7_gen_Yu_pred_mask.py
 python toolkit/LM6d_7_gen_Yu_pred_mask_v02.py # uncomment eggbox path to generate eggbox
 ```
@@ -27,7 +28,7 @@ python toolkit/LM6d_7_gen_Yu_pred_mask_v02.py # uncomment eggbox path to generat
 
 Run the following commands to prepare the synthetic data for LINEMOD. Note that there is only one object in each synthetic real image.
 
-Check the `version` first. 
+Check the `version` first.
 ```
 python toolkit/LM6d_ds_0_gen_syn_poses.py
 python toolkit/LM6d_ds_1_gen_real_light.py
