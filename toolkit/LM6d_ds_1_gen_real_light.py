@@ -76,8 +76,8 @@ def gen_real():
     for class_idx, class_name in enumerate(tqdm(classes)):
         if class_name == '__back_ground__':
             continue
-        if class_name not in ['ape']:
-            continue
+        # if class_name in ['ape']:
+        #     continue
 
         # init render machines
         brightness_ratios = [0.2, 0.25, 0.3, 0.35, 0.4] ###################

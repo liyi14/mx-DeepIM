@@ -80,8 +80,6 @@ print(angle_std, angle_max, x_std, y_std, z_std)
 image_set = 'train'
 for cls_idx, cls_name in enumerate(tqdm(sel_classes)):
     print(cls_idx, cls_name)
-    if not cls_name in ['ape']:
-        continue
     rd_stat = []
     td_stat = []
     pose_real = []

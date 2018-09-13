@@ -81,8 +81,6 @@ if __name__=='__main__':
         print("start ", class_idx, class_name)
         if class_name in ['__back_ground__']:
             continue
-        if class_name not in ['ape']:
-            continue
 
         if gen_images:
             # init render
@@ -97,7 +95,7 @@ if __name__=='__main__':
             rendered_pose_list = np.array([[float(x) for x in each_pose] for each_pose in str_rendered_pose_list])
             rendered_per_real = 1
             assert(len(rendered_pose_list) == 1*len(real_list)), '{} vs {}'.format(len(rendered_pose_list), len(real_list))
-            for idx, real_index in enumerate(real_list):
+            for idx, real_index in enumerate(tqdm(real_list)):
                 video_name, real_prefix = real_index.split('/')
                 rendered_dir = os.path.join(rendered_root_dir, video_name)
                 mkdir_if_missing(rendered_dir)

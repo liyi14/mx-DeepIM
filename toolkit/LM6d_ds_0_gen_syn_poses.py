@@ -75,8 +75,6 @@ def stat_poses():
     trans_stat = {}
     quat_stat = {}
     for cls_idx, cls_name in idx2class.items():
-        if cls_name != 'ape':
-            continue
         new_points[cls_name] = {'pz': []}
         train_idx_file = os.path.join(real_set_dir, "{}_train.txt".format(cls_name))
         with open(train_idx_file, 'r') as f:
@@ -172,8 +170,6 @@ def gen_poses():
     mkdir_if_missing(syn_pose_dir)
 
     for cls_i, cls_name in enumerate(sel_classes):
-        if cls_name != 'ape':
-            continue
         src_quat_mean = quat_stat[cls_name]['quat_mean']
         src_quat_std = quat_stat[cls_name]['quat_std']
         src_trans_mean = trans_stat[cls_name]['trans_mean']
@@ -182,9 +178,6 @@ def gen_poses():
 
         for i in tqdm(range(NUM_IMAGES)):
             real_prefix = real_prefix_list[i]
-
-            # if cls_name == 'ape':
-            #     continue
 
             # randomly generate a pose
             tgt_quat = np.random.normal(0, 1, 4)
@@ -239,5 +232,4 @@ def gen_poses():
 if __name__=='__main__':
     # pose_dict, quat_stat, trans_stat, new_points = stat_poses()
     gen_poses()
-    pass
 

@@ -10,7 +10,6 @@ from __future__ import print_function, division
 import numpy as np
 import os
 import sys
-from shutil import copyfile
 
 cur_path = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(1, os.path.join(cur_path, '..'))
@@ -56,8 +55,6 @@ if __name__=='__main__':
         # val_pair = []
         print("start ", class_idx, class_name)
         if class_name in ['__back_ground__']:
-            continue
-        if class_name not in ['ape']:
             continue
 
         for set_type in ['train']:

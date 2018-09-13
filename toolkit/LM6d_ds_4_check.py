@@ -52,7 +52,7 @@ image_set_dir = os.path.join(LINEMOD_root, 'LM6d_data_syn_light/image_set')
 real_set_dir = os.path.join(LINEMOD_root, 'LM6d_data_syn_light/image_set/real')
 
 def check():
-    cls_name = 'ape'
+    cls_name = 'duck'
     set_file = os.path.join(image_set_dir, "train_{}_{}.txt".format(version, cls_name))
     with open(set_file, 'r') as f:
         pairs = [line.strip() for line in f.readlines()]
