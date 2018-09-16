@@ -57,7 +57,7 @@ respectively.
 
 ## Requirements: Software
 
-1. MXNet from [the offical repository](https://github.com/dmlc/mxnet). 
+1. MXNet from [the official repository](https://github.com/dmlc/mxnet). 
 We tested our code on [MXNet@(commit fc9e70b)](https://github.com/apache/incubator-mxnet/commit/fc9e70b).
    
     Or use the prebuilt version following [the installation guide.](https://mxnet.incubator.apache.org/install/index.html?platform=Linux&language=Python&processor=GPU).   
