@@ -10,7 +10,7 @@ Our train/val split can be found on [Google Drive](https://drive.google.com/open
 ```
 python toolkit/LM6d_devkit/LM6d_0_rescale_models.py
 # convert .ply models to .obj and .xyz models using meshlab
-python toolkit/LM6d_devkit/LM6d_adapt_real.py
+python toolkit/LM6d_devkit/LM6d_1_adapt_real.py
 python toolkit/LM6d_devkit/LM6d_2_calc_extents.py  # (To be more precise, use diameters in models_info.txt)
 # generate train/val indexes (randomly 15% for train)
 # put the real images and image_set to data/LM6d_render_v1
