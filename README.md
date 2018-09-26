@@ -76,6 +76,7 @@ We tested our code on [MXNet@(commit fc9e70b)](https://github.com/apache/incubat
 	pip install opencv-python
 	pip install easydict
 	pip install pyyaml
+	pip install tqdm
 	```
    glumpy:
    ```
@@ -151,6 +152,8 @@ git clone https://github.com/liyi14/mx-DeepIM.git
 	```
 	./data/
 	```
+
+	VOC2012 is needed to randomly replace the backgrounds of the synthetic data.
 
 2. Please download FlowNet model manually from [Google Drive](https://drive.google.com/open?id=1wU1QkG5h5Yyg0G-l9SjoGOIzUgLT4ntR)
  or [Baidu NetDisk](https://pan.baidu.com/s/1qjLw8_gNzcywbWXa2NK9ig) (password: shga), 

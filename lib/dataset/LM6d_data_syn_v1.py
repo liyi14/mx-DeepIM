@@ -10,7 +10,6 @@ import cv2
 import os
 import numpy as np
 import PIL
-import hickle as hkl
 from .imdb import IMDB
 from lib.utils.projection import se3_inverse, se3_mul
 from lib.utils.print_and_log import print_and_log
