@@ -1,6 +1,5 @@
 ---
-#MXNET_VERSION: "mxnet_v00_origin"
-MXNET_VERSION: "mxnet_0303"
+MXNET_VERSION: "mxnet"
 CUDA9: True
 output_path: "./output/deepim_release/"
 symbol: flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask
@@ -8,11 +7,10 @@ symbol: flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask
 ModelNet: True
 modelnet_root: './data/ModelNet/'
 
-NUM_GPUS: 4
+NUM_GPUS: 1
 SCALES:
 - 480
 - 640
-FLOW_CLASS_AGNOSTIC: True
 default:
   frequent: 20
   kvstore: device
@@ -24,7 +22,6 @@ dataset:
   root_path: "./data/"
 #  test_image_set: train_
   test_image_set: my_val_
-#  test_image_set: yu_val_
   DEPTH_FACTOR: 1000
   NORMALIZE_FLOW: 20.0
   NORMALIZE_ROT: 1.0
@@ -42,7 +39,6 @@ dataset:
 #  - 'airplane_0630'
 #  - 'airplane_0631'
 #  - 'airplane_0632'
-  RENDER_REAL: False
   INTRINSIC_MATRIX:
   - 572.4114
   - 0.0
@@ -61,10 +57,8 @@ dataset:
   - 1.0
   - 1.0
   - 1.0
-  MASK_GT: False
 network:
   FIXED_PARAMS:
-  IMAGE_STRIDE: 0
   PIXEL_MEANS:
   - 123.68
   - 116.779
@@ -73,67 +67,48 @@ network:
   pretrained_epoch: 0
   init_from_flownet: True
   skip_initialize: False
-  WITH_DEPTH: False
-  SE3_TYPE: QUAT
+  INPUT_DEPTH: False
+  INPUT_MASK: True
+  PRED_FLOW: True
+  PRED_MASK: True
   STANDARD_FLOW_REP: False
   TRAIN_ITER: True
   TRAIN_ITER_SIZE: 4
-  SE3_I2R: True
-  SE3_R2I: False
-  FLOW_I2R: True
-  FLOW_R2I: False
-#  WITH_MASK: False
-#  MASK_INPUTS: True
-  WITH_MASK: True
-  PRED_MASK: True
-  MASK_INPUTS: False
+  REGRESSOR_NUM: 1
+  ROT_TYPE: QUAT
   ROT_COORD: 'CAMERA'
-#  REPLACE_REAL_BG: True
-  HIGHLIGHT_CENTER: False
-train_iter0:
-  SE3_I2R: True
-  SE3_R2I: False
-  SE3_NORM_LOSS: False
-  LW_ROT: 0.0
-  LW_TRANS: 0.0
+train_iter:
+  SE3_DIST_LOSS: False
   SE3_PM_LOSS: True
   LW_PM: 0.1
-  LW_MASK: 0.03
   NUM_3D_SAMPLE: 3000
-  FLOW_I2R: True
-  FLOW_R2I: False
   LW_FLOW: 0.25
+  LW_MASK: 0.03
 TRAIN:
-  ONLINE_MASK_SYN: False
   optimizer: sgd
   warmup: True
   warmup_lr: 0.00001
-  # typically we will use 4000 warmup step for single GPU
-#  warmup_step: 200 #800
-  warmup_step: 800
+#  warmup_step: 800 # 4 gpus
+  warmup_step: 200 # 1 gpus
   begin_epoch: 0
   end_epoch: 4
   lr: 0.0001
   lr_step: '2,3'
   momentum: 0.975
   model_prefix: "flownet_SE3_ex_ModelNet_v1"
-  # whether flip image
-  FLIP_IMG: False
-  FLIP_PAIR: False
   # size of images for each device
-#  BATCH_PAIRS: 16
   BATCH_PAIRS: 4
-  # wheter crop image during training
-  ENABLE_CROP: False
   # whether resume training
   RESUME: False
   # whether shuffle image
   SHUFFLE: true
-  WEIGHT_TYPE: viz
+  FLOW_WEIGHT_TYPE: 'viz'
   VISUALIZE: False
   INIT_MASK: 'box_gt'
+  UPDATE_MASK: 'box_gt'
   MASK_DILATE: True
-  USE_MASK_PRED: False
+  REPLACE_REAL_BG_RATIO: 0.0
+  TENSORBOARD_LOG: True
 TEST:
   # size of images for each device
   BATCH_PAIRS: 1
@@ -141,8 +116,9 @@ TEST:
   VISUALIZE: False
   test_iter: 4
   FLIP_PAIR: False
-  AVERAGE_ITERS: False
   VIS_VIDEO: False
   INIT_MASK: 'box_rendered'
-  USE_MASK_PRED: True
+  UPDATE_MASK: 'box_rendered'
   MASK_DILATE: False
+#  FAST_TEST: False
+  FAST_TEST: True
