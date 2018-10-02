@@ -168,7 +168,7 @@ and put it under folder `./model`. Make sure it looks like this:
 
 2. To perform experiments, run the python scripts with the corresponding config file as input. For example, to train and test DeepIM models with pre-trained FlowNet, use the following command
     ```
-    python experiments/deepim/deepim_train_test.py --cfg experiments/deepim/deepim/your_cfg.yaml
+    python experiments/deepim/deepim_train_test.py --cfg experiments/deepim/cfgs/your_cfg.yaml --gpus 0,1,2,3
     ```
     A cache folder would be created automatically to save the model and the log under `output/deepim/`.
 3. Please find more details in config files and in our code.
