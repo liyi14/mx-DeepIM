@@ -37,7 +37,7 @@ def get_data_pair_test_batch(pairdb, config):
     for i in xrange(len(pairdb)):
         cur_batch = {'image_observed': im_observed[i],
                      'image_rendered': im_rendered[i],
-                     'src_pose': np.array(pairdb[i]['pose_est']).reshape((1, 3, 4)),
+                     'src_pose': np.array(pairdb[i]['pose_rendered']).reshape((1, 3, 4)),
                      'class_index': class_index_array}
 
         if config.network.INPUT_DEPTH:
