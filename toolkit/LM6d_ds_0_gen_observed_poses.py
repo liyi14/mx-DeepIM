@@ -80,8 +80,9 @@ def stat_poses():
     trans_stat = {}
     quat_stat = {}
     for cls_idx, cls_name in idx2class.items():
-        if cls_name != 'ape':
-            continue
+        # uncomment here to only generate data for ape
+        # if cls_name != 'ape':
+        #     continue
         new_points[cls_name] = {'pz': []}
         train_idx_file = os.path.join(observed_set_dir, "{}_train.txt".format(cls_name))
         with open(train_idx_file, 'r') as f:

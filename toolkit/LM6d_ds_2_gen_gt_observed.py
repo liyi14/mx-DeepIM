@@ -58,7 +58,7 @@ depth_factor = 1000
 
 LINEMOD_root = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted/LM6d_refine')
 LINEMOD_syn_root = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted/LM6d_refine_syn')
-syn_poses_path = os.path.join(LINEMOD_syn_root, 'syn_poses_single/LM6d_ds_all_syn_pose.pkl')
+syn_poses_path = os.path.join(LINEMOD_syn_root, 'poses/LM6d_ds_train_observed_pose_all.pkl')
 
 # output path
 gt_observed_root_dir = os.path.join(LINEMOD_syn_root, 'data', 'gt_observed')

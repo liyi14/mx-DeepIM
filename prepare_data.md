@@ -20,7 +20,7 @@ LM6d_refine/PoseCNN_LINEMOD_6D_results/ape, ...
 
 Then execute the following scripts consecutively to process the images.
 ```
-python toolkit/LM6d_devkit/LM6d_2a_adapt_real.py
+python toolkit/LM6d_devkit/LM6d_2a_adapt_images.py
 # training set
 python toolkit/LM6d_0_gen_gt_observed.py
 python toolkit/LM6d_1_gen_rendered_pose.py
@@ -35,6 +35,9 @@ Run the following commands to prepare the synthetic data for LINEMOD. Note that 
 If you want to have a quick start, you can uncomment the conditions
 Check the `version` first.
 ```
+cd LINEMOD_6D/LM6d_converted
+cp -r LM6d_refine/models LM6d_refine_syn
+cd -
 python toolkit/LM6d_ds_0_gen_observed_poses.py
 python toolkit/LM6d_ds_1_gen_observed.py
 python toolkit/LM6d_ds_2_gen_gt_observed.py

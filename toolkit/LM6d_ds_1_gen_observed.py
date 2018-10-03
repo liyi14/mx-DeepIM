@@ -66,7 +66,7 @@ def gen_observed():
     mkdir_if_missing(observed_root_dir)
     mkdir_if_missing(image_set_dir)
 
-    syn_poses_path = os.path.join(observed_pose_dir, 'LM6d_all_observed_pose_all.pkl')
+    syn_poses_path = os.path.join(observed_pose_dir, 'LM6d_ds_train_observed_pose_all.pkl')
     with open(syn_poses_path, 'rb') as f:
         syn_pose_dict = cPickle.load(f)
 

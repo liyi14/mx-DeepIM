@@ -66,8 +66,9 @@ def main():
         print("start ", class_name)
         if class_name in ['__back_ground__']:
             continue
-        if class_name not in ['ape']:
-            continue
+        # uncomment here to only generate data for ape
+        # if class_name not in ['ape']:
+        #     continue
 
         if gen_images:
             # init render

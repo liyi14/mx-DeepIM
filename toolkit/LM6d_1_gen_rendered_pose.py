@@ -60,6 +60,9 @@ print("angle_std={}, angle_max={}, x_std={}, y_std={}, z_std={}".format(angle_st
 
 image_set = 'all'
 for cls_idx, cls_name in idx2class.items():
+    # uncomment here to only generate data for ape
+    # if cls_name not in ['ape']:
+    #     continue
     print(cls_idx, cls_name)
     rd_stat = []
     td_stat = []

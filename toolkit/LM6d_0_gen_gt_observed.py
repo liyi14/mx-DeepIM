@@ -80,7 +80,8 @@ def write_pose_file(pose_file, class_idx, pose_ori_m):
 def gen_gt_observed():
     for cls_idx, cls_name in idx2class.items():
         print(cls_idx, cls_name)
-        # if cls_name != 'ape': # NB: comment here to generate for all classes
+        # uncomment here to only generate data for ape
+        # if cls_name != 'ape':
         #     continue
         with open(os.path.join(observed_set_dir, '{}_all.txt'.format(cls_name)), 'r') as f:
             all_indices = [line.strip('\r\n') for line in f.readlines()]
