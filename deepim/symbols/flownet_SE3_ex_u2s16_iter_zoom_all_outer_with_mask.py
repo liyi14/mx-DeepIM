@@ -30,24 +30,24 @@ class flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask(Symbol):
         self.filter_list = [64, 128, 256, 512]
 
     def get_flownet(self, data_iter, big_cfg, small_cfg, share_dict, iter_idx):
-        if 'depth_real' in data_iter.keys():
+        if 'depth_observed' in data_iter.keys():
             if big_cfg.network.INPUT_MASK and big_cfg.network.PRED_MASK:
-                data = mx.symbol.Concat(data_iter['image_real'] / 255.0, data_iter['image_rendered'] / 255.0,
-                                        data_iter['depth_real'] / 255.0, data_iter['depth_rendered'] / 255.0,
-                                        data_iter['mask_real_est'],
+                data = mx.symbol.Concat(data_iter['image_observed'] / 255.0, data_iter['image_rendered'] / 255.0,
+                                        data_iter['depth_observed'] / 255.0, data_iter['depth_rendered'] / 255.0,
+                                        data_iter['mask_observed'],
                                         data_iter['mask_rendered'],
                                         dim=1)
             else:
-                data = mx.symbol.Concat(data_iter['image_real']/255.0, data_iter['image_rendered']/255.0,
-                                    data_iter['depth_real']/255.0, data_iter['depth_rendered']/255.0, dim=1)
+                data = mx.symbol.Concat(data_iter['image_observed']/255.0, data_iter['image_rendered']/255.0,
+                                    data_iter['depth_observed']/255.0, data_iter['depth_rendered']/255.0, dim=1)
         else:
             if big_cfg.network.INPUT_MASK and big_cfg.network.PRED_MASK:
-                data = mx.symbol.Concat(data_iter['image_real'] / 255.0, data_iter['image_rendered'] / 255.0,
-                                        data_iter['mask_real_est'],
+                data = mx.symbol.Concat(data_iter['image_observed'] / 255.0, data_iter['image_rendered'] / 255.0,
+                                        data_iter['mask_observed'],
                                         data_iter['mask_rendered'],
                                         dim=1)
             else:
-                data = mx.symbol.Concat(data_iter['image_real'] / 255.0, data_iter['image_rendered'] / 255.0, dim=1)
+                data = mx.symbol.Concat(data_iter['image_observed'] / 255.0, data_iter['image_rendered'] / 255.0, dim=1)
         flow_conv1 = mx.symbol.Convolution(name='flow_conv1_iter{}'.format(iter_idx), data=data, num_filter=64, pad=(3, 3),
                                            kernel=(7, 7), stride=(2, 2), no_bias=False,
                                            weight=share_dict['flow_conv1_weight'], bias=share_dict['flow_conv1_bias'])
@@ -227,7 +227,7 @@ class flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask(Symbol):
                                                           weight=share_dict['upsampling_weight'])
 
             # flow loss
-            flow_est_crop = mx.symbol.Crop(*[flow_est_resize, labels['image_real']], offset=(8, 8),
+            flow_est_crop = mx.symbol.Crop(*[flow_est_resize, labels['image_observed']], offset=(8, 8),
                                                name='flow_est_crop')
             flow_loss_ = labels['flow_weights'] * \
                              mx.sym.square(data=(flow_est_crop - labels['flow'] / big_cfg.dataset.NORMALIZE_FLOW),
@@ -305,12 +305,12 @@ class flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask(Symbol):
             pose_src = labels['src_pose']
             point_cloud_weights = labels['point_cloud_weights']
             point_cloud_model = labels['point_cloud_model']
-            point_cloud_real = labels['point_cloud_real']
+            point_cloud_observed = labels['point_cloud_observed']
 
-            point_cloud_real_est = mx.sym.Custom(point_cloud=point_cloud_model, rotation=rot_est_norm,
+            point_cloud_observed_est = mx.sym.Custom(point_cloud=point_cloud_model, rotation=rot_est_norm,
                                                  translation=trans_est,
                                                  pose_src=pose_src,
-                                                 name='Transform3D_real',
+                                                 name='Transform3D',
                                                  op_type='Transform3D', T_means=big_cfg.dataset.trans_means.flatten(),
                                                  T_stds=big_cfg.dataset.trans_stds.flatten(),
                                                  rot_coord=big_cfg.network.ROT_COORD)
@@ -318,16 +318,16 @@ class flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask(Symbol):
             # calculate the point matching loss
             norm_term = big_cfg.dataset.NORMALIZE_3D_POINT
             if small_cfg.SE3_PM_LOSS_TYPE == 'L1':
-                point_matching_loss_all = mx.sym.abs(data=(point_cloud_real_est - point_cloud_real) / norm_term,
+                point_matching_loss_all = mx.sym.abs(data=(point_cloud_observed_est - point_cloud_observed) / norm_term,
                                                    name='point_matching_loss_all_')
                 point_matching_loss_valid = point_cloud_weights * point_matching_loss_all
 
             elif small_cfg.SE3_PM_LOSS_TYPE == 'L2':
-                point_matching_loss_all = mx.sym.square(data=(point_cloud_real_est - point_cloud_real) / norm_term,
+                point_matching_loss_all = mx.sym.square(data=(point_cloud_observed_est - point_cloud_observed) / norm_term,
                                                       name='point_matching_loss_all_')
                 point_matching_loss_valid = mx.sym.broadcast_mul(point_cloud_weights, point_matching_loss_all)
             elif small_cfg.SE3_PM_LOSS_TYPE == 'smooth_L1':
-                point_matching_loss_all = mx.sym.smooth_l1(data=(point_cloud_real_est - point_cloud_real) / norm_term,
+                point_matching_loss_all = mx.sym.smooth_l1(data=(point_cloud_observed_est - point_cloud_observed) / norm_term,
                                                          name='point_matching_loss_all_',
                                                          scalar=small_cfg.SE3_PM_SL1_SCALAR)
                 point_matching_loss_valid = point_cloud_weights * point_matching_loss_all
@@ -353,11 +353,11 @@ class flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask(Symbol):
                                                        weight=share_dict['mask_upsampling_weight'])
 
             # mask loss
-            mask_pred_resize_crop = mx.symbol.Crop(*[mask_pred_resize, labels['image_real']], offset=(8, 8),
+            mask_pred_resize_crop = mx.symbol.Crop(*[mask_pred_resize, labels['image_observed']], offset=(8, 8),
                                                    name='mask_pred_resize_crop')
 
             mask_prob = mx.sym.LogisticRegressionOutput(name='mask_prob',
-                                                        data=mask_pred_resize_crop, label=labels['mask_real_gt'],
+                                                        data=mask_pred_resize_crop, label=labels['mask_gt_observed'],
                                                         grad_scale=small_cfg.LW_MASK)
 
             mask_pred_bin = mx.sym.round(data=mask_prob, name='mask_pred_bin')
@@ -366,11 +366,11 @@ class flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask(Symbol):
                                                name='invZoomMask', op_type='ZoomMaskWithFactor',
                                                height=480, width=640, b_inv_zoom=True)
             group_list.append(mask_prob) # zoomed
-            group_list.append(mx.sym.BlockGrad(labels['mask_real_gt'],
-                                               name='zoom_mask_real_gt'))
+            group_list.append(mx.sym.BlockGrad(labels['mask_gt_observed'],
+                                               name='zoom_mask_gt_observed'))
             group_list.append(mx.sym.BlockGrad(unzoomed_mask_pred, name='unzoomed_mask_pred'))
 
-            pred['mask_real_est'] = mx.sym.BlockGrad(mask_pred_bin)
+            pred['mask_observed'] = mx.sym.BlockGrad(mask_pred_bin)
 
         return pred
 
@@ -395,54 +395,54 @@ class flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask(Symbol):
             labels_dict['tgt_pose'] = tgt_pose
 
         # images and masks
-        image_real = mx.symbol.Variable(name="image_real")
+        image_observed = mx.symbol.Variable(name="image_observed")
         image_rendered = mx.symbol.Variable(name="image_rendered")
-        group_list = [mx.sym.BlockGrad(image_real), mx.sym.BlockGrad(image_rendered)]
+        group_list = [mx.sym.BlockGrad(image_observed), mx.sym.BlockGrad(image_rendered)]
 
         if cfg.network.INPUT_MASK or cfg.network.PRED_MASK:
             mask_vis_dict = {}
-            mask_real_est = mx.symbol.Variable(name="mask_real_est")
-            mask_real_gt = mx.symbol.Variable(name='mask_real_gt')
+            mask_observed = mx.symbol.Variable(name="mask_observed")
+            mask_gt_observed = mx.symbol.Variable(name='mask_gt_observed')
             mask_rendered = mx.symbol.Variable(name='mask_rendered')
-            # get zoom factor using mask real est and mask rendered
-            zoom_mask_real_est, zoom_mask_real_gt, zoom_mask_rendered, zoom_factor \
-                = mx.sym.Custom(mask_real_est=mask_real_est, mask_real_gt=mask_real_gt,
+            # get zoom factor using mask observed and mask rendered
+            zoom_mask_observed, zoom_mask_gt_observed, zoom_mask_rendered, zoom_factor \
+                = mx.sym.Custom(mask_observed=mask_observed, mask_gt_observed=mask_gt_observed,
                                 mask_rendered=mask_rendered, src_pose=labels_dict['src_pose'],
                                 K=cfg.dataset.INTRINSIC_MATRIX.flatten(),
                                 name='ZoomMask', op_type='ZoomMask',
                                 height=480, width=640)
-            data_iter['mask_real_est'] = zoom_mask_real_est
+            data_iter['mask_observed'] = zoom_mask_observed
             data_iter['mask_rendered'] = zoom_mask_rendered
-            labels_dict['mask_real_gt'] = zoom_mask_real_gt
+            labels_dict['mask_gt_observed'] = zoom_mask_gt_observed
 
-            mask_vis_dict['mask_real_est'] = zoom_mask_real_est
+            mask_vis_dict['mask_observed'] = zoom_mask_observed
             mask_vis_dict['mask_rendered'] = zoom_mask_rendered
-            mask_vis_dict['mask_real_gt'] = zoom_mask_real_gt
+            mask_vis_dict['mask_gt_observed'] = zoom_mask_gt_observed
             # zoom image
-            zoom_image_real, zoom_image_rendered \
+            zoom_image_observed, zoom_image_rendered \
                 = mx.sym.Custom(zoom_factor=zoom_factor,
-                                image_real=image_real, image_rendered=image_rendered,
+                                image_observed=image_observed, image_rendered=image_rendered,
                                 name='ZoomImageWithFactor', op_type='ZoomImageWithFactor',
                                 height=480, width=640, pixel_means=cfg.network.PIXEL_MEANS.flatten())
 
         else:
             # get zoom factor using image
-            zoom_image_real, zoom_image_rendered, zoom_factor \
-                = mx.sym.Custom(image_real=image_real, image_rendered=image_rendered,
+            zoom_image_observed, zoom_image_rendered, zoom_factor \
+                = mx.sym.Custom(image_observed=image_observed, image_rendered=image_rendered,
                                 src_pose=labels_dict['src_pose'],
                                 K=cfg.dataset.INTRINSIC_MATRIX.flatten(),
                                 name='ZoomImage', op_type='ZoomImage',
                                 height=480, width=640, pixel_means=cfg.network.PIXEL_MEANS.flatten())
-        data_iter['image_real'] = zoom_image_real
+        data_iter['image_observed'] = zoom_image_observed
         data_iter['image_rendered'] = zoom_image_rendered
-        labels_dict['image_real'] = image_real # for get_loss
+        labels_dict['image_observed'] = image_observed # for get_loss
         labels_dict['zoom_factor'] = zoom_factor
 
         if cfg.network.INPUT_MASK:
-            mask_vis_dict['image_real'] = mx.sym.BlockGrad(zoom_image_real, name='zoom_image_real')
+            mask_vis_dict['image_observed'] = mx.sym.BlockGrad(zoom_image_observed, name='zoom_image_observed')
             mask_vis_dict['image_rendered'] = mx.sym.BlockGrad(zoom_image_rendered, name='zoom_image_rendered')
 
-        depth_render_real = mx.symbol.BlockGrad(mx.symbol.Variable(name='depth_render_real'))
+        depth_gt_observed = mx.symbol.BlockGrad(mx.symbol.Variable(name='depth_gt_observed'))
 
         # se3
         rot_gt = mx.symbol.Variable(name='rot')
@@ -456,13 +456,13 @@ class flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask(Symbol):
 
         # depth
         if cfg.network.INPUT_DEPTH:
-            depth_real = mx.symbol.Variable(name="depth_real")
+            depth_observed = mx.symbol.Variable(name="depth_observed")
             depth_rendered = mx.symbol.Variable(name="depth_rendered")
-            zoom_depth_real, zoom_depth_rendered \
-                = mx.sym.Custom(zoom_factor=zoom_factor, depth_real=depth_real, depth_rendered=depth_rendered,
+            zoom_depth_observed, zoom_depth_rendered \
+                = mx.sym.Custom(zoom_factor=zoom_factor, depth_observed=depth_observed, depth_rendered=depth_rendered,
                                 name='ZoomDepth', op_type='ZoomDepth',
                                 height=480, width=640)
-            data_iter['depth_real'] = zoom_depth_real
+            data_iter['depth_observed'] = zoom_depth_observed
             data_iter['depth_rendered'] = zoom_depth_rendered
 
         # flow
@@ -480,10 +480,10 @@ class flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask(Symbol):
         if small_cfg.SE3_PM_LOSS:
             point_cloud_model = mx.symbol.Variable(name='point_cloud_model')
             point_cloud_weights = mx.symbol.Variable(name='point_cloud_weights')
-            point_cloud_real = mx.symbol.Variable(name='point_cloud_real')
+            point_cloud_observed = mx.symbol.Variable(name='point_cloud_observed')
             labels_dict['point_cloud_model'] = point_cloud_model
             labels_dict['point_cloud_weights'] = point_cloud_weights
-            labels_dict['point_cloud_real'] = point_cloud_real
+            labels_dict['point_cloud_observed'] = point_cloud_observed
 
 
         # forward iter 0
@@ -495,30 +495,30 @@ class flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask(Symbol):
             group_list.append(mx.sym.BlockGrad(src_pose))
             group_list.append(mx.sym.BlockGrad(tgt_pose))
 
-        group_list.append(depth_render_real)
+        group_list.append(depth_gt_observed)
         if cfg.network.INPUT_MASK:
-            group_list.append(mx.sym.BlockGrad(mask_real_est))
-            group_list.append(mx.sym.BlockGrad(mask_real_gt))
+            group_list.append(mx.sym.BlockGrad(mask_observed))
+            group_list.append(mx.sym.BlockGrad(mask_gt_observed))
             group_list.append(mx.sym.BlockGrad(mask_rendered))
 
         if cfg.network.INPUT_MASK and cfg.network.PRED_MASK and cfg.TRAIN.VISUALIZE: # for visualize
             # for i in range(1, cfg.network.TRAIN_ITER_SIZE+1):
-            group_list.append(mask_vis_dict['mask_real_est'])       # zoomed
-            group_list.append(mask_vis_dict['mask_real_gt']) # zoomed
+            group_list.append(mask_vis_dict['mask_observed'])       # zoomed
+            group_list.append(mask_vis_dict['mask_gt_observed']) # zoomed
             group_list.append(mask_vis_dict['mask_rendered'])    # zoomed
-            group_list.append(mask_vis_dict['image_real'])   # zoomed
+            group_list.append(mask_vis_dict['image_observed'])   # zoomed
             group_list.append(mask_vis_dict['image_rendered'])   # zoomed
 
         class_index = mx.sym.Variable('class_index')
         group_list.append(mx.sym.BlockGrad(class_index))
-        # zoom_image_real, zoom_image_rendered = mx.sym.Custom(image_real=image_real, image_rendered=image_rendered,
+        # zoom_image_observed, zoom_image_rendered = mx.sym.Custom(image_observed=image_observed, image_rendered=image_rendered,
         #                                                    name='SimpleZoom_vis', op_type='SimpleZoom',
         #                                                    height=480, width=640, pixel_means=cfg.network.PIXEL_MEANS.flatten())
         if cfg.TRAIN.VISUALIZE:
-            group_list.append(mx.sym.BlockGrad(zoom_mask_real_gt)) # zoomed
-            group_list.append(mx.sym.BlockGrad(zoom_mask_real_est)) # zoomed
+            group_list.append(mx.sym.BlockGrad(zoom_mask_gt_observed)) # zoomed
+            group_list.append(mx.sym.BlockGrad(zoom_mask_observed)) # zoomed
             group_list.append(mx.sym.BlockGrad(zoom_mask_rendered))
-        group_list.append(data_iter['image_real']) # zoomed
+        group_list.append(data_iter['image_observed']) # zoomed
         group_list.append(data_iter['image_rendered'])
         group = mx.symbol.Group(group_list)
         self.sym = group
@@ -536,49 +536,49 @@ class flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask(Symbol):
 
         data_iter = {}
         # images and masks
-        image_real = mx.symbol.Variable(name="image_real")
+        image_observed = mx.symbol.Variable(name="image_observed")
         image_rendered = mx.symbol.Variable(name="image_rendered")
         src_pose = mx.symbol.Variable(name="src_pose")
 
         if cfg.network.INPUT_MASK:
-            mask_real_est = mx.symbol.Variable(name="mask_real_est")
-            mask_real_gt = mask_real_est # test phase has no gt
+            mask_observed = mx.symbol.Variable(name="mask_observed")
+            mask_gt_observed = mask_observed # test phase has no gt
             mask_rendered = mx.symbol.Variable(name='mask_rendered')
-            # get zoom factor using mask real est and mask rendered
-            zoom_mask_real_est, _, zoom_mask_rendered, zoom_factor \
-                = mx.sym.Custom(mask_real_est=mask_real_est, mask_real_gt=mask_real_gt,
+            # get zoom factor using mask observed and mask rendered
+            zoom_mask_observed, _, zoom_mask_rendered, zoom_factor \
+                = mx.sym.Custom(mask_observed=mask_observed, mask_gt_observed=mask_gt_observed,
                                 mask_rendered=mask_rendered, src_pose=src_pose,
                                 K=cfg.dataset.INTRINSIC_MATRIX.flatten(),
                                 name='ZoomMask', op_type='ZoomMask',
                                 height=480, width=640)
-            data_iter['mask_real_est'] = zoom_mask_real_est
+            data_iter['mask_observed'] = zoom_mask_observed
             data_iter['mask_rendered'] = zoom_mask_rendered
             # zoom image
-            zoom_image_real, zoom_image_rendered \
+            zoom_image_observed, zoom_image_rendered \
                 = mx.sym.Custom(zoom_factor=zoom_factor,
-                                image_real=image_real, image_rendered=image_rendered,
+                                image_observed=image_observed, image_rendered=image_rendered,
                                 name='ZoomImageWithFactor', op_type='ZoomImageWithFactor',
                                 height=480, width=640, pixel_means=cfg.network.PIXEL_MEANS.flatten())
         else:
             # zoom image
-            zoom_image_real, zoom_image_rendered, zoom_factor \
-                = mx.sym.Custom(image_real=image_real, image_rendered=image_rendered,
+            zoom_image_observed, zoom_image_rendered, zoom_factor \
+                = mx.sym.Custom(image_observed=image_observed, image_rendered=image_rendered,
                                 src_pose=src_pose,
                                 K=cfg.dataset.INTRINSIC_MATRIX.flatten(),
                                 name='ZoomImage', op_type='ZoomImage',
                                 height=480, width=640, pixel_means=cfg.network.PIXEL_MEANS.flatten())
-        data_iter['image_real'] = zoom_image_real
+        data_iter['image_observed'] = zoom_image_observed
         data_iter['image_rendered'] = zoom_image_rendered
 
         # depth
         if cfg.network.INPUT_DEPTH:
-            depth_real = mx.symbol.Variable(name="depth_real")
+            depth_observed = mx.symbol.Variable(name="depth_observed")
             depth_rendered = mx.symbol.Variable(name="depth_rendered")
-            zoom_depth_real, zoom_depth_rendered \
-                = mx.sym.Custom(zoom_factor=zoom_factor, depth_real=depth_real, depth_rendered=depth_rendered,
+            zoom_depth_observed, zoom_depth_rendered \
+                = mx.sym.Custom(zoom_factor=zoom_factor, depth_observed=depth_observed, depth_rendered=depth_rendered,
                                 name='ZoomDepth', op_type='ZoomDepth',
                                 height=480, width=640)
-            data_iter['depth_real'] = zoom_depth_real
+            data_iter['depth_observed'] = zoom_depth_observed
             data_iter['depth_rendered'] = zoom_depth_rendered
 
         conv_feat, deconv_feat = self.get_flownet(data_iter, cfg, cfg.train_iter, share_dict, 0)
@@ -593,24 +593,24 @@ class flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask(Symbol):
                                                        name='mask_upsampling',
                                                        attr={'lr_mult': '0.0'}, workspace=self.workspace)
 
-            mask_pred_resize_crop = mx.symbol.Crop(*[mask_pred_resize, image_real], offset=(8, 8),
+            mask_pred_resize_crop = mx.symbol.Crop(*[mask_pred_resize, image_observed], offset=(8, 8),
                                                    name='mask_pred_resize_crop')
-            zoom_mask_real_est_pred = mx.sym.Activation(data=mask_pred_resize_crop, act_type='sigmoid',
-                                                      name="zoom_mask_real_est_prob_iter")
+            zoom_mask_observed_pred = mx.sym.Activation(data=mask_pred_resize_crop, act_type='sigmoid',
+                                                      name="zoom_mask_observed_prob_iter")
 
-            mask_real_est_pred_float = mx.sym.Custom(zoom_factor=zoom_factor, mask=zoom_mask_real_est_pred,
+            mask_observed_pred_float = mx.sym.Custom(zoom_factor=zoom_factor, mask=zoom_mask_observed_pred,
                            name='invZoomMask', op_type='ZoomMaskWithFactor',
                            height=480, width=640, b_inv_zoom=True)
 
-            mask_real_est_pred = mx.sym.round(mask_real_est_pred_float, name='mask_real_est_pred')
+            mask_observed_pred = mx.sym.round(mask_observed_pred_float, name='mask_observed_pred')
 
-            group_list.append(mx.sym.BlockGrad(mask_real_est_pred, name='mask_real_est_pred'))
+            group_list.append(mx.sym.BlockGrad(mask_observed_pred, name='mask_observed_pred'))
 
             if not cfg.TEST.FAST_TEST:
-                group_list.append(zoom_mask_real_est_pred)
-                group_list.append(mx.sym.BlockGrad(zoom_mask_real_est, name='zoom_mask_real_est'))
-                group_list.append(mx.sym.BlockGrad(zoom_mask_real_est_pred, name='zoom_mask_real_est_pred'))
-                group_list.append(mx.sym.BlockGrad(zoom_image_real, name='zoom_image_real'))
+                group_list.append(zoom_mask_observed_pred)
+                group_list.append(mx.sym.BlockGrad(zoom_mask_observed, name='zoom_mask_observed'))
+                group_list.append(mx.sym.BlockGrad(zoom_mask_observed_pred, name='zoom_mask_observed_pred'))
+                group_list.append(mx.sym.BlockGrad(zoom_image_observed, name='zoom_image_observed'))
                 group_list.append(mx.sym.BlockGrad(zoom_image_rendered, name='zoom_image_rendered'))
 
 
@@ -624,11 +624,11 @@ class flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask(Symbol):
                                                           num_group=2, no_bias=True, name='upsampling',
                                                           attr={'lr_mult': '0.0'},
                                                           workspace=self.workspace) * cfg.dataset.NORMALIZE_FLOW
-            zoom_flow_est_crop = mx.symbol.Crop(*[flow_est_resize, image_real], offset=(8, 8), name='zoom_flow_est_crop')
+            zoom_flow_est_crop = mx.symbol.Crop(*[flow_est_resize, image_observed], offset=(8, 8), name='zoom_flow_est_crop')
             flow_est = mx.sym.Custom(name='invZoomFlow', op_type='ZoomFlow', height=480, width=640,
                                               flow=zoom_flow_est_crop, zoom_factor=zoom_factor,
                                               b_inv_zoom=True)
-            flow_est_crop = mx.symbol.Crop(*[flow_est, image_real], offset=(0, 0), name='flow_est_crop')
+            flow_est_crop = mx.symbol.Crop(*[flow_est, image_observed], offset=(0, 0), name='flow_est_crop')
             group_list.append(flow_est_crop)
 
         rot_param = 3 if cfg.network.ROT_TYPE == "EULER" else 4
@@ -678,7 +678,7 @@ class flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask(Symbol):
         else:
             num_extra_in_channel = 0
             if cfg.network.INPUT_DEPTH:
-                num_extra_in_channel += 2 # corresponding to the real and rendered images respectively
+                num_extra_in_channel += 2 # corresponding to the observed and rendered images respectively
             if cfg.network.INPUT_MASK:
                 num_extra_in_channel += 2
             if num_extra_in_channel > 0:

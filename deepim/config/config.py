@@ -46,19 +46,19 @@ config.network.TRANS_LOSS_TYPE = 'L2' # 'L1', 'smooth_L1'
 
 # dataset related params
 config.dataset = edict()
-config.dataset.dataset = 'RENDER_V1'
-config.dataset.dataset_path = './data/render_v1'
-config.dataset.image_set = 'train_002_r30_t3'
+config.dataset.dataset = 'LINEMOD_REFINE'
+config.dataset.dataset_path = './data/LINEMOD_6D/LINEMOD_converted/LINEMOD_refine'
+config.dataset.image_set = 'train_ape'
 config.dataset.root_path = './data'
-config.dataset.test_image_set = 'val_002_r30_t3'
+config.dataset.test_image_set = 'val_ape'
 config.dataset.model_dir = ''
-config.dataset.model_file = './data/render_v1/models.txt' # optional, if too many classes
-config.dataset.pose_file = './data/render_v1/poses.txt' # optional, if too many classes
+config.dataset.model_file = './data/ModelNet/render_v1/models.txt' # optional, if too many classes
+config.dataset.pose_file = './data/ModelNet/render_v1/poses.txt' # optional, if too many classes
 
-config.dataset.DEPTH_FACTOR = 10000
+config.dataset.DEPTH_FACTOR = 1000
 config.dataset.NORMALIZE_FLOW = 1.0
 config.dataset.NORMALIZE_3D_POINT = 0.1
-config.dataset.INTRINSIC_MATRIX = np.array([[1066.778, 0, 312.9869], [0, 1067.487, 241.3109], [0, 0, 1]])
+config.dataset.INTRINSIC_MATRIX = np.array([[572.4114, 0, 325.2611], [0, 573.57043, 242.04899], [0, 0, 1]])
 config.dataset.ZNEAR = 0.25
 config.dataset.ZFAR = 6.0
 
@@ -88,7 +88,7 @@ config.TRAIN.TENSORBOARD_LOG = False
 config.TRAIN.INIT_MASK = 'box_gt' # mask_gt, box_gt
 config.TRAIN.UPDATE_MASK = 'box_gt'
 config.TRAIN.MASK_DILATE = False
-config.TRAIN.REPLACE_REAL_BG_RATIO = 0.0 # replace train images' bg with VOC
+config.TRAIN.REPLACE_OBSERVED_BG_RATIO = 0.0 # replace train images' bg with VOC
 
 config.TEST = edict()
 config.TEST.BATCH_PAIRS = 1

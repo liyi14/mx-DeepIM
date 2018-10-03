@@ -31,12 +31,12 @@ class TestDataLoader(mx.io.DataIter):
         self.index = np.arange(self.size)
 
         # decide data and label names (only for training)
-        self.data_name = ['image_real', 'image_rendered', 'src_pose', 'class_index']
+        self.data_name = ['image_observed', 'image_rendered', 'src_pose', 'class_index']
         if config.network.INPUT_DEPTH:
-            self.data_name.append('depth_real')
+            self.data_name.append('depth_observed')
             self.data_name.append('depth_rendered')
         if config.network.INPUT_MASK:
-            self.data_name.append('mask_real_est')
+            self.data_name.append('mask_observed')
             self.data_name.append('mask_rendered')
 
 
@@ -140,20 +140,20 @@ class TrainDataLoader(mx.io.DataIter):
         self.index = np.arange(self.size)
 
         # decide data and label names
-        self.data_name = ['image_real', 'image_rendered', 'depth_render_real', 'class_index', 'src_pose', 'tgt_pose']
+        self.data_name = ['image_observed', 'image_rendered', 'depth_gt_observed', 'class_index', 'src_pose', 'tgt_pose']
 
         if config.network.INPUT_DEPTH:
-            self.data_name.append('depth_real')
+            self.data_name.append('depth_observed')
             self.data_name.append('depth_rendered')
 
         if config.network.INPUT_MASK:
-            self.data_name.append('mask_real_est')
+            self.data_name.append('mask_observed')
             self.data_name.append('mask_rendered')
 
         self.label_name = ['rot', 'trans']
 
         if config.network.PRED_MASK:
-            self.label_name.append('mask_real_gt')
+            self.label_name.append('mask_gt_observed')
 
         if config.network.PRED_FLOW:
             self.label_name.append('flow')
@@ -162,7 +162,7 @@ class TrainDataLoader(mx.io.DataIter):
         if config.train_iter.SE3_PM_LOSS:
             self.label_name.append('point_cloud_model')
             self.label_name.append('point_cloud_weights')
-            self.label_name.append('point_cloud_real')
+            self.label_name.append('point_cloud_observed')
 
         # status variable for synchronization between get_data and get_label
         self.cur = 0
@@ -274,7 +274,7 @@ class TrainDataLoader(mx.io.DataIter):
         if False:
             temp = get_data_pair_train_batch([pairdb[islice.start]], self.config) # for debug
             print('**'*20)
-            print(pairdb[0]['image_real'])
+            print(pairdb[0]['image_observed'])
             print('data:')
             for k in temp['data'].keys():
                 print("\t{}, {}".format(k, temp['data'][k].shape))
@@ -287,12 +287,12 @@ class TrainDataLoader(mx.io.DataIter):
             r_dist, t_dist = calc_rt_dist_m(temp['data']['src_pose'][0], temp['data']['tgt_pose'][0])
             print("{}: R_dist: {}, T_dist: {}".format(self.cur, r_dist, t_dist))
             print('**'*20)
-            image_real = (temp['data']['image_real'][0].transpose([1,2,0])+128).astype(np.uint8)
+            image_real = (temp['data']['image_observed'][0].transpose([1,2,0])+128).astype(np.uint8)
             print(np.max(image_real))
             print(np.min(image_real))
             image_rendered = (temp['data']['image_rendered'][0].transpose([1,2,0])+128).astype(np.uint8)
-            mask_real_gt = np.squeeze(temp['label']['mask_real_gt'])
-            mask_real_est = np.squeeze(temp['data']['mask_real_est'])
+            mask_real_gt = np.squeeze(temp['label']['mask_gt_observed'])
+            mask_real_est = np.squeeze(temp['data']['mask_observed'])
             mask_rendered = np.squeeze(temp['data']['mask_rendered'])
             if 'flow' in temp['label']:
                 print('in loader, flow: ', temp['label']['flow'].shape, np.unique(temp['label']['flow']))

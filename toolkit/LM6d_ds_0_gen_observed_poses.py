@@ -21,21 +21,21 @@ random.seed(2333)
 np.random.seed(2333)
 
 idx2class = {1: 'ape',
-            2: 'benchviseblue',
-            3: 'bowl',
-            4: 'camera',
-            5: 'can',
-            6: 'cat',
-            7: 'cup',
-            8: 'driller',
-            9: 'duck',
-            10: 'eggbox',
-            11: 'glue',
-            12: 'holepuncher',
-            13: 'iron',
-            14: 'lamp',
-            15: 'phone'
-}
+             2: 'benchviseblue',
+             3: 'bowl',
+             4: 'camera',
+             5: 'can',
+             6: 'cat',
+             7: 'cup',
+             8: 'driller',
+             9: 'duck',
+             10: 'eggbox',
+             11: 'glue',
+             12: 'holepuncher',
+             13: 'iron',
+             14: 'lamp',
+             15: 'phone'
+             }
 classes = idx2class.values()
 classes = sorted(classes)
 
@@ -54,12 +54,17 @@ ZFAR = 6.0
 
 depth_factor = 1000
 
-LINEMOD_root = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted')
-render_real_dir = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted/LM6d_render_v1/data/render_real')
-real_set_dir = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted/LM6d_render_v1/image_set/real/')
+LINEMOD_root = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted/LM6d_refine')
+gt_observed_dir = os.path.join(LINEMOD_root, 'data/gt_observed')
+observed_set_dir = os.path.join(LINEMOD_root, 'image_set/observed')
 
-NUM_IMAGES = 20000
+# output path
+LINEMOD_syn_root = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted/LM6d_refine_syn')
+pose_dir = os.path.join(LINEMOD_syn_root, 'poses') # single object in each image
+mkdir_if_missing(pose_dir)
+print("target path: {}".format(pose_dir))
 
+NUM_IMAGES = 10000
 
 def angle(u, v):
     c = np.dot(u, v) / (np.linalg.norm(u) * np.linalg.norm(v))  # -> cosine of the angle
@@ -78,25 +83,25 @@ def stat_poses():
         if cls_name != 'ape':
             continue
         new_points[cls_name] = {'pz': []}
-        train_idx_file = os.path.join(real_set_dir, "{}_train.txt".format(cls_name))
+        train_idx_file = os.path.join(observed_set_dir, "{}_train.txt".format(cls_name))
         with open(train_idx_file, 'r') as f:
-            real_indices = [line.strip() for line in f.readlines()]
+            observed_indices = [line.strip() for line in f.readlines()]
 
-        num_real = len(real_indices)
-        pose_dict[cls_name] = np.zeros((num_real, 7))  # quat, translation
+        num_observed = len(observed_indices)
+        pose_dict[cls_name] = np.zeros((num_observed, 7))  # quat, translation
         trans_stat[cls_name] = {}
         quat_stat[cls_name] = {}
-        for real_i, real_idx in enumerate(tqdm(real_indices)):
-            prefix = real_idx.split('/')[1]
-            pose_path = os.path.join(render_real_dir, cls_name, '{}-pose.txt'.format(prefix))
+        for observed_i, observed_idx in enumerate(tqdm(observed_indices)):
+            prefix = observed_idx.split('/')[1]
+            pose_path = os.path.join(gt_observed_dir, cls_name, '{}-pose.txt'.format(prefix))
             assert os.path.exists(pose_path), 'path {} not exists'.format(pose_path)
             pose = np.loadtxt(pose_path, skiprows=1)
             rot = pose[:3, :3]
             # print(rot)
             quat = np.squeeze(se3.mat2quat(rot))
             src_trans = pose[:3, 3]
-            pose_dict[cls_name][real_i, :4] = quat
-            pose_dict[cls_name][real_i, 4:] = src_trans
+            pose_dict[cls_name][observed_i, :4] = quat
+            pose_dict[cls_name][observed_i, 4:] = src_trans
 
             new_pz = np.dot(rot, pz.reshape((-1, 1))).reshape((3,))
             new_points[cls_name]['pz'].append(new_pz)
@@ -161,15 +166,9 @@ def stat_poses():
 def gen_poses():
     pz = np.array([0,0,1])
     pose_dict, quat_stat, trans_stat, new_points = stat_poses()
-    real_prefix_list = ['{:06d}'.format(i + 1) for i in range(NUM_IMAGES)]
+    observed_prefix_list = ['{:06d}'.format(i + 1) for i in range(NUM_IMAGES)]
     sel_classes = classes
-    num_class = len(sel_classes)
-    # syn_pose_dict = {prefix: np.zeros((num_class, 7), dtype='float32')
-    #                  for prefix in real_prefix_list}  # store poses
-    syn_pose_dict = {cls_name: np.zeros((NUM_IMAGES, 7)) for cls_name in sel_classes}
-
-    syn_pose_dir = os.path.join(cur_path, '..', 'data/LINEMOD_6D/LM6d_converted/LM6d_render_v1/syn_poses_single')
-    mkdir_if_missing(syn_pose_dir)
+    observed_pose_dict = {cls_name: np.zeros((NUM_IMAGES, 7)) for cls_name in sel_classes}
 
     for cls_i, cls_name in enumerate(sel_classes):
         if cls_name != 'ape':
@@ -181,8 +180,9 @@ def gen_poses():
         deg_max = new_points[cls_name]['angle_max']
 
         for i in tqdm(range(NUM_IMAGES)):
-            real_prefix = real_prefix_list[i]
+            observed_prefix = observed_prefix_list[i]
 
+            # uncomment here to only generate data for ape
             # if cls_name == 'ape':
             #     continue
 
@@ -221,23 +221,23 @@ def gen_poses():
                 center_y = float(transform[1] / transform[2])
                 count += 1
                 if count % 100 == 0:
-                    print(real_prefix, cls_name, count,
+                    print(observed_prefix, cls_name, count,
                           "deg < deg_max={}: {}, 48 < center_x < (640-48): {}, 48 < center_y < (480-48): {}".format(
                               deg_max, deg <= deg_max, 48 < center_x < (640 - 48), 48 < center_y < (480 - 48)))
 
             tgt_pose_q = np.zeros((7,), dtype='float32')
             tgt_pose_q[:4] = tgt_quat
             tgt_pose_q[4:] = tgt_trans
-            syn_pose_dict[cls_name][i, :] = tgt_pose_q
+            observed_pose_dict[cls_name][i, :] = tgt_pose_q
 
     # write pose
-    poses_file = os.path.join(syn_pose_dir, 'LM6d_ds_v1_all_syn_pose.pkl')
+    poses_file = os.path.join(pose_dir, 'LM6d_ds_train_observed_pose_all.pkl')
     with open(poses_file, 'wb') as f:
-        cPickle.dump(syn_pose_dict, f, 2)
+        cPickle.dump(observed_pose_dict, f, 2)
 
 
 if __name__=='__main__':
     # pose_dict, quat_stat, trans_stat, new_points = stat_poses()
     gen_poses()
-    pass
+    print("{} finished".format(__file__))
 

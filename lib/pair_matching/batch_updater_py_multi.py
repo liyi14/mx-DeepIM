@@ -61,7 +61,7 @@ class batchUpdaterPyMulti():
         :param small_cfg: 
         :return: 
         '''
-        pred = ['image_real', 'image_rendered']
+        pred = ['image_observed', 'image_rendered']
         # pred = []
         if big_cfg.network.PRED_FLOW:
             pred.append('flow_est_crop')
@@ -77,7 +77,7 @@ class batchUpdaterPyMulti():
             pred.append('point_matching_loss')
         if self.big_cfg['network']['PRED_MASK']:
             pred.append('zoom_mask_prob')
-            pred.append('zoom_mask_real_gt')
+            pred.append('zoom_mask_gt_observed')
             pred.append('mask_pred') # unzoomed
 
         return pred
@@ -85,10 +85,10 @@ class batchUpdaterPyMulti():
     def forward(self, data_batch, preds, big_cfg):
         """
         :param data:
-            image_real
+            image_observed
             image_rendered
-            depth_render_real
-            - depth_real
+            depth_gt_observed
+            - depth_observed
             - depth_rendered
             - mask_real
             src_pose
@@ -102,7 +102,7 @@ class batchUpdaterPyMulti():
             - point_cloud_weights
             - point_cloud_real
         :param preds:
-            image_real
+            image_observed
             image_rendered
             - flow_i2r_est
             - flow_i2r_loss
@@ -139,7 +139,7 @@ class batchUpdaterPyMulti():
         init_time += time.time()-t
 
         if self.big_cfg.network.PRED_FLOW:
-            depth_render_real_all = [data_array[ctx_i][data_names.index('depth_render_real')].asnumpy()
+            depth_gt_observed_all = [data_array[ctx_i][data_names.index('depth_gt_observed')].asnumpy()
                                         for ctx_i in range(num_ctx)]
 
         for ctx_i in range(num_ctx):
@@ -150,7 +150,7 @@ class batchUpdaterPyMulti():
             src_pose = src_pose_all[ctx_i] # data_array[ctx_i][data_names.index('src_pose')].asnumpy()
             tgt_pose = tgt_pose_all[ctx_i] # data_array[ctx_i][data_names.index('tgt_pose')].asnumpy()
             if self.big_cfg.network.PRED_FLOW:
-                depth_render_real = depth_render_real_all[ctx_i] # data_array[ctx_i][data_names.index('depth_render_real')] # ndarray
+                depth_gt_observed = depth_gt_observed_all[ctx_i] # data_array[ctx_i][data_names.index('depth_gt_observed')] # ndarray
 
             class_index = class_index_all[ctx_i] # data_array[ctx_i][data_names.index('class_index')].asnumpy()
             rot_est = rot_est_all[ctx_i] # preds[pred_names.index('rot_est')][ctx_i].asnumpy()
@@ -260,12 +260,12 @@ class batchUpdaterPyMulti():
                 # plt.subplot(1,2,1)
                 # plt.imshow(refined_depth_array[0,0])
                 # plt.subplot(1,2,2)
-                # plt.imshow(depth_render_real[0,0])
+                # plt.imshow(depth_gt_observed[0,0])
                 # plt.show()
 
                 refined_flow, refined_flow_valid = \
                     gpu_flow_machine(refined_depth_array.astype(np.float32),
-                                     depth_render_real.astype(np.float32),
+                                     depth_gt_observed.astype(np.float32),
                                      KT_array.astype(np.float32),
                                      np.array(self.Kinv).astype(np.float32))
                 ## problem with py3
@@ -404,14 +404,14 @@ if __name__ == '__main__':
         old_image_rendered = old_data[data_names.index('image_rendered')].asnumpy()
         new_image_rendered = new_data[data_names.index('image_rendered')].asnumpy()
 
-        old_image_real = old_data[data_names.index('image_real')].asnumpy()
-        new_image_real = new_data[data_names.index('image_real')].asnumpy()
+        old_image_observed = old_data[data_names.index('image_observed')].asnumpy()
+        new_image_observed = new_data[data_names.index('image_observed')].asnumpy()
 
         if big_cfg.network.PRED_MASK:
             old_mask_rendered = old_data[data_names.index('mask_rendered')].asnumpy()
             new_mask_rendered = new_data[data_names.index('mask_rendered')].asnumpy()
-            old_mask_real_est = old_data[data_names.index('mask_real_est')].asnumpy()
-            new_mask_real_est = new_data[data_names.index('mask_real_est')].asnumpy()
+            old_mask_observed = old_data[data_names.index('mask_observed')].asnumpy()
+            new_mask_observed = new_data[data_names.index('mask_observed')].asnumpy()
 
         if last_small_cfg['FLOW']:
             old_flow = old_label[label_names.index('flow')].asnumpy()
@@ -434,8 +434,8 @@ if __name__ == '__main__':
             old_im_i = get_im(old_image_rendered, j)
             new_im_i = get_im(new_image_rendered, j)
 
-            old_im_r = get_im(old_image_real, j)
-            new_im_r = get_im(new_image_real, j)
+            old_im_r = get_im(old_image_observed, j)
+            new_im_r = get_im(new_image_observed, j)
 
             new_rot_i2r = new_label[label_names.index('rot_i2r')].asnumpy()[j]
             new_trans_i2r = new_label[label_names.index('trans_i2r')].asnumpy()[j]
@@ -446,7 +446,7 @@ if __name__ == '__main__':
             print("src_pose: \n{}\nrefined_pose: \n{}\n, tgt_pose: \n{}\n, delta: \n{}\n"
                   .format(src_pose, refined_pose, tgt_pose, refined_pose-tgt_pose))
 
-            def vis_flow(flow_i2r, flow_i2r_weights, sel_img_idx, image_real, image_rendered):
+            def vis_flow(flow_i2r, flow_i2r_weights, sel_img_idx, image_observed, image_rendered):
                 flow_i2r = np.squeeze(flow_i2r[sel_img_idx, :, :, :]).transpose(1, 2, 0)
                 flow_i2r_weights = np.squeeze(flow_i2r_weights[sel_img_idx, :, :, :]).transpose([1, 2, 0])
                 visible = np.squeeze(flow_i2r_weights[:, :, 0]) != 0
@@ -456,15 +456,15 @@ if __name__ == '__main__':
                 font_size = 5
                 plt.axis('off')
                 fig.add_subplot(2, 3, 1)
-                plt.imshow(image_real)
-                plt.title('image_real', fontsize=font_size)
+                plt.imshow(image_observed)
+                plt.title('image_observed', fontsize=font_size)
                 fig.add_subplot(2, 3, 2)
                 plt.imshow(image_rendered)
                 plt.title('image_rendered', fontsize=font_size)
 
-                height = image_real.shape[0]
+                height = image_observed.shape[0]
                 width = image_rendered.shape[1]
-                mesh_real = np.zeros((height, width, 3), np.uint8)
+                mesh_observed = np.zeros((height, width, 3), np.uint8)
                 mesh_rendered = np.zeros((height, width, 3), np.uint8)
                 for h in range(0, height, 3):
                     for w in range(0, width, 3):
@@ -473,14 +473,14 @@ if __name__ == '__main__':
                             mesh_rendered = cv2.circle(mesh_rendered, (np.round(w).astype(int), np.round(h).astype(int)), 1,
                                                    (h * 255 / height, 255 - w * 255 / width, w * 255 / width), 5)
 
-                            mesh_real = cv2.circle(mesh_real,
+                            mesh_observed = cv2.circle(mesh_observed,
                                                    (np.round(w + cur_flow[1]).astype(int),
                                                     np.round(h + cur_flow[0]).astype(int)), 1,
                                                    (h * 255 / height, 255 - w * 255 / width, w * 255 / width), 5)
 
                 fig.add_subplot(2, 3, 4)
-                plt.imshow(mesh_real)
-                plt.title('mesh_real', fontsize=font_size)
+                plt.imshow(mesh_observed)
+                plt.title('mesh_observed', fontsize=font_size)
 
                 fig.add_subplot(2, 3, 5)
                 plt.imshow(mesh_rendered)
@@ -499,9 +499,9 @@ if __name__ == '__main__':
                     m = np.squeeze(mask[j])
                     return m
                 old_mask_i = get_mask(old_mask_rendered, j)
-                old_mask_r_est = get_mask(old_mask_real_est, j)
+                old_mask_r_est = get_mask(old_mask_observed, j)
                 new_mask_i = get_mask(new_mask_rendered, j)
-                new_mask_r_est = get_mask(new_mask_real_est, j)
+                new_mask_r_est = get_mask(new_mask_observed, j)
 
                 fig = plt.figure()
                 font_size = 5

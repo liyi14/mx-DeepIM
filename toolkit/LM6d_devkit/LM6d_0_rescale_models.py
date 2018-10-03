@@ -6,13 +6,14 @@
 from __future__ import print_function, division
 '''
 scale ply models.
+*********** NOTICE ***********
 After scaling, the points.xyz, textured.obj(textured.obj.mtl), texture_map.png
-can be obtained via meshlab.
+can be obtained via meshlab. (or you can download it here https://drive.google.com/drive/folders/1dxbEn9NOhlWjiEop3QPjT2wi-FB-N1if?usp=sharing)
 1. open .ply file in meshlab
 2. Filters/Texture/Parametrization: Trivial - Per Triangle
  (if you get an error about the inter-triangle border being too much, increase the texture dimension)
 3. Then Filters/Texture/Transfer: Vertex Color to Texture
-4. export mesh as textured.obj and points.xyz (for .xyz, uncheck the Normal option)  
+4. File/Export Mesh As -> textured.obj and points.xyz (for .xyz, uncheck the Normal option)  
 '''
 import sys, os
 cur_dir = os.path.dirname(os.path.abspath(__file__))
@@ -21,10 +22,12 @@ import numpy as np
 from lib.utils.mkdir_if_missing import mkdir_if_missing
 
 LM6d_origin_root = os.path.join(cur_dir, '../../data/LINEMOD_6D/LM6d_origin')
-LM6d_new_root = os.path.join(cur_dir, '../../data/LINEMOD_6D/LM6d_converted')
+version = 'v1'
+LM6d_new_root = os.path.join(cur_dir, '../../data/LINEMOD_6D/LM6d_converted/LM6d_render_{}/'.format(version))
 src_model_root = os.path.join(LM6d_origin_root, 'models')
 dst_model_root = os.path.join(LM6d_new_root, 'models')
 mkdir_if_missing(dst_model_root)
+print("target path: {}".format(dst_model_root))
 
 class_list = ['{:02d}'.format(i) for i in range(1, 16)]
 
@@ -83,7 +86,6 @@ def scale_ply(mesh_path, res_mesh_path, transform=None):
 
             # print(res_line)
             f_res.write(res_line)
-
             # points.append(xyz)
 
         # points_np = np.array(points)
@@ -120,6 +122,7 @@ def check_model_points():
 
 # =================================
 
-
 if __name__ == "__main__":
+    print('processed model files (models.tar.gz) can be downloaded at https://drive.google.com/drive/folders/1dxbEn9NOhlWjiEop3QPjT2wi-FB-N1if?usp=sharing')
     scale_ply_main()
+    print("{} finished".format(__file__))

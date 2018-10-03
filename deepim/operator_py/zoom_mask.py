@@ -123,11 +123,11 @@ class ZoomMaskProp(mx.operator.CustomOpProp):
         self.width = int(width)
 
     def list_arguments(self):
-        input_list = ['mask_real_est', 'mask_real_gt', 'mask_rendered', 'src_pose']
+        input_list = ['mask_observed', 'mask_gt_observed', 'mask_rendered', 'src_pose']
         return input_list
 
     def list_outputs(self):
-        output_list = ['zoom_mask_real_est', 'zoom_mask_real_gt', 'zoom_mask_rendered', 'zoom_factor']
+        output_list = ['zoom_mask_observed', 'zoom_mask_gt_observed', 'zoom_mask_rendered', 'zoom_factor']
         return output_list
 
     def infer_shape(self, in_shape):

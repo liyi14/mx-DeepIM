@@ -117,11 +117,11 @@ class ZoomImageProp(mx.operator.CustomOpProp):
         self.pixel_means = self.pixel_means[np.newaxis, :, np.newaxis, np.newaxis]
 
     def list_arguments(self):
-        input_list = ['image_real', 'image_rendered', 'src_pose']
+        input_list = ['image_observed', 'image_rendered', 'src_pose']
         return input_list
 
     def list_outputs(self):
-        output_list = ['zoom_image_real', 'zoom_image_rendered', 'zoom_factor']
+        output_list = ['zoom_image_observed', 'zoom_image_rendered', 'zoom_factor']
         return output_list
 
     def infer_shape(self, in_shape):

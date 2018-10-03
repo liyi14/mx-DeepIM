@@ -2,86 +2,47 @@
 The `./toolkit` folder contains scripts to prepare data.
 ### LINEMOD(LINEMOD_6D)
 Download the dataset from [http://ptak.felk.cvut.cz/6DB/public/datasets/hinterstoisser/](http://ptak.felk.cvut.cz/6DB/public/datasets/hinterstoisser/).
+More specifically, only `test` have to be downloaded.
+(Only the `test` folder contains real images which are used for training and testing in previous works, including ours)
+Extract the `test` files to folder `$(DeepIM_root)/data/LM6d_origin`
 
-Run these commands successively to prepare `LM6d_render_v1`:
+Run these commands successively to prepare `LM6d_refine`:
 
-Check the ``version``, the paths and class names first.
-Our train/val split can be found on [Google Drive](https://drive.google.com/open?id=1sdBoEmO8UXnkXRoaGUFUai6E3Od6O2e-).
+Our processed models (models), train/val split (image_set/observed) and PoseCNN's results can be found on [Google Drive](https://drive.google.com/drive/folders/1dxbEn9NOhlWjiEop3QPjT2wi-FB-N1if?usp=sharing)
+
+Download them and put them in folder`$(DeepIM_root)/data/LINEMOD_6D/LM6d_converted/LM6d_refine`
+which shall like:
 ```
-python toolkit/LM6d_devkit/LM6d_0_rescale_models.py
-# convert .ply models to .obj and .xyz models using meshlab
-python toolkit/LM6d_devkit/LM6d_1_adapt_real.py
-python toolkit/LM6d_devkit/LM6d_2_calc_extents.py  # (To be more precise, use diameters in models_info.txt)
-# generate train/val indexes (randomly 15% for train)
-# put the real images and image_set to data/LM6d_render_v1
-# (check LM6d_1_gen_render_real.py for the paths)
-python toolkit/LM6d_1_gen_render_real.py
-python toolkit/LM6d_2_gen_rendered_pose.py
-python toolkit/LM6d_3_gen_rendered.py
-python toolkit/LM6d_6_gen_Yu_pred_rendered.py
-python toolkit/LM6d_6_gen_Yu_pred_rendered_v02.py # uncomment eggbox path to generate eggbox
-python toolkit/LM6d_7_gen_Yu_pred_mask.py
-python toolkit/LM6d_7_gen_Yu_pred_mask_v02.py # uncomment eggbox path to generate eggbox
+LM6d_refine/models/ape, benchviseblue, ...
+LM6d_refine/image_set/observed/ape_all.txt, ...
+LM6d_refine/PoseCNN_LINEMOD_6D_results/ape, ...
+```
+
+Then execute the following scripts consecutively to process the images.
+```
+python toolkit/LM6d_devkit/LM6d_2a_adapt_real.py
+# training set
+python toolkit/LM6d_0_gen_gt_observed.py
+python toolkit/LM6d_1_gen_rendered_pose.py
+python toolkit/LM6d_2_gen_rendered.py
+# test set
+python toolkit/LM6d_3_gen_PoseCNN_pred_rendered.py
 ```
 
 ### LINEMOD synthetic data(LM6D_DATA_SYN_v1)
 
 Run the following commands to prepare the synthetic data for LINEMOD. Note that there is only one object in each synthetic real image.
-
+If you want to have a quick start, you can uncomment the conditions
 Check the `version` first.
 ```
-python toolkit/LM6d_ds_0_gen_syn_poses.py
-python toolkit/LM6d_ds_1_gen_real_light.py
-python toolkit/LM6d_ds_1b_gen_render_real.py
-python toolkit/LM6d_ds_2_gen_rendered_pose.py
-python toolkit/LM6d_ds_3_gen_rendered.py
-python toolkit/LM6d_ds_3b_gen_train_10k_pairs.py
-(optional) python toolkit/LM6d_ds_4_check.py
+python toolkit/LM6d_ds_0_gen_observed_poses.py
+python toolkit/LM6d_ds_1_gen_observed.py
+python toolkit/LM6d_ds_2_gen_gt_observed.py
+python toolkit/LM6d_ds_3_gen_rendered_pose.py
+python toolkit/LM6d_ds_4_gen_rendered.py
 ```
 
-### Occluded LINEMOD(LINEMOD_6D_Occ)
-Run the following commands to prepare `LM6d_Occ`:
-```
-python toolkit/LM6d_occ_0_gen_real_set.py
-python toolkit/LM6d_occ_1_gen_train_pair_set.py
-python toolkit/LM6d_occ_2a_gen_test_rendered_pose.py
-python toolkit/LM6d_occ_2b_gen_test_rendered.py
-python toolkit/LM6d_occ_6_gen_Yu_pred_test_rendered.py
-```
+We use indoor images from Pascal VOC 2012 ([download link](http://host.robots.ox.ac.uk/pascal/VOC/voc2012/VOCtrainval_11-May-2012.tar)) as the background of these synthetic during training.
+Download and extract it in the `$(DeepIM root)/data`, which will like `$(DeepIM_root)/data/VOCdevkit/VOC2012`.
 
-### Synthetic data for Occluded LINEMOD(LM6D_occ_DSM_v1)
-Run the following scripts to prepare the synthetic data for Occluded LINEMOD.
-```
-python toolkit/LM6d_occ_dsm_0_gen_syn_poses.py
-python toolkit/LM6d_occ_dsm_1_gen_real_light.py
-python toolkit/LM6d_occ_dsm_2_gen_render_real.py
-python toolkit/LM6d_occ_dsm_3_remove_low_visible.py
-python toolkit/LM6d_occ_dsm_4_gen_rendered_pose.py
-python toolkit/LM6d_occ_dsm_5_gen_rendered.py
-```
-
-### ModelNet
-Run the following scripts:
-```
-python toolkit/ModelNet_1_convert_obj_gen_texture_map.py (may need to run multiple times to ensure that all 3D models have been converted except for some corrupted models.)
-python toolkit/ModelNet_2_gen_render.py
-python toolkit/ModelNet_2c_stat_obj_size_gen_model_set_train_class.py
-python toolkit/ModelNet_2c_stat_obj_size_gen_model_set_unseen_class.py
-python toolkit/ModelNet_2e_check_real.py
-python toolkit/ModelNet_3_gen_real_set.py
-python toolkit/ModelNet_4_gen_rendered_and_pair_set.py
-```
-
-### T-LESS(TLESS_v3)
-Run the following scripts:
-```
-sh toolkit/TLESS_0_downloads.sh
-python toolkit/TLESS_0_rescale_model.py
-python toolkit/TLESS_v3_1_adapt_real_train.py
-python toolkit/TLESS_v3_2_gen_rendered_pose_train.py
-python toolkit/TLESS_v3_3_gen_rendered_train.py
-python toolkit/TLESS_v3_4_adjust_test.py
-python toolkit/TLESS_v3_5_gen_rendered_pose_test.py
-python toolkit/TLESS_v3_6_gen_rendered_test.py
-python toolkit/TLESS_v3_7b_gen_test_indices_visibmorethan10.py
-```
+Support files for other dataset will be released later.
