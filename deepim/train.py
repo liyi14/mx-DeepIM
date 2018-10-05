@@ -190,7 +190,7 @@ def train_net(args, ctx, pretrained, epoch, prefix, begin_epoch, end_epoch, lr, 
                         logger=logger, context=ctx, max_data_shapes=[max_data_shape for _ in xrange(batch_size)],
                         max_label_shapes=[max_label_shape for _ in xrange(batch_size)],
                         fixed_param_prefix=fixed_param_prefix,
-                        CUDA9=config.CUDA9, config=config)
+                        config=config)
 
 
     # decide training params
@@ -284,8 +284,6 @@ def train_net(args, ctx, pretrained, epoch, prefix, begin_epoch, end_epoch, lr, 
 def main():
     print('Called with argument:', args)
     ctx = [mx.gpu(int(i)) for i in args.gpus.split(',')]
-    if len(ctx) != config.NUM_GPUS:
-        print("********** WARNING: length of context doesn't match num_gpus set in config, {} vs. {} ************".format(len(ctx), config.NUM_GPUS))
     train_net(args, ctx, config.network.pretrained, config.network.pretrained_epoch, config.TRAIN.model_prefix,
               config.TRAIN.begin_epoch, config.TRAIN.end_epoch, config.TRAIN.lr, config.TRAIN.lr_step)
 

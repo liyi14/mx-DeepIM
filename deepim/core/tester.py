@@ -32,8 +32,7 @@ class Predictor(object):
                  provide_data=None, provide_label=None,
                  arg_params=None, aux_params=None):
         self._mod = MutableModule(symbol, data_names, label_names,
-                                  context=context, max_data_shapes=max_data_shapes,
-                                  CUDA9=config.CUDA9)
+                                  context=context, max_data_shapes=max_data_shapes)
         self._mod.bind(provide_data, provide_label, for_training=False)
         self._mod.init_params(arg_params=arg_params, aux_params=aux_params)
 

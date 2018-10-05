@@ -19,7 +19,7 @@ from operator_py.zoom_image_with_factor import *
 from operator_py.zoom_mask_with_factor import *
 
 
-class flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask(Symbol):
+class deepIM_flownet(Symbol):
     def __init__(self):
         """
         Use __init__ to define parameter network needs
@@ -29,7 +29,7 @@ class flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask(Symbol):
         self.units = (2, 3, 3, 3, 3)
         self.filter_list = [64, 128, 256, 512]
 
-    def get_flownet(self, data_iter, big_cfg, small_cfg, share_dict, iter_idx):
+    def get_convs(self, data_iter, big_cfg, small_cfg, iter_idx):
         if 'depth_observed' in data_iter.keys():
             if big_cfg.network.INPUT_MASK and big_cfg.network.PRED_MASK:
                 data = mx.symbol.Concat(data_iter['image_observed'] / 255.0, data_iter['image_rendered'] / 255.0,
@@ -48,183 +48,98 @@ class flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask(Symbol):
                                         dim=1)
             else:
                 data = mx.symbol.Concat(data_iter['image_observed'] / 255.0, data_iter['image_rendered'] / 255.0, dim=1)
-        flow_conv1 = mx.symbol.Convolution(name='flow_conv1_iter{}'.format(iter_idx), data=data, num_filter=64, pad=(3, 3),
-                                           kernel=(7, 7), stride=(2, 2), no_bias=False,
-                                           weight=share_dict['flow_conv1_weight'], bias=share_dict['flow_conv1_bias'])
-        ReLU1 = mx.symbol.LeakyReLU(name='ReLU1_iter{}'.format(iter_idx), data=flow_conv1, act_type='leaky', slope=0.1)
+        flow_conv1 = mx.symbol.Convolution(name='flow_conv1', data=data, num_filter=64, pad=(3, 3),
+                                           kernel=(7, 7), stride=(2, 2), no_bias=False)
+        ReLU1 = mx.symbol.LeakyReLU(name='ReLU1', data=flow_conv1, act_type='leaky', slope=0.1)
         # scale 4
-        conv2 = mx.symbol.Convolution(name='conv2_iter{}'.format(iter_idx), data=ReLU1, num_filter=128, pad=(2, 2),
-                                      kernel=(5, 5), stride=(2, 2), no_bias=False, weight=share_dict['conv2_weight'],
-                                      bias=share_dict['conv2_bias'])
-        ReLU2 = mx.symbol.LeakyReLU(name='ReLU2_iter{}'.format(iter_idx), data=conv2, act_type='leaky', slope=0.1)
+        conv2 = mx.symbol.Convolution(name='conv2', data=ReLU1, num_filter=128, pad=(2, 2),
+                                      kernel=(5, 5), stride=(2, 2), no_bias=False)
+        ReLU2 = mx.symbol.LeakyReLU(name='ReLU2', data=conv2, act_type='leaky', slope=0.1)
         # scale 8
-        conv3 = mx.symbol.Convolution(name='conv3_iter{}'.format(iter_idx), data=ReLU2, num_filter=256, pad=(2, 2),
-                                      kernel=(5, 5), stride=(2, 2), no_bias=False, weight=share_dict['conv3_weight'],
-                                      bias=share_dict['conv3_bias'])
-        ReLU3 = mx.symbol.LeakyReLU(name='ReLU3_iter{}'.format(iter_idx), data=conv3, act_type='leaky', slope=0.1)
-        conv3_1 = mx.symbol.Convolution(name='conv3_1_iter{}'.format(iter_idx), data=ReLU3, num_filter=256, pad=(1, 1),
-                                        kernel=(3, 3), stride=(1, 1), no_bias=False,
-                                        weight=share_dict['conv3_1_weight'], bias=share_dict['conv3_1_bias'])
-        ReLU4 = mx.symbol.LeakyReLU(name='ReLU4_iter{}'.format(iter_idx), data=conv3_1, act_type='leaky', slope=0.1)
+        conv3 = mx.symbol.Convolution(name='conv3', data=ReLU2, num_filter=256, pad=(2, 2),
+                                      kernel=(5, 5), stride=(2, 2), no_bias=False)
+        ReLU3 = mx.symbol.LeakyReLU(name='ReLU3', data=conv3, act_type='leaky', slope=0.1)
+        conv3_1 = mx.symbol.Convolution(name='conv3_1', data=ReLU3, num_filter=256, pad=(1, 1),
+                                        kernel=(3, 3), stride=(1, 1), no_bias=False)
+        ReLU4 = mx.symbol.LeakyReLU(name='ReLU4', data=conv3_1, act_type='leaky', slope=0.1)
         # scale 16
-        conv4 = mx.symbol.Convolution(name='conv4_iter{}'.format(iter_idx), data=ReLU4, num_filter=512, pad=(1, 1),
-                                      kernel=(3, 3), stride=(2, 2), no_bias=False, weight=share_dict['conv4_weight'],
-                                      bias=share_dict['conv4_bias'])
-        ReLU5 = mx.symbol.LeakyReLU(name='ReLU5_iter{}'.format(iter_idx), data=conv4, act_type='leaky', slope=0.1)
-        conv4_1 = mx.symbol.Convolution(name='conv4_1_iter{}'.format(iter_idx), data=ReLU5, num_filter=512, pad=(1, 1),
-                                        kernel=(3, 3), stride=(1, 1), no_bias=False,
-                                        weight=share_dict['conv4_1_weight'], bias=share_dict['conv4_1_bias'])
-        ReLU6 = mx.symbol.LeakyReLU(name='ReLU6_iter{}'.format(iter_idx), data=conv4_1, act_type='leaky', slope=0.1)
+        conv4 = mx.symbol.Convolution(name='conv4', data=ReLU4, num_filter=512, pad=(1, 1),
+                                      kernel=(3, 3), stride=(2, 2), no_bias=False)
+        ReLU5 = mx.symbol.LeakyReLU(name='ReLU5', data=conv4, act_type='leaky', slope=0.1)
+        conv4_1 = mx.symbol.Convolution(name='conv4_1', data=ReLU5, num_filter=512, pad=(1, 1),
+                                        kernel=(3, 3), stride=(1, 1), no_bias=False)
+        ReLU6 = mx.symbol.LeakyReLU(name='ReLU6', data=conv4_1, act_type='leaky', slope=0.1)
         # scale 32
-        conv5 = mx.symbol.Convolution(name='conv5_iter{}'.format(iter_idx), data=ReLU6, num_filter=512, pad=(1, 1),
-                                      kernel=(3, 3), stride=(2, 2), no_bias=False, weight=share_dict['conv5_weight'],
-                                      bias=share_dict['conv5_bias'])
-        ReLU7 = mx.symbol.LeakyReLU(name='ReLU7_iter{}'.format(iter_idx), data=conv5, act_type='leaky', slope=0.1)
-        conv5_1 = mx.symbol.Convolution(name='conv5_1_iter{}'.format(iter_idx), data=ReLU7, num_filter=512, pad=(1, 1),
-                                        kernel=(3, 3), stride=(1, 1), no_bias=False,
-                                        weight=share_dict['conv5_1_weight'], bias=share_dict['conv5_1_bias'])
-        ReLU8 = mx.symbol.LeakyReLU(name='ReLU8_iter{}'.format(iter_idx), data=conv5_1, act_type='leaky', slope=0.1)
+        conv5 = mx.symbol.Convolution(name='conv5', data=ReLU6, num_filter=512, pad=(1, 1),
+                                      kernel=(3, 3), stride=(2, 2), no_bias=False)
+        ReLU7 = mx.symbol.LeakyReLU(name='ReLU7', data=conv5, act_type='leaky', slope=0.1)
+        conv5_1 = mx.symbol.Convolution(name='conv5_1', data=ReLU7, num_filter=512, pad=(1, 1),
+                                        kernel=(3, 3), stride=(1, 1), no_bias=False)
+        ReLU8 = mx.symbol.LeakyReLU(name='ReLU8', data=conv5_1, act_type='leaky', slope=0.1)
         # scale 64
-        conv6 = mx.symbol.Convolution(name='conv6_iter{}'.format(iter_idx), data=ReLU8, num_filter=1024, pad=(1, 1),
-                                      kernel=(3, 3), stride=(2, 2), no_bias=False, weight=share_dict['conv6_weight'],
-                                      bias=share_dict['conv6_bias'])
-        ReLU9 = mx.symbol.LeakyReLU(name='ReLU9_iter{}'.format(iter_idx), data=conv6, act_type='leaky', slope=0.1)
-        conv6_1 = mx.symbol.Convolution(name='conv6_1_iter{}'.format(iter_idx), data=ReLU9, num_filter=1024, pad=(1, 1),
-                                        kernel=(3, 3), stride=(1, 1), no_bias=False,
-                                        weight=share_dict['conv6_1_weight'], bias=share_dict['conv6_1_bias'])
-        ReLU10 = mx.symbol.LeakyReLU(name='ReLU10_iter{}'.format(iter_idx), data=conv6_1, act_type='leaky', slope=0.1)
+        conv6 = mx.symbol.Convolution(name='conv6', data=ReLU8, num_filter=1024, pad=(1, 1),
+                                      kernel=(3, 3), stride=(2, 2), no_bias=False)
+        ReLU9 = mx.symbol.LeakyReLU(name='ReLU9', data=conv6, act_type='leaky', slope=0.1)
+        conv6_1 = mx.symbol.Convolution(name='conv6_1', data=ReLU9, num_filter=1024, pad=(1, 1),
+                                        kernel=(3, 3), stride=(1, 1), no_bias=False)
+        ReLU10 = mx.symbol.LeakyReLU(name='ReLU10', data=conv6_1, act_type='leaky', slope=0.1)
 
         # se3
-        flatten_0 = mx.symbol.Flatten(name='flatten_0_iter{}'.format(iter_idx), data=ReLU10)
+        flatten_0 = mx.symbol.Flatten(name='flatten_0', data=ReLU10)
 
-        fc6 = mx.symbol.FullyConnected(name='fc6_iter{}'.format(iter_idx), data=flatten_0, num_hidden=256, no_bias=False,
-                                       weight=share_dict['fc6_weight'], bias=share_dict['fc6_bias'])
-        relu_fc6 = mx.symbol.LeakyReLU(name='ReLU11_iter{}'.format(iter_idx), data=fc6, act_type='leaky', slope=0.1)
+        fc6 = mx.symbol.FullyConnected(name='fc6', data=flatten_0, num_hidden=256, no_bias=False)
+        relu_fc6 = mx.symbol.LeakyReLU(name='ReLU11', data=fc6, act_type='leaky', slope=0.1)
 
-        fc7 = mx.symbol.FullyConnected(name='fc7_iter{}'.format(iter_idx), data=relu_fc6, num_hidden=256, no_bias=False,
-                                       weight=share_dict['fc7_weight'], bias=share_dict['fc7_bias'])
-        relu_fc7 = mx.symbol.LeakyReLU(name='ReLU12_iter{}'.format(iter_idx), data=fc7, act_type='leaky', slope=0.1)
+        fc7 = mx.symbol.FullyConnected(name='fc7', data=relu_fc6, num_hidden=256, no_bias=False)
+        relu_fc7 = mx.symbol.LeakyReLU(name='ReLU12', data=fc7, act_type='leaky', slope=0.1)
 
         feat_list = [relu_fc7, None]
 
         # flow branch
         if big_cfg.network.PRED_FLOW or big_cfg.network.PRED_MASK:
             # scale 64
-            Convolution1 = mx.symbol.Convolution(name='Convolution1_iter{}'.format(iter_idx), data=ReLU10, num_filter=2,
-                 pad=(1, 1), kernel=(3, 3), stride=(1, 1), no_bias=False,
-                 weight=share_dict['Convolution1_weight'], bias=share_dict['Convolution1_bias']) #(B,2,8,10)
+            Convolution1 = mx.symbol.Convolution(name='Convolution1', data=ReLU10, num_filter=2,
+                 pad=(1, 1), kernel=(3, 3), stride=(1, 1), no_bias=False) #(B,2,8,10)
             # scale 32
-            deconv5 = mx.symbol.Deconvolution(name='deconv5_iter{}'.format(iter_idx), data=ReLU10, num_filter=512,
-                pad=(0, 0), kernel=(4, 4), stride=(2, 2), no_bias=False,
-                weight=share_dict['deconv5_weight'], bias=share_dict['deconv5_bias']) # (B,512, 18, 22)
-            crop_deconv5 = mx.symbol.Crop(name='crop_deconv5_iter{}'.format(iter_idx), *[deconv5, ReLU8], offset=(1, 1)) #(B,512,15,20)
-            ReLU11 = mx.symbol.LeakyReLU(name='ReLU11_iter{}'.format(iter_idx), data=crop_deconv5, act_type='leaky',
+            deconv5 = mx.symbol.Deconvolution(name='deconv5', data=ReLU10, num_filter=512,
+                pad=(0, 0), kernel=(4, 4), stride=(2, 2), no_bias=False) # (B,512, 18, 22)
+            crop_deconv5 = mx.symbol.Crop(name='crop_deconv5', *[deconv5, ReLU8], offset=(1, 1)) #(B,512,15,20)
+            ReLU11 = mx.symbol.LeakyReLU(name='ReLU11', data=crop_deconv5, act_type='leaky',
                                          slope=0.1)
-            upsample_flow6to5 = mx.symbol.Deconvolution(name='upsample_flow6to5_iter{}'.format(iter_idx),
+            upsample_flow6to5 = mx.symbol.Deconvolution(name='upsample_flow6to5',
                                                         data=Convolution1, num_filter=2, pad=(0, 0), kernel=(4, 4),
-                                                        stride=(2, 2), no_bias=False,
-                                                        weight=share_dict['upsample_flow6to5_weight'],
-                                                        bias=share_dict['upsample_flow6to5_bias'])
+                                                        stride=(2, 2), no_bias=False)
             crop_upsampled_flow6_to_5 = mx.symbol.Crop(name='crop_upsampled_flow6_to_5', *[upsample_flow6to5, ReLU8],
                                                        offset=(1, 1)) #(B,2,15,20)
-            Concat2 = mx.symbol.Concat(name='Concat2_iter{}'.format(iter_idx), *[ReLU8, ReLU11, crop_upsampled_flow6_to_5]) #(B, 1026,15,20)
-            Convolution2 = mx.symbol.Convolution(name='Convolution2_iter{}'.format(iter_idx), data=Concat2, num_filter=2,
-                pad=(1, 1), kernel=(3, 3), stride=(1, 1), no_bias=False,
-                weight=share_dict['Convolution2_weight'], bias=share_dict['Convolution2_bias']) #(B,2,15,20)
+            Concat2 = mx.symbol.Concat(name='Concat2', *[ReLU8, ReLU11, crop_upsampled_flow6_to_5]) #(B, 1026,15,20)
+            Convolution2 = mx.symbol.Convolution(name='Convolution2', data=Concat2, num_filter=2,
+                pad=(1, 1), kernel=(3, 3), stride=(1, 1), no_bias=False) #(B,2,15,20)
             # scale 16
-            deconv4 = mx.symbol.Deconvolution(name='deconv4_iter{}'.format(iter_idx), data=Concat2, num_filter=256,
-                                        pad=(0, 0), kernel=(4, 4), stride=(2, 2), no_bias=False,
-                                        weight=share_dict['deconv4_weight'], bias=share_dict['deconv4_bias']) # (B,256,32,42)
-            crop_deconv4 = mx.symbol.Crop(name='crop_deconv4_iter{}'.format(iter_idx), *[deconv4, ReLU6], offset=(1, 1))
-            ReLU12 = mx.symbol.LeakyReLU(name='ReLU12_iter{}'.format(iter_idx), data=crop_deconv4, act_type='leaky',
+            deconv4 = mx.symbol.Deconvolution(name='deconv4', data=Concat2, num_filter=256,
+                                        pad=(0, 0), kernel=(4, 4), stride=(2, 2), no_bias=False) # (B,256,32,42)
+            crop_deconv4 = mx.symbol.Crop(name='crop_deconv4', *[deconv4, ReLU6], offset=(1, 1))
+            ReLU12 = mx.symbol.LeakyReLU(name='ReLU12', data=crop_deconv4, act_type='leaky',
                                          slope=0.1)
-            upsample_flow5to4 = mx.symbol.Deconvolution(name='upsample_flow5to4_iter{}'.format(iter_idx),
+            upsample_flow5to4 = mx.symbol.Deconvolution(name='upsample_flow5to4',
                 data=Convolution2, num_filter=2, pad=(0, 0), kernel=(4, 4),
-                stride=(2, 2), no_bias=False,
-                weight=share_dict['upsample_flow5to4_weight'], bias=share_dict['upsample_flow5to4_bias'])
-            crop_upsampled_flow5_to_4 = mx.symbol.Crop(name='crop_upsampled_flow5_to_4_iter{}'.format(iter_idx),
+                stride=(2, 2), no_bias=False)
+            crop_upsampled_flow5_to_4 = mx.symbol.Crop(name='crop_upsampled_flow5_to_4',
                 *[upsample_flow5to4, ReLU6], offset=(1, 1)) #(B,2,32,42)
-            Concat3 = mx.symbol.Concat(name='Concat3_iter{}'.format(iter_idx), *[ReLU6, ReLU12, crop_upsampled_flow5_to_4]) #(B,770,30,40)
+            Concat3 = mx.symbol.Concat(name='Concat3', *[ReLU6, ReLU12, crop_upsampled_flow5_to_4]) #(B,770,30,40)
             feat_list[1] = Concat3
 
         return feat_list
 
-
-    def get_share_dict(self, cfg):
-        share_dict = {
-            'flow_conv1_weight': mx.sym.Variable('flow_conv1_weight'),
-            'flow_conv1_bias': mx.sym.Variable('flow_conv1_bias'),
-            'conv2_weight': mx.sym.Variable('conv2_weight'),
-            'conv2_bias': mx.sym.Variable('conv2_bias'),
-            'conv3_weight': mx.sym.Variable('conv3_weight'),
-            'conv3_bias': mx.sym.Variable('conv3_bias'),
-            'conv3_1_weight': mx.sym.Variable('conv3_1_weight'),
-            'conv3_1_bias': mx.sym.Variable('conv3_1_bias'),
-            'conv4_weight': mx.sym.Variable('conv4_weight'),
-            'conv4_bias': mx.sym.Variable('conv4_bias'),
-            'conv4_1_weight': mx.sym.Variable('conv4_1_weight'),
-            'conv4_1_bias': mx.sym.Variable('conv4_1_bias'),
-            'conv5_weight': mx.sym.Variable('conv5_weight'),
-            'conv5_bias': mx.sym.Variable('conv5_bias'),
-            'conv5_1_weight': mx.sym.Variable('conv5_1_weight'),
-            'conv5_1_bias': mx.sym.Variable('conv5_1_bias'),
-            'conv6_weight': mx.sym.Variable('conv6_weight'),
-            'conv6_bias': mx.sym.Variable('conv6_bias'),
-            'conv6_1_weight': mx.sym.Variable('conv6_1_weight'),
-            'conv6_1_bias': mx.sym.Variable('conv6_1_bias'),
-            'fc6_weight': mx.sym.Variable('fc6_weight'),
-            'fc6_bias': mx.sym.Variable('fc6_bias'),
-            'fc7_weight': mx.sym.Variable('fc7_weight'),
-            'fc7_bias': mx.sym.Variable('fc7_bias'),
-            'deconv5_weight': mx.sym.Variable('deconv5_weight'),
-            'deconv5_bias': mx.sym.Variable('deconv5_bias'),
-            'deconv4_weight': mx.sym.Variable('deconv4_weight'),
-            'deconv4_bias': mx.sym.Variable('deconv4_bias'),
-            'upsample_flow5to4_bias': mx.sym.Variable('upsample_flow5to4_bias'),
-            'upsample_flow5to4_weight': mx.sym.Variable('upsample_flow5to4_weight'),
-            'upsample_flow6to5_bias': mx.sym.Variable('upsample_flow6to5_bias'),
-            'upsample_flow6to5_weight': mx.sym.Variable('upsample_flow6to5_weight'),
-            'Convolution1_bias': mx.sym.Variable('Convolution1_bias'),
-            'Convolution1_weight': mx.sym.Variable('Convolution1_weight'),
-            'Convolution2_bias': mx.sym.Variable('Convolution2_bias'),
-            'Convolution2_weight': mx.sym.Variable('Convolution2_weight'),
-            'Convolution3_bias': mx.sym.Variable('Convolution3_bias'),
-            'Convolution3_weight': mx.sym.Variable('Convolution3_weight'),
-            'upsampling_weight': mx.sym.Variable('upsampling_weight')
-        }
-        if cfg.network.PRED_MASK:
-            share_dict['mask_conv3_bias'] = mx.sym.Variable('mask_conv3_bias')
-            share_dict['mask_conv3_weight'] = mx.sym.Variable('mask_conv3_weight')
-            share_dict['mask_upsampling_weight'] = mx.sym.Variable('mask_upsampling_weight')
-        if cfg.network.REGRESSOR_NUM == 1:
-            share_dict['rot_bias'] = mx.sym.Variable('rot_bias')
-            share_dict['rot_weight'] = mx.sym.Variable('rot_weight')
-            share_dict['trans_bias'] = mx.sym.Variable('trans_bias')
-            share_dict['trans_weight'] = mx.sym.Variable('trans_weight')
-        else:
-            for regressor_idx in range(cfg.network.REGRESSOR_NUM):
-                share_dict['rot_class{}_bias'.format(regressor_idx)] = mx.sym.Variable(
-                    'rot_iter{}_bias'.format(regressor_idx))
-                share_dict['rot_iter{}_weight'.format(regressor_idx)] = mx.sym.Variable(
-                    'rot_iter{}_weight'.format(regressor_idx))
-                share_dict['trans_iter{}_bias'.format(regressor_idx)] = mx.sym.Variable(
-                    'trans_iter{}_bias'.format(regressor_idx))
-                share_dict['trans_iter{}_weight'.format(regressor_idx)] = mx.sym.Variable(
-                    'trans_iter{}_weight'.format(regressor_idx))
-        return share_dict
-
-    def get_loss(self, big_cfg, small_cfg, conv_feat, deconv_feat, share_dict, labels, group_list, regressor_idx):
+    def get_loss(self, big_cfg, small_cfg, conv_feat, deconv_feat, labels, group_list, regressor_idx):
         pred = {}
 
         if big_cfg.network.PRED_FLOW:
             # get flow prediction
             flow_est = mx.symbol.Convolution(name='Convolution3', data=deconv_feat,
-                                                 num_filter=2, pad=(1, 1), kernel=(3, 3), stride=(1, 1), no_bias=False,
-                                                 weight=share_dict['Convolution3_weight'], bias=share_dict['Convolution3_bias'])
+                                                 num_filter=2, pad=(1, 1), kernel=(3, 3), stride=(1, 1), no_bias=False)
             flow_est_resize = mx.symbol.Deconvolution(data=flow_est, num_filter=2, kernel=(32, 32),
-                                                          stride=(16, 16), num_group=2, no_bias=True, name='upsampleing',
-                                                          attr={'lr_mult': '0.0'}, workspace=self.workspace,
-                                                          weight=share_dict['upsampling_weight'])
+                                                          stride=(16, 16), num_group=2, no_bias=True, name='upsampling',
+                                                          attr={'lr_mult': '0.0'}, workspace=self.workspace)
 
             # flow loss
             flow_est_crop = mx.symbol.Crop(*[flow_est_resize, labels['image_observed']], offset=(8, 8),
@@ -241,20 +156,14 @@ class flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask(Symbol):
         # get se3 prediction
         if big_cfg.network.REGRESSOR_NUM == 1:
             rot_est = mx.symbol.FullyConnected(name='rot', data=conv_feat, num_hidden=4,
-                                               no_bias=False, weight=share_dict['rot_weight'],
-                                               bias=share_dict['rot_bias'])
+                                               no_bias=False)
             zoom_trans_est = mx.symbol.FullyConnected(name='trans', data=conv_feat, num_hidden=3,
-                                                      no_bias=False, weight=share_dict['trans_weight'],
-                                                      bias=share_dict['trans_bias'])
+                                                      no_bias=False)
         else:
-            rot_est = mx.symbol.FullyConnected(name='rot', data=conv_feat, num_hidden=4, no_bias=False,
-                                               weight=share_dict['rot_iter{}_weight'.format(regressor_idx)],
-                                               bias=share_dict['rot_iter{}_bias'.format(regressor_idx)])
+            rot_est = mx.symbol.FullyConnected(name='rot', data=conv_feat, num_hidden=4, no_bias=False)
             zoom_trans_est = mx.symbol.FullyConnected(name='trans', data=conv_feat,
                                                       num_hidden=3,
-                                                      no_bias=False, weight=share_dict[
-                    'trans_iter{}_weight'.format(regressor_idx)],
-                                                      bias=share_dict['trans_iter{}_bias'.format(regressor_idx)])
+                                                      no_bias=False)
 
         rot_est_norm = mx.sym.L2Normalization(data=rot_est, name='normalize_quat')
         trans_est = mx.sym.Custom(zoom_factor=labels['zoom_factor'],
@@ -343,14 +252,11 @@ class flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask(Symbol):
         if big_cfg.network.PRED_MASK:
             # get mask prediction
             mask_pred = mx.symbol.Convolution(name='mask_conv3', data=deconv_feat,
-                                              num_filter=1, pad=(1, 1), kernel=(3, 3), stride=(1, 1), no_bias=False,
-                                              weight=share_dict['mask_conv3_weight'],
-                                              bias=share_dict['mask_conv3_bias'])
+                                              num_filter=1, pad=(1, 1), kernel=(3, 3), stride=(1, 1), no_bias=False)
             mask_pred_resize = mx.symbol.Deconvolution(data=mask_pred, num_filter=1, kernel=(32, 32),
                                                        stride=(16, 16), no_bias=True,
                                                        name='mask_upsampling',
-                                                       attr={'lr_mult': '0.0'}, workspace=self.workspace,
-                                                       weight=share_dict['mask_upsampling_weight'])
+                                                       attr={'lr_mult': '0.0'}, workspace=self.workspace)
 
             # mask loss
             mask_pred_resize_crop = mx.symbol.Crop(*[mask_pred_resize, labels['image_observed']], offset=(8, 8),
@@ -381,7 +287,6 @@ class flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask(Symbol):
         :return: the symbol for training
         """
         # prepare for forward
-        share_dict = self.get_share_dict(cfg)
         small_cfg = cfg['train_iter']
 
         data_iter = {} # for get_conv
@@ -487,8 +392,8 @@ class flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask(Symbol):
 
 
         # forward iter 0
-        conv_feat, deconv_feat = self.get_flownet(data_iter, cfg, small_cfg, share_dict, 0)
-        pred_iter = self.get_loss(cfg, small_cfg, conv_feat, deconv_feat, share_dict, labels_dict,
+        conv_feat, deconv_feat = self.get_convs(data_iter, cfg, small_cfg, 0)
+        pred_iter = self.get_loss(cfg, small_cfg, conv_feat, deconv_feat, labels_dict,
                                   group_list, regressor_idx=0)
 
         if cfg.network.TRAIN_ITER:
@@ -532,7 +437,6 @@ class flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask(Symbol):
         :return: the symbol for testing
         """
         group_list = []
-        share_dict = self.get_share_dict(cfg)
 
         data_iter = {}
         # images and masks
@@ -581,7 +485,7 @@ class flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask(Symbol):
             data_iter['depth_observed'] = zoom_depth_observed
             data_iter['depth_rendered'] = zoom_depth_rendered
 
-        conv_feat, deconv_feat = self.get_flownet(data_iter, cfg, cfg.train_iter, share_dict, 0)
+        conv_feat, deconv_feat = self.get_convs(data_iter, cfg, cfg.train_iter, 0)
         mask_score = None
         if cfg.network.PRED_MASK and (cfg.TEST.UPDATE_MASK not in ['init', 'box_rendered'] or not cfg.TEST.FAST_TEST):
 

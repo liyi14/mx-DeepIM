@@ -4,5 +4,4 @@
 # Written by Yi Li, Gu Wang
 # --------------------------------------------------------
 from __future__ import absolute_import
-from . import flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask
-from . import flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask_multi
+from . import deepIM_flownet
