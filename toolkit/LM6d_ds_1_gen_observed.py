@@ -24,11 +24,11 @@ np.random.seed(2333)
 
 idx2class = {1: 'ape',
              2: 'benchviseblue',
-             3: 'bowl',
+             # 3: 'bowl',
              4: 'camera',
              5: 'can',
              6: 'cat',
-             7: 'cup',
+             # 7: 'cup',
              8: 'driller',
              9: 'duck',
              10: 'eggbox',
@@ -102,9 +102,6 @@ def gen_observed():
             observed_pose_file = os.path.join(observed_dir, prefix+"-pose.txt")
 
             observed_label_file = os.path.join(observed_dir, prefix + "-label.png")
-
-            if idx % 500 == 0:
-                print('  ', class_name, idx, '/', len(observed_index_list), ' ', observed_index)
 
             pose_quat = syn_poses[idx, :]
             pose = se3.se3_q2m(pose_quat)

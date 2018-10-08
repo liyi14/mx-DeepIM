@@ -24,11 +24,11 @@ np.random.seed(2333)
 # =================== global settings ======================
 idx2class = {1: 'ape',
              2: 'benchviseblue',
-             3: 'bowl',
+             # 3: 'bowl',
              4: 'camera',
              5: 'can',
              6: 'cat',
-             7: 'cup',
+             # 7: 'cup',
              8: 'driller',
              9: 'duck',
              10: 'eggbox',

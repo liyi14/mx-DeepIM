@@ -22,11 +22,11 @@ np.random.seed(2333)
 
 idx2class = {1: 'ape',
              2: 'benchviseblue',
-             3: 'bowl',
+             # 3: 'bowl',
              4: 'camera',
              5: 'can',
              6: 'cat',
-             7: 'cup',
+             # 7: 'cup',
              8: 'driller',
              9: 'duck',
              10: 'eggbox',
@@ -172,8 +172,9 @@ def gen_poses():
     observed_pose_dict = {cls_name: np.zeros((NUM_IMAGES, 7)) for cls_name in sel_classes}
 
     for cls_i, cls_name in enumerate(sel_classes):
-        if cls_name != 'ape':
-            continue
+        # uncomment here to only generate data for ape
+        # if cls_name not in ['ape']:
+        #     continue
         src_quat_mean = quat_stat[cls_name]['quat_mean']
         src_quat_std = quat_stat[cls_name]['quat_std']
         src_trans_mean = trans_stat[cls_name]['trans_mean']
@@ -182,10 +183,6 @@ def gen_poses():
 
         for i in tqdm(range(NUM_IMAGES)):
             observed_prefix = observed_prefix_list[i]
-
-            # uncomment here to only generate data for ape
-            # if cls_name == 'ape':
-            #     continue
 
             # randomly generate a pose
             tgt_quat = np.random.normal(0, 1, 4)
