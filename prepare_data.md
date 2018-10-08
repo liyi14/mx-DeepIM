@@ -1,6 +1,6 @@
 ## Prepare data
 The `./toolkit` folder contains scripts to prepare data.
-### LINEMOD(LINEMOD_6D)
+### LINEMOD(LM6D_REFINE)
 Download the dataset from [http://ptak.felk.cvut.cz/6DB/public/datasets/hinterstoisser/](http://ptak.felk.cvut.cz/6DB/public/datasets/hinterstoisser/).
 More specifically, only `test` have to be downloaded.
 (Only the `test` folder contains real images which are used for training and testing in previous works, including ours)
@@ -17,8 +17,13 @@ LM6d_refine/models/ape, benchviseblue, ...
 LM6d_refine/image_set/observed/ape_all.txt, ...
 LM6d_refine/PoseCNN_LINEMOD_6D_results/ape, ...
 ```
+After putting all the files in correct location, you can just run
+```buildoutcfg
+sh prepare_data.sh
+```
+to prepare original dataset and synthetic data for LINEMOD.
 
-Then execute the following scripts consecutively to process the images.
+Then execute the following scripts consecutively to process the images. 
 ```
 python toolkit/LM6d_devkit/LM6d_2a_adapt_images.py
 # training set
@@ -29,13 +34,14 @@ python toolkit/LM6d_2_gen_rendered.py
 python toolkit/LM6d_3_gen_PoseCNN_pred_rendered.py
 ```
 
-### LINEMOD synthetic data(LM6D_DATA_SYN_v1)
+### LINEMOD synthetic data(LM6D_REFINE_SYN)
+(skip this stage if you already executed `prepare_data.sh`)
 
 Run the following commands to prepare the synthetic data for LINEMOD. Note that there is only one object in each synthetic real image.
 If you want to have a quick start, you can uncomment the conditions
 Check the `version` first.
 ```
-cd LINEMOD_6D/LM6d_converted
+cd data/LINEMOD_6D/LM6d_converted
 cp -r LM6d_refine/models LM6d_refine_syn
 cd -
 python toolkit/LM6d_ds_0_gen_observed_poses.py

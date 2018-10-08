@@ -170,6 +170,6 @@ def check_gt_observed():
 
 if __name__ == "__main__":
     gen_gt_observed()
-    check_gt_observed()
+    # check_gt_observed()
 
     print("{} finished".format(__file__))
