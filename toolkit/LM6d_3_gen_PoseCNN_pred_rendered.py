@@ -5,7 +5,9 @@
 # --------------------------------------------------------
 from __future__ import print_function, division
 import numpy as np
-import os
+import os, sys
+cur_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(1, os.path.join(cur_dir, '..'))
 from shutil import copyfile
 from lib.utils.mkdir_if_missing import *
 from lib.render_glumpy.render_py import Render_Py
@@ -57,7 +59,7 @@ if __name__=='__main__':
 
     # config for external method results
     keyframe_path = "%s/{}_test.txt"%(os.path.join(LINEMOD_root, 'image_set/observed'))
-    exMethod_pred_dir = os.path.join(cur_path, '../data/LINEMOD_6D/{}_LINEMOD_6D_results'.format(version))
+    exMethod_pred_dir = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted/LM6d_refine/{}_LINEMOD_6D_results'.format(version))
 
     # output_path
     rendered_root_dir = os.path.join(LINEMOD_root, 'data/rendered_val_{}'.format(version))
@@ -69,6 +71,9 @@ if __name__=='__main__':
     for small_class_idx, class_name in enumerate(class_name_list):
         if class_name in ['__back_ground__']:
             continue
+        # uncomment here to only generate data for ape
+        # if class_name not in ['ape']:
+        #     continue
         big_class_idx = class2big_idx[class_name]
         
         # init render

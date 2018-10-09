@@ -1,6 +1,6 @@
 ## Prepare data
 The `./toolkit` folder contains scripts to prepare data.
-### LINEMOD(LINEMOD_6D)
+### LINEMOD(LM6D_REFINE) and LINEMOD synthetic data(LM6D_REFINE_SYN)
 Download the dataset from [http://ptak.felk.cvut.cz/6DB/public/datasets/hinterstoisser/](http://ptak.felk.cvut.cz/6DB/public/datasets/hinterstoisser/).
 More specifically, only `test` have to be downloaded.
 (Only the `test` folder contains real images which are used for training and testing in previous works, including ours)
@@ -17,30 +17,11 @@ LM6d_refine/models/ape, benchviseblue, ...
 LM6d_refine/image_set/observed/ape_all.txt, ...
 LM6d_refine/PoseCNN_LINEMOD_6D_results/ape, ...
 ```
-
-Then execute the following scripts consecutively to process the images.
+After putting all the files in correct location, you can just run
+```buildoutcfg
+sh prepare_data.sh
 ```
-python toolkit/LM6d_devkit/LM6d_2a_adapt_real.py
-# training set
-python toolkit/LM6d_0_gen_gt_observed.py
-python toolkit/LM6d_1_gen_rendered_pose.py
-python toolkit/LM6d_2_gen_rendered.py
-# test set
-python toolkit/LM6d_3_gen_PoseCNN_pred_rendered.py
-```
-
-### LINEMOD synthetic data(LM6D_DATA_SYN_v1)
-
-Run the following commands to prepare the synthetic data for LINEMOD. Note that there is only one object in each synthetic real image.
-If you want to have a quick start, you can uncomment the conditions
-Check the `version` first.
-```
-python toolkit/LM6d_ds_0_gen_observed_poses.py
-python toolkit/LM6d_ds_1_gen_observed.py
-python toolkit/LM6d_ds_2_gen_gt_observed.py
-python toolkit/LM6d_ds_3_gen_rendered_pose.py
-python toolkit/LM6d_ds_4_gen_rendered.py
-```
+to prepare original dataset and synthetic data for LINEMOD.
 
 We use indoor images from Pascal VOC 2012 ([download link](http://host.robots.ox.ac.uk/pascal/VOC/voc2012/VOCtrainval_11-May-2012.tar)) as the background of these synthetic during training.
 Download and extract it in the `$(DeepIM root)/data`, which will like `$(DeepIM_root)/data/VOCdevkit/VOC2012`.

@@ -11,11 +11,9 @@ from easydict import EasyDict as edict
 config = edict()
 
 config.MXNET_VERSION = ''
-config.CUDA9 = True
 
 config.output_path = ''
 config.symbol = ''
-config.NUM_GPUS = 1
 config.SCALES = [(480, 640)]  # first is scale (the shorter side); second is max size
 
 # default training

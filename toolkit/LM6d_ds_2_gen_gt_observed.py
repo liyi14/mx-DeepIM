@@ -24,11 +24,11 @@ np.random.seed(2333)
 
 idx2class = {1: 'ape',
             2: 'benchviseblue',
-            3: 'bowl',
+            # 3: 'bowl',
             4: 'camera',
             5: 'can',
             6: 'cat',
-            7: 'cup',
+            # 7: 'cup',
             8: 'driller',
             9: 'duck',
             10: 'eggbox',
@@ -58,7 +58,7 @@ depth_factor = 1000
 
 LINEMOD_root = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted/LM6d_refine')
 LINEMOD_syn_root = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted/LM6d_refine_syn')
-syn_poses_path = os.path.join(LINEMOD_syn_root, 'syn_poses_single/LM6d_ds_all_syn_pose.pkl')
+syn_poses_path = os.path.join(LINEMOD_syn_root, 'poses/LM6d_ds_train_observed_pose_all.pkl')
 
 # output path
 gt_observed_root_dir = os.path.join(LINEMOD_syn_root, 'data', 'gt_observed')
@@ -108,9 +108,6 @@ def gen_gt_observed():
 
             # observed_label_file = os.path.join(observed_root_dir, video_name, prefix + "-label.png")
             gt_observed_label_file = os.path.join(gt_observed_dir, prefix + "-label.png")
-
-            if idx % 500 == 0:
-                print('  ', class_name, idx, '/', len(observed_index_list), ' ', observed_index)
 
             pose_quat = syn_poses[idx, :]
             pose = se3.se3_q2m(pose_quat)
