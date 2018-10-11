@@ -54,10 +54,7 @@ from lib.utils.lr_scheduler import WarmupMultiFactorScheduler
 from lib.utils.print_and_log import print_and_log
 
 def train_net(args, ctx, pretrained, epoch, prefix, begin_epoch, end_epoch, lr, lr_step):
-    if not os.path.basename(args.cfg).split('.')[0].endswith('temp'):
-        new_args_name = os.path.basename(args.cfg).split('.')[0]+'_{}gpus.yaml'.format(len(ctx))
-    else:
-        new_args_name = args.cfg
+    new_args_name = args.cfg
     if args.vis:
         config.TRAIN.VISUALIZE = True
     logger, final_output_path = create_logger(config.output_path, new_args_name, config.dataset.image_set, args.temp)

@@ -133,7 +133,7 @@ git clone https://github.com/liyi14/mx-DeepIM.git
     2.1 In the root directory of DeepIM, run `sh init.sh` to initialize the DeepIM project.
     (**Note:** For python3, need to install pytorch first to jit compile flow_c module.)
 
-    2.2 Link (i.e. `ln -sf`) the root folder of data to `./data`.
+    2.2 (Optional) Delete the data folder and link (i.e. `ln -sf`) the root folder of data to `./data`.
     
      
 
@@ -142,14 +142,10 @@ git clone https://github.com/liyi14/mx-DeepIM.git
 
 1. Prepare datasets, see `./toolkit/` and [prepare_data.md](./prepare_data.md) for details.
    
-   **Note:** `real` corresponds to `observed` in the paper.
-   
     The datasets should be put in folder:
 	```
 	./data/
 	```
-
-	VOC2012 is needed to randomly replace the backgrounds of the synthetic data.
 
 2. Please download FlowNet model manually from [Google Drive](https://drive.google.com/open?id=1wU1QkG5h5Yyg0G-l9SjoGOIzUgLT4ntR)
  or [Baidu NetDisk](https://pan.baidu.com/s/1qjLw8_gNzcywbWXa2NK9ig) (password: shga), 
@@ -167,6 +163,15 @@ and put it under folder `./model`. Make sure it looks like this:
     python experiments/deepim/deepim_train_test.py --cfg experiments/deepim/cfgs/your_cfg.yaml --gpus 0,1,2,3
     ```
     A cache folder would be created automatically to save the model and the log under `output/deepim/`.
+    or you can just run the script like
+    ```
+    sh train_and_test_deepim_ape.sh
+    ```
+    to train and test the model only on category ape or run
+    ```
+    sh train_and_test_deepim_all.sh
+    ```
+    to train and test the model on all categories.
 3. Please find more details in config files and in our code.
 
 ## Misc.
