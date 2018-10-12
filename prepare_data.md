@@ -8,9 +8,9 @@ Extract the `test` files to folder `$(DeepIM_root)/data/LM6d_origin`
 
 Run these commands successively to prepare `LM6d_refine`:
 
-Our processed models (models), train/val split (image_set/observed) and PoseCNN's results can be found on [Google Drive](https://drive.google.com/drive/folders/1dxbEn9NOhlWjiEop3QPjT2wi-FB-N1if?usp=sharing)
+Our processed models (`models.tar.gz`), train/val split (`LINEMOD_6D_image_set.tar.gz`) and PoseCNN's results (`PoseCNN_LINEMOD_6D_results.tar.gz`) can be found on [Google Drive](https://drive.google.com/drive/folders/1dxbEn9NOhlWjiEop3QPjT2wi-FB-N1if?usp=sharing)
 
-Download them and put them in folder`$(DeepIM_root)/data/LINEMOD_6D/LM6d_converted/LM6d_refine`
+Download and extract them in folder`$(DeepIM_root)/data/LINEMOD_6D/LM6d_converted/LM6d_refine`
 which shall like:
 ```
 LM6d_refine/models/ape, benchviseblue, ...
@@ -18,7 +18,7 @@ LM6d_refine/image_set/observed/ape_all.txt, ...
 LM6d_refine/PoseCNN_LINEMOD_6D_results/ape, ...
 ```
 After putting all the files in correct location, you can just run
-```buildoutcfg
+```
 sh prepare_data.sh
 ```
 to prepare original dataset and synthetic data for LINEMOD.
