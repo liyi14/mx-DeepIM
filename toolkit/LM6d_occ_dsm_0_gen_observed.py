@@ -256,5 +256,5 @@ for cls_name in sel_classes:
     with open(observed_set_path.format(cls_name), 'w') as f:
         for line in train_indices:
             f.write(line + '\n')
-            
+
 print("{} finished".format(__file__))
