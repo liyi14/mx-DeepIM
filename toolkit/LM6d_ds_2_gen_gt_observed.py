@@ -4,7 +4,7 @@
 # Written by Gu Wang, Yi Li
 # --------------------------------------------------------
 '''
-generate render real from syn_poses 
+generate gt observed from syn_poses
 '''
 from __future__ import division, print_function
 import numpy as np
@@ -24,11 +24,11 @@ np.random.seed(2333)
 
 idx2class = {1: 'ape',
             2: 'benchviseblue',
-            3: 'bowl',
+            # 3: 'bowl',
             4: 'camera',
             5: 'can',
             6: 'cat',
-            7: 'cup',
+            # 7: 'cup',
             8: 'driller',
             9: 'duck',
             10: 'eggbox',
@@ -56,31 +56,28 @@ ZFAR = 6.0
 
 depth_factor = 1000
 
-LINEMOD_root = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted')
+LINEMOD_root = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted/LM6d_refine')
+LINEMOD_syn_root = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted/LM6d_refine_syn')
+syn_poses_path = os.path.join(LINEMOD_syn_root, 'poses/LM6d_ds_train_observed_pose_all.pkl')
 
+# output path
+gt_observed_root_dir = os.path.join(LINEMOD_syn_root, 'data', 'gt_observed')
+mkdir_if_missing(gt_observed_root_dir)
 
-def gen_render_real():
-    syn_poses_dir = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted/LM6d_render_v1/syn_poses_single/')
-
-    # output path
-    render_real_root_dir = os.path.join(LINEMOD_root, 'LM6d_data_syn_light', 'data', 'render_real')
-    image_set_dir = os.path.join(LINEMOD_root, 'LM6d_data_syn_light/image_set')
-    mkdir_if_missing(render_real_root_dir)
-    mkdir_if_missing(image_set_dir)
-
-    syn_poses_path = os.path.join(syn_poses_dir, 'LM6d_ds_v1_all_syn_pose.pkl')
+def gen_gt_observed():
     with open(syn_poses_path, 'rb') as f:
         syn_pose_dict = cPickle.load(f)
 
-    for class_idx, class_name in enumerate(tqdm(classes)):
+    for class_idx, class_name in enumerate(classes):
         if class_name == '__back_ground__':
             continue
-        if class_name in ['ape']:
-            continue
+        # uncomment here to only generate data for ape
+        # if class_name not in ['ape']:
+        #     continue
 
         # init render machines
         # brightness_ratios = [0.2, 0.25, 0.3, 0.35, 0.4] ###################
-        model_dir = os.path.join(LINEMOD_root, 'models/{}'.format(class_name))
+        model_dir = os.path.join(LINEMOD_syn_root, 'models/{}'.format(class_name))
         render_machine = Render_Py(model_dir, K, width, height, ZNEAR, ZFAR)
 
         # syn_poses_path = os.path.join(syn_poses_dir, 'LM6d_v1_all_rendered_pose_{}.txt'.format(class_name))
@@ -88,32 +85,29 @@ def gen_render_real():
         # print(syn_poses.shape) # nx7
         syn_poses = syn_pose_dict[class_name]
         num_poses = syn_poses.shape[0]
-        real_index_list = ['{}/{:06d}'.format(class_name, i+1) for i in range(num_poses)]
+        observed_index_list = ['{}/{:06d}'.format(class_name, i+1) for i in range(num_poses)]
 
-        # real_set_path = os.path.join(image_set_dir, 'real/LM_data_syn_train_real_{}.txt'.format(class_name))
-        # mkdir_if_missing(os.path.join(image_set_dir, 'real'))
-        # f_real_set = open(real_set_path, 'w')
+        # observed_set_path = os.path.join(image_set_dir, 'observed/LM_data_syn_train_observed_{}.txt'.format(class_name))
+        # mkdir_if_missing(os.path.join(image_set_dir, 'observed'))
+        # f_observed_set = open(observed_set_path, 'w')
 
         all_pair = []
-        for idx, real_index in enumerate(real_index_list):
-            # f_real_set.write('{}\n'.format(real_index))
-            # continue # just generate real set file
-            prefix = real_index.split('/')[1]
-            video_name = real_index.split('/')[0]
+        for idx, observed_index in enumerate(tqdm(observed_index_list)):
+            # f_observed_set.write('{}\n'.format(observed_index))
+            # continue # just generate observed set file
+            prefix = observed_index.split('/')[1]
+            video_name = observed_index.split('/')[0]
 
-            render_real_dir = os.path.join(render_real_root_dir, class_name)
-            mkdir_if_missing(render_real_dir)
+            gt_observed_dir = os.path.join(gt_observed_root_dir, class_name)
+            mkdir_if_missing(gt_observed_dir)
 
 
-            render_real_color_file = os.path.join(render_real_dir, prefix+"-color.png")
-            render_real_depth_file = os.path.join(render_real_dir, prefix+"-depth.png")
-            render_real_pose_file = os.path.join(render_real_dir, prefix+"-pose.txt")
+            gt_observed_color_file = os.path.join(gt_observed_dir, prefix+"-color.png")
+            gt_observed_depth_file = os.path.join(gt_observed_dir, prefix+"-depth.png")
+            gt_observed_pose_file = os.path.join(gt_observed_dir, prefix+"-pose.txt")
 
-            # real_label_file = os.path.join(real_root_dir, video_name, prefix + "-label.png")
-            render_real_label_file = os.path.join(render_real_dir, prefix + "-label.png")
-
-            if idx % 500 == 0:
-                print('  ', class_name, idx, '/', len(real_index_list), ' ', real_index)
+            # observed_label_file = os.path.join(observed_root_dir, video_name, prefix + "-label.png")
+            gt_observed_label_file = os.path.join(gt_observed_dir, prefix + "-label.png")
 
             pose_quat = syn_poses[idx, :]
             pose = se3.se3_q2m(pose_quat)
@@ -141,54 +135,21 @@ def gen_render_real():
             light_position[2] -= pose[2, 3]
             # print("light_position b: {}".format(light_position))
 
-            # randomly adjust color and intensity for light_intensity
-            colors = np.array([[0, 0, 1],
-                               [0, 1, 0],
-                               [0, 1, 1],
-                               [1, 0, 0],
-                               [1, 0, 1],
-                               [1, 1, 0],
-                               [1, 1, 1]])
-            intensity = np.random.uniform(0.9, 1.1, size=(3,))
-            colors_randk = random.randint(0, colors.shape[0] - 1)
-            light_intensity = colors[colors_randk] * intensity
-            # print('light intensity: ', light_intensity)
-
-
-
-            # print('brightness ratio:', brightness_ratios[rm_randk])
             # get render result
             rgb_gl, depth_gl = render_machine.render(pose[:3, :3], pose[:, 3], r_type='mat')
             rgb_gl = rgb_gl.astype('uint8')
-            # render_real label
+            # gt_observed label
             label_gl = np.zeros(depth_gl.shape)
             # print('depth gl:', depth_gl.shape)
             label_gl[depth_gl!=0] = 1
 
-
-            # import matplotlib.pyplot as plt
-            # fig = plt.figure()
-            # plt.axis('off')
-            # fig.add_subplot(1, 3, 1)
-            # plt.imshow(rgb_gl[:, :, [2,1,0]])
-            #
-            # fig.add_subplot(1, 3, 2)
-            # plt.imshow(depth_gl)
-            #
-            # fig.add_subplot(1, 3, 3)
-            # plt.imshow(label_gl)
-            #
-            # fig.suptitle('light position: {}\n light_intensity: {}\n brightness: {}'.format(light_position, light_intensity, brightness_ratios[rm_randk]))
-            # plt.show()
-
-
-            cv2.imwrite(render_real_color_file, rgb_gl)
+            cv2.imwrite(gt_observed_color_file, rgb_gl)
             depth_gl = (depth_gl * depth_factor).astype(np.uint16)
-            cv2.imwrite(render_real_depth_file, depth_gl)
+            cv2.imwrite(gt_observed_depth_file, depth_gl)
 
-            cv2.imwrite(render_real_label_file, label_gl)
+            cv2.imwrite(gt_observed_label_file, label_gl)
 
-            text_file = open(render_real_pose_file, 'w')
+            text_file = open(gt_observed_pose_file, 'w')
             text_file.write("{}\n".format(class_idx))
             pose_str = "{} {} {} {}\n{} {} {} {}\n{} {} {} {}" \
                 .format(pose[0, 0], pose[0, 1], pose[0, 2], pose[0, 3],
@@ -200,4 +161,4 @@ def gen_render_real():
 
 
 if __name__=='__main__':
-    gen_render_real()
+    gen_gt_observed()

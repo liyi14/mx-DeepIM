@@ -42,37 +42,32 @@ def class2idx(class_name, idx2class=idx2class):
 
 version = 'v1'
 
-LINEMOD_root = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted')
-# input render real poses
-render_real_dir = os.path.join(LINEMOD_root, 'LM6d_data_syn_light', 'data', 'render_real')
-real_dir = os.path.join(LINEMOD_root, 'LM6d_data_syn_light', 'data', 'real')
-rendered_dir = os.path.join(LINEMOD_root, 'LM6d_data_syn_light', 'data', 'rendered_{}'.format(version))
+LINEMOD_root = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted/LM6d_refine')
+LINEMOD_syn_root = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted/LM6d_refine_syn')
+# input render observed poses
+gt_observed_dir = os.path.join(LINEMOD_syn_root, 'data', 'gt_observed')
+observed_dir = os.path.join(LINEMOD_syn_root, 'data', 'observed')
+rendered_dir = os.path.join(LINEMOD_syn_root, 'data', 'rendered')
 
-image_set_dir = os.path.join(LINEMOD_root, 'LM6d_data_syn_light/image_set')
-real_set_dir = os.path.join(LINEMOD_root, 'LM6d_data_syn_light/image_set/real')
+image_set_dir = os.path.join(LINEMOD_syn_root, 'image_set')
+observed_set_dir = os.path.join(LINEMOD_syn_root, 'image_set/observed')
 
 def check():
-    cls_name = 'duck'
-    set_file = os.path.join(image_set_dir, "train_{}_{}.txt".format(version, cls_name))
+    cls_name = 'ape'
+    set_file = os.path.join(image_set_dir, "train_{}.txt".format(cls_name))
     with open(set_file, 'r') as f:
         pairs = [line.strip() for line in f.readlines()]
 
     for pair in pairs:
-        real_idx, rendered_idx = pair.split()
-        real_color = read_img(os.path.join(real_dir, "{}-color.png".format(real_idx)), 3)
-        render_color = read_img(os.path.join(render_real_dir, "{}-color.png".format(real_idx)), 3)
+        observed_idx, rendered_idx = pair.split()
+        observed_color = read_img(os.path.join(observed_dir, "{}-color.png".format(observed_idx)), 3)
+        gt_rendered_color = read_img(os.path.join(gt_observed_dir, "{}-color.png".format(observed_idx)), 3)
         rendered_color = read_img(os.path.join(rendered_dir, '{}-color.png'.format(rendered_idx)), 3)
-
 
         fig = plt.figure(dpi=150)
         plt.subplot(2,3,1)
-        plt.imshow(real_color[:,:,[2,1,0]]) # BGR->RGB
-        plt.title('real')
-        plt.axis('off')
-
-        plt.subplot(2, 3, 2)
-        plt.imshow(render_color[:,:,[2,1,0]])
-        plt.title('render real')
+        plt.imshow(observed_color[:,:,[2,1,0]]) # BGR->RGB
+        plt.title('observed')
         plt.axis('off')
 
         plt.subplot(2, 3, 3)
@@ -80,16 +75,10 @@ def check():
         plt.title('rendered')
         plt.axis('off')
 
-        plt.subplot(2, 3, 4)
-        real_render_diff = np.abs(render_color[:, :, [2, 1, 0]] - real_color[:,:,[2,1,0]])
-        plt.imshow(real_render_diff)
-        plt.title('real - render real')
-        plt.axis('off')
-
         plt.subplot(2, 3, 5)
-        real_rendered_diff = np.abs(real_color[:,:,[2,1,0]] - rendered_color[:,:,[2,1,0]])
-        plt.imshow(real_rendered_diff.astype(np.uint8))
-        plt.title('real - rendered')
+        observed_rendered_diff = np.abs(observed_color[:,:,[2,1,0]] - rendered_color[:,:,[2,1,0]])
+        plt.imshow(observed_rendered_diff.astype(np.uint8))
+        plt.title('observed - rendered')
         plt.axis('off')
 
         plt.show()
@@ -111,25 +100,25 @@ def check_rot_distribution():
         if cls_name != 'bowl':
             continue
         new_points[cls_name] = {'pz': []}
-        train_idx_file = os.path.join(real_set_dir, "LM6d_data_syn_train_real_{}.txt".format(cls_name))
+        train_idx_file = os.path.join(observed_set_dir, "LM6d_data_syn_train_observed_{}.txt".format(cls_name))
         with open(train_idx_file, 'r') as f:
-            real_indices = [line.strip() for line in f.readlines()]
+            observed_indices = [line.strip() for line in f.readlines()]
 
-        num_real = len(real_indices)
-        pose_dict[cls_name] = np.zeros((num_real, 7))  # quat, translation
+        num_observed = len(observed_indices)
+        pose_dict[cls_name] = np.zeros((num_observed, 7))  # quat, translation
         trans_stat[cls_name] = {}
         quat_stat[cls_name] = {}
-        for real_i, real_idx in enumerate(tqdm(real_indices)):
-            prefix = real_idx.split('/')[1]
-            pose_path = os.path.join(render_real_dir, cls_name, '{}-pose.txt'.format(prefix))
+        for observed_i, observed_idx in enumerate(tqdm(observed_indices)):
+            prefix = observed_idx.split('/')[1]
+            pose_path = os.path.join(gt_observed_dir, cls_name, '{}-pose.txt'.format(prefix))
             assert os.path.exists(pose_path), 'path {} not exists'.format(pose_path)
             pose = np.loadtxt(pose_path, skiprows=1)
             rot = pose[:3, :3]
             # print(rot)
             quat = np.squeeze(se3.mat2quat(rot))
             src_trans = pose[:3, 3]
-            pose_dict[cls_name][real_i, :4] = quat
-            pose_dict[cls_name][real_i, 4:] = src_trans
+            pose_dict[cls_name][observed_i, :4] = quat
+            pose_dict[cls_name][observed_i, 4:] = src_trans
 
             new_pz = np.dot(rot, pz.reshape((-1, 1))).reshape((3,))
             new_points[cls_name]['pz'].append(new_pz)
@@ -227,17 +216,17 @@ def check_model_points():
         if cls_name != 'bowl':
             continue
 
-        train_idx_file = os.path.join(real_set_dir, "LM6d_data_syn_train_real_{}.txt".format(cls_name))
+        train_idx_file = os.path.join(observed_set_dir, "LM6d_data_syn_train_observed_{}.txt".format(cls_name))
         with open(train_idx_file, 'r') as f:
-            real_indices = [line.strip() for line in f.readlines()]
+            observed_indices = [line.strip() for line in f.readlines()]
 
-        num_real = len(real_indices)
+        num_observed = len(observed_indices)
 
-        for real_i, real_idx in enumerate(tqdm(real_indices)):
-            prefix = real_idx.split('/')[1]
-            pose_path = os.path.join(render_real_dir, cls_name, '{}-pose.txt'.format(prefix))
-            real_color_path = os.path.join(render_real_dir, cls_name, "{}-color.png".format(prefix))
-            real_color = read_img(real_color_path)
+        for observed_i, observed_idx in enumerate(tqdm(observed_indices)):
+            prefix = observed_idx.split('/')[1]
+            pose_path = os.path.join(gt_observed_dir, cls_name, '{}-pose.txt'.format(prefix))
+            observed_color_path = os.path.join(gt_observed_dir, cls_name, "{}-color.png".format(prefix))
+            observed_color = read_img(observed_color_path)
             assert os.path.exists(pose_path), 'path {} not exists'.format(pose_path)
             pose = np.loadtxt(pose_path, skiprows=1)
             R = pose[:3, :3]
@@ -253,46 +242,9 @@ def check_model_points():
 
             plt.subplot(1, 2, 2)
             plt.axis('off')
-            plt.imshow(real_color[:,:,[2,1,0]])
+            plt.imshow(observed_color[:,:,[2,1,0]])
 
             plt.show()
 
-
-
-    def vis_points(points):
-        import matplotlib.pyplot as plt
-        from mpl_toolkits.mplot3d import Axes3D
-        sel_p = 'pz'
-        ax = plt.figure().add_subplot(121, projection='3d')
-        ax.scatter(points[:, 0], points[:, 1],
-                   points[:, 2],
-                   c='r', marker='^')
-        ax.scatter(0, 0, 0, c='b', marker='o')
-
-
-        ax.set_xlabel('X Label')
-        ax.set_ylabel('Y Label')
-        ax.set_zlabel('Z Label')
-
-        # ax = plt.figure().add_subplot(121, projection='3d')
-        # ax.scatter(points_1[:, 0], points_1[:, 1],
-        #            points_1[:, 2],
-        #            c='r', marker='^')
-        # ax.scatter(0, 0, 0, c='b', marker='o')
-        #
-        # ax.set_xlabel('X Label')
-        # ax.set_ylabel('Y Label')
-        # ax.set_zlabel('Z Label')
-        # ax.set_xlim([-1.5, 1.5])
-        # ax.set_ylim([-1.5, 1.5])
-        # ax.set_zlim([-1.5, 1.5])
-        plt.title(cls_name)
-        plt.show()
-    # vis_points(points[:3000])
-
-
-
 if __name__ == "__main__":
     check()
-    # check_rot_distribution()
-    # check_model_points()

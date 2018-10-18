@@ -50,11 +50,11 @@ class ZoomDepthProp(mx.operator.CustomOpProp):
         self.width = int(width)
 
     def list_arguments(self):
-        input_list = ['zoom_factor', 'depth_real', 'depth_rendered']
+        input_list = ['zoom_factor', 'depth_observed', 'depth_rendered']
         return input_list
 
     def list_outputs(self):
-        output_list = ['zoom_depth_real', 'zoom_depth_rendered']
+        output_list = ['zoom_depth_observed', 'zoom_depth_rendered']
         return output_list
 
     def infer_shape(self, in_shape):

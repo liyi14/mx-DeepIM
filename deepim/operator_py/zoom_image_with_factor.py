@@ -76,11 +76,11 @@ class ZoomImageWithFactorProp(mx.operator.CustomOpProp):
         self.hight_light_center = high_light_center.lower()=='true'
 
     def list_arguments(self):
-        input_list = ['zoom_factor', 'image_real', 'image_rendered']
+        input_list = ['zoom_factor', 'image_observed', 'image_rendered']
         return input_list
 
     def list_outputs(self):
-        output_list = ['zoom_image_real', 'zoom_image_rendered']
+        output_list = ['zoom_image_observed', 'zoom_image_rendered']
         return output_list
 
     def infer_shape(self, in_shape):

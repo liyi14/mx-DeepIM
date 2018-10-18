@@ -25,13 +25,8 @@ def parse_args():
     parser.add_argument('--vis', help='turn on visualization', action='store_true')
     parser.add_argument('--vis_video', help='turn on video visualization', action='store_true')
     parser.add_argument('--vis_video_zoom', help='turn on zoom video visualization', action='store_true')
-    parser.add_argument('--iter_test', help='turn on visualization', action='store_true')
-    parser.add_argument('--ignore_cache', help='ignore cached results boxes', action='store_true')
-    parser.add_argument('--shuffle', help='shuffle data on visualization', action='store_true')
+    parser.add_argument('--ignore_cache', help='ignore cached pose prediction results', action='store_true')
     parser.add_argument('--gpus', help='specify the gpu to be use', required=True, type=str)
-    parser.add_argument('--temp', help='turn on visualization', action='store_true')
-    parser.add_argument('--alt', help='switch between rotation and translation', action='store_true')
-    parser.add_argument('--refine', help='turn on visualization', action='store_true')
     parser.add_argument('--skip_flow', help='whether skip flow during test', action='store_true')
     args = parser.parse_args()
     return args
@@ -63,40 +58,16 @@ def test_deepim():
     if args.vis or args.vis_video or args.vis_video_zoom:
         config.TEST.VISUALIZE = True
         config.TEST.FAST_TEST = False
-    if args.iter_test:
-        config.TEST.test_iter = 5
-    if args.refine:
-        config.TEST.test_iter = 1
-    if args.skip_flow:
-        config.network.FLOW_I2R = False
-        config.network.FLOW_R2I = False
-        config.train_iter0.FLOW_I2R = False
-        config.train_iter0.FLOW_R2I = False
-        config.train_iter1.FLOW_I2R = False
-        config.train_iter1.FLOW_R2I = False
-        config.train_iter2.FLOW_I2R = False
-        config.train_iter2.FLOW_R2I = False
-        config.train_iter3.FLOW_I2R = False
-        config.train_iter3.FLOW_R2I = False
     epoch = config.TEST.test_epoch
     ctx = [mx.gpu(int(i)) for i in args.gpus.split(',')]
-    if len(ctx) != config.NUM_GPUS:
-        print("********** WARNING: length of context doesn't match num_gpus set in config, {} vs. {} **********".\
-            format(len(ctx), config.NUM_GPUS))
 
     image_set = config.dataset.test_image_set
     root_path = config.dataset.root_path
     dataset = config.dataset.dataset.split('+')[0]
     dataset_path = config.dataset.dataset_path
 
-    if not os.path.basename(args.cfg).split('.')[0].endswith('temp'):
-        new_args_name = os.path.basename(args.cfg).split('.')[0]+'_{}gpus.yaml'.format(config.NUM_GPUS)
-    else:
-        new_args_name = args.cfg
-    if config.TEST.VISUALIZE or args.temp:
-        logger, final_output_path = create_logger(config.output_path, new_args_name, image_set, True)
-    else:
-        logger, final_output_path = create_logger(config.output_path, new_args_name, image_set)
+    new_args_name = args.cfg
+    logger, final_output_path = create_logger(config.output_path, new_args_name, image_set)
     prefix = os.path.join(final_output_path, '..', '_'.join([iset for iset in config.dataset.image_set.split('+')]), config.TRAIN.model_prefix)
 
     pprint.pprint(config)

@@ -24,34 +24,30 @@ random.seed(2333)
 np.random.seed(2333)
 from tqdm import tqdm
 
-
-
 if __name__=='__main__':
     idx2class = {1: 'ape',
-            2: 'benchviseblue',
-            3: 'bowl',
-            4: 'camera',
-            5: 'can',
-            6: 'cat',
-            7: 'cup',
-            8: 'driller',
-            9: 'duck',
-            10: 'eggbox',
-            11: 'glue',
-            12: 'holepuncher',
-            13: 'iron',
-            14: 'lamp',
-            15: 'phone'
-}
+                 2: 'benchviseblue',
+                 # 3: 'bowl',
+                 4: 'camera',
+                 5: 'can',
+                 6: 'cat',
+                 # 7: 'cup',
+                 8: 'driller',
+                 9: 'duck',
+                 10: 'eggbox',
+                 11: 'glue',
+                 12: 'holepuncher',
+                 13: 'iron',
+                 14: 'lamp',
+                 15: 'phone'
+                 }
     classes = idx2class.values()
     classes = sorted(classes)
-
 
     def class2idx(class_name, idx2class=idx2class):
         for k,v in idx2class.items():
             if v == class_name:
                 return k
-
 
     width = 640
     height = 480
@@ -61,26 +57,28 @@ if __name__=='__main__':
     depth_factor = 1000
 
     # output_path
-    version = 'v1' # -------------------------------------------
-
-    LINEMOD_root = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted')
-    rendered_pose_path = "%s/LM6d_data_syn_%s_{}_rendered_pose_{}.txt"%(os.path.join(LINEMOD_root, 'data_syn_rendered_poses'), version)
-    real_list_path = "%s/LM6d_data_syn_{}_real_{}.txt" % (
-            os.path.join(LINEMOD_root, 'LM6d_data_syn_light', 'image_set/real'))
+    LINEMOD_root = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted/LM6d_refine')
+    LINEMOD_syn_root = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted/LM6d_refine_syn')
+    rendered_pose_path = "%s/LM6d_ds_rendered_pose_{}.txt"%(os.path.join(LINEMOD_syn_root, 'poses', 'rendered_poses'))
+    observed_list_path = "%s/LM6d_data_syn_{}_observed_{}.txt" % (
+            os.path.join(LINEMOD_syn_root, 'image_set/observed'))
 
     # output_path
-    rendered_root_dir = os.path.join(LINEMOD_root, 'LM6d_data_syn_light', 'data', 'rendered_{}'.format(version))
-    pair_set_dir = os.path.join(LINEMOD_root, 'LM6d_data_syn_light/image_set')
+    rendered_root_dir = os.path.join(LINEMOD_syn_root, 'data', 'rendered')
+    pair_set_dir = os.path.join(LINEMOD_syn_root, 'image_set')
     mkdir_if_missing(rendered_root_dir)
     mkdir_if_missing(pair_set_dir)
-    gen_images = True # --------------------NB: change here-----------------------------------
-    # val_videos = ['test']
-    for class_idx, class_name in enumerate(tqdm(classes)):
+
+    gen_images = True
+
+    for class_idx, class_name in enumerate(classes):
         train_pair = []
-        # val_pair = []
         print("start ", class_idx, class_name)
         if class_name in ['__back_ground__']:
             continue
+        # uncomment here to only generate data for ape
+        # if class_name not in ['ape']:
+        #     continue
 
         if gen_images:
             # init render
@@ -88,9 +86,9 @@ if __name__=='__main__':
             render_machine = Render_Py(model_dir, K, width, height, ZNEAR, ZFAR)
 
         for set_type in ['train']:
-            with open(real_list_path.format(set_type, class_name)) as f:
+            with open(observed_list_path.format(set_type, class_name)) as f:
                 real_list = [x.strip() for x in f.readlines()]
-            with open(rendered_pose_path.format(set_type, class_name)) as f:
+            with open(rendered_pose_path.format(class_name)) as f:
                 str_rendered_pose_list = [x.strip().split(' ') for x in f.readlines()]
             rendered_pose_list = np.array([[float(x) for x in each_pose] for each_pose in str_rendered_pose_list])
             rendered_per_real = 1
@@ -136,10 +134,11 @@ if __name__=='__main__':
                                           .format(real_index,
                                                   video_name, class_name, real_prefix, inner_idx))
 
-            pair_set_file = os.path.join(pair_set_dir, "train_{}_{}.txt".format(version, class_name))
+            pair_set_file = os.path.join(pair_set_dir, "train_{}.txt".format(class_name))
             train_pair = sorted(train_pair)
             with open(pair_set_file, "w") as text_file:
                 for x in train_pair:
                     text_file.write("{}\n".format(x))
 
         print(class_name, " done")
+    print("{} finished".format(__file__))

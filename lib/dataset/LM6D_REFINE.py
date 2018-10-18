@@ -15,95 +15,39 @@ from lib.utils.print_and_log import print_and_log
 from lib.utils.pose_error import *
 from lib.pair_matching.RT_transform import calc_rt_dist_m
 
-class LM6D_v1(IMDB):
+class LM6D_REFINE(IMDB):
     def __init__(self, cfg, image_set, root_path, devkit_path, class_name, result_path=None, mask_size=-1, binary_thresh=None, mask_syn_name=''):
         """
         fill basic information to initialize imdb
-        :param image_set: 2007_trainval, 2007_test, etc
-        :param root_path: 'selective_search_data' and 'cache'
-        :param devkit_path: data and results
+        :param image_set: train, val, PoseCNN_val, etc
+        :param root_path: contains folders of different dataset related to LINEMOD_6D (seems useless now)
+        :param devkit_path: contains folders of data, image_set, etc
         :return: imdb object
         """
-        #image_set = image_set[len(year) + 1 : len(image_set)]
-        if len(mask_syn_name)>0:
-            super(LM6D_v1, self).__init__('LM6d_render_v1_'+mask_syn_name, image_set, root_path, devkit_path, result_path)  # set self.name
-        else:
-            super(LM6D_v1, self).__init__('LM6D_render_v1', image_set, root_path, devkit_path, result_path)  # set self.name
+        super(LM6D_REFINE, self).__init__('LM6D_refine', image_set, root_path, devkit_path, result_path)  # set self.name
         self.root_path = root_path
         self.devkit_path = devkit_path
-        self.render_real_data_path = os.path.join(devkit_path, 'data', 'render_real')
-        self.real_data_path = os.path.join(devkit_path, 'data', 'real')
-        self._linemod_path = self._get_default_path()
+        self.gt_observed_data_path = os.path.join(devkit_path, 'data', 'gt_observed')
+        self.observed_data_path = os.path.join(devkit_path, 'data', 'observed')
 
-        if image_set.startswith('yu_val_v02'):
-            self.rendered_data_path = os.path.join(devkit_path, 'data', 'rendered_Yu_v02')
-        elif image_set.startswith('yu_val'):
-            self.rendered_data_path = os.path.join(devkit_path, 'data', 'rendered_Yu_v01')
-        elif image_set.startswith('train_v1') or image_set.startswith('my_val_v1') or image_set.startswith(
-                'my_minival_v1'):
-            self.rendered_data_path = os.path.join(devkit_path, 'data', 'rendered_v1')
-        elif image_set.startswith('train_v2') or image_set.startswith('my_val_v2') or image_set.startswith(
-                'my_minival_v2'):
-            self.rendered_data_path = os.path.join(devkit_path, 'data', 'rendered_v2')
-        elif image_set.startswith('train_v3') or image_set.startswith('my_val_v3') or image_set.startswith(
-                'my_minival_v3'):
-            self.rendered_data_path = os.path.join(devkit_path, 'data', 'rendered_v3')
-        elif image_set.startswith('train_v4') or image_set.startswith('my_val_v4') or image_set.startswith(
-                'my_minival_v4'):
-            self.rendered_data_path = os.path.join(devkit_path, 'data', 'rendered_v4')
-        elif image_set.startswith('train_v5') or image_set.startswith('my_val_v5') or image_set.startswith(
-                'my_minival_v5'):
-            self.rendered_data_path = os.path.join(devkit_path, 'data', 'rendered_v5')
-        elif image_set.startswith('train_v6') or image_set.startswith('my_val_v6') or image_set.startswith(
-                'my_minival_v6'):
-            self.rendered_data_path = os.path.join(devkit_path, 'data', 'rendered_v6')
-        elif image_set.startswith('train_v7') or image_set.startswith('my_val_v7') or image_set.startswith(
-                'my_minival_v7'):
-            self.rendered_data_path = os.path.join(devkit_path, 'data', 'rendered_v7')
-        elif image_set.startswith('train_v8') or image_set.startswith('my_val_v8') or image_set.startswith(
-                'my_minival_v8'):
-            self.rendered_data_path = os.path.join(devkit_path, 'data', 'rendered_v8')
-        elif image_set.startswith('train_v9') or image_set.startswith('my_val_v9') or image_set.startswith(
-                'my_minival_v9'):
-            self.rendered_data_path = os.path.join(devkit_path, 'data', 'rendered_v9')
+        if image_set.startswith('PoseCNN_val'):
+            self.rendered_data_path = os.path.join(devkit_path, 'data', 'rendered_val_PoseCNN')
         elif image_set.startswith('train') or image_set.startswith('my_val') or image_set.startswith('my_minival'):
             self.rendered_data_path = os.path.join(devkit_path, 'data', 'rendered')
         else:
             raise Exception("unknown prefix of "+image_set)
 
-        print('LM6d_v1 rendered_data_path: {}'.format(self.rendered_data_path))
-
+        print('LM6d_refine rendered_data_path: {}'.format(self.rendered_data_path))
 
         self.mask_syn_path = ''
         if image_set.startswith('train'):
             self.phase = 'train'
             if len(mask_syn_name) > 0:
                 self.mask_syn_path = os.path.join(devkit_path, 'data', mask_syn_name)
-        elif image_set.startswith('my_val') or image_set.startswith('yu_val') or image_set.startswith('my_minival'):
+        elif image_set.startswith('my_val') or image_set.startswith('PoseCNN_val') or image_set.startswith('my_minival'):
             self.phase = 'val'
         else:
             raise Exception("unknown prefix of "+image_set)
-
-        if image_set.startswith('yu_val_v02'):
-            if os.path.exists(os.path.join(devkit_path, 'data', 'mask_Yu_v02')):
-                self.mask_est_path = os.path.join(devkit_path, 'data', 'mask_Yu_v02')
-            else:
-                self.mask_est_path = '' # os.path.join(devkit_path, 'data', 'mask_Yu_v01')
-        elif image_set.startswith('yu_val'):
-            if os.path.exists(os.path.join(devkit_path, 'data', 'mask_Yu_v01')):
-                self.mask_est_path = os.path.join(devkit_path, 'data', 'mask_Yu_v01')
-            else:
-                self.mask_est_path = '' # os.path.join(devkit_path, 'data', 'mask_Yu_v01')
-        else:
-            self.mask_est_path = ''
-
-        if image_set.startswith('yu_val_v02'):
-            if os.path.exists(os.path.join(devkit_path, 'data', 'mask_Yu_v02')):
-                self.mask_est_path = os.path.join(devkit_path, 'data', 'mask_Yu_v02')
-            else:
-                self.mask_est_path = '' # os.path.join(devkit_path, 'data', 'mask_Yu_v01')
-        else:
-            self.mask_est_path = ''
 
         self.idx2class = {
                      1: 'ape',
@@ -136,20 +80,12 @@ class LM6D_v1(IMDB):
         self._points = self._load_object_points()
         self._diameters = self._load_object_diameter()
 
-    def _get_default_path(self):
-        """
-        Return the default path where LOV is expected to be installed.
-        """
-        ROOT_DIR = os.path.join(os.path.dirname(__file__), '..', '..')
-        return os.path.join(ROOT_DIR, 'data', 'LINEMOD_6D')
-
-
     def _load_object_points(self):
 
         points = {}
 
         for cls_idx, cls_name in self.idx2class.items():
-            point_file = os.path.join(self._linemod_path, 'models', cls_name, 'points.xyz')
+            point_file = os.path.join(self.devkit_path, 'models', cls_name, 'points.xyz')
             assert os.path.exists(point_file), 'Path does not exist: {}'.format(point_file)
             points[cls_name] = np.loadtxt(point_file)
 
@@ -157,7 +93,7 @@ class LM6D_v1(IMDB):
 
     def _load_object_diameter(self):
         diameters = {}
-        models_info_file = os.path.join(self._linemod_path, 'models', 'models_info.txt')
+        models_info_file = os.path.join(self.devkit_path, 'models', 'models_info.txt')
         assert os.path.exists(models_info_file), 'Path does not exist: {}'.format(models_info_file)
         with open(models_info_file, 'r') as f:
             for line in f:
@@ -188,10 +124,10 @@ class LM6D_v1(IMDB):
         :param index: index of a specific image
         :return: full path of this image
         """
-        if type == 'real':
-            image_file = os.path.join(self.real_data_path, index + '-color.png')
-        elif type == 'render_real':
-            image_file = os.path.join(self.render_real_data_path, cls_name, index.split('/')[1] + '-color.png')
+        if type == 'observed':
+            image_file = os.path.join(self.observed_data_path, index + '-color.png')
+        # elif type == 'gt_observed':
+        #     image_file = os.path.join(self.gt_observed_data_path, cls_name, index.split('/')[1] + '-color.png')
         elif type == 'rendered':
             image_file = os.path.join(self.rendered_data_path, index + '-color.png')
         if check:
@@ -204,10 +140,10 @@ class LM6D_v1(IMDB):
         :param index: index of a specific image
         :return: full path of depth image
         """
-        if type == 'real':
-            depth_file = os.path.join(self.real_data_path, index + '-depth.png')
-        elif type == 'render_real':
-            depth_file = os.path.join(self.render_real_data_path, cls_name, index.split('/')[1] + '-depth.png')
+        if type == 'observed':
+            depth_file = os.path.join(self.observed_data_path, index + '-depth.png')
+        elif type == 'gt_observed':
+            depth_file = os.path.join(self.gt_observed_data_path, cls_name, index.split('/')[1] + '-depth.png')
         elif type == 'rendered':
             depth_file = os.path.join(self.rendered_data_path, index + '-depth.png')
         if check:
@@ -220,14 +156,10 @@ class LM6D_v1(IMDB):
         :param index: index of a specific image
         :return: full path of segmentation class
         """
-        if type == 'real_gt':
-            seg_class_file = os.path.join(self.real_data_path, index + '-label.png')
+        if type == 'observed' or type == 'gt_observed':
+            seg_class_file = os.path.join(self.observed_data_path, index + '-label.png')
         elif type == 'rendered':
             seg_class_file = os.path.join(self.rendered_data_path, index + '-label.png')
-        elif type == 'syn':
-            seg_class_file = os.path.join(self.mask_syn_path, index + '-label.png')
-        elif type == 'real_est':
-            seg_class_file = os.path.join(self.mask_est_path, index.split('/')[0], self.cur_class, index.split('/')[1] + '-label.png')
         if check:
             assert os.path.exists(seg_class_file), 'Path does not exist: {}'.format(seg_class_file)
         return seg_class_file
@@ -238,8 +170,8 @@ class LM6D_v1(IMDB):
         :param index: index of a specific image
         :return: full path of segmentation class
         """
-        if type == 'real' or type == 'render_real':
-            pose_file = os.path.join(self.render_real_data_path, cls_name, index.split('/')[1] + '-pose.txt')
+        if type == 'observed' or type == 'gt_observed':
+            pose_file = os.path.join(self.gt_observed_data_path, cls_name, index.split('/')[1] + '-pose.txt')
         elif type == 'rendered':
             pose_file = os.path.join(self.rendered_data_path, index + '-pose.txt')
         assert os.path.exists(pose_file), 'type:{}, Path does not exist: {}'.format(type, pose_file)
@@ -284,26 +216,22 @@ class LM6D_v1(IMDB):
         cls_name = self.cur_class
         pair_rec['gt_class'] = cls_name
 
-        pair_rec['image_real'] = self.image_path_from_index(pair_index[0], 'real')
-        pair_rec['image_render_real'] = self.image_path_from_index(pair_index[0], 'render_real', cls_name=cls_name)
+        pair_rec['image_observed'] = self.image_path_from_index(pair_index[0], 'observed')
+        # pair_rec['image_gt_observed'] = self.image_path_from_index(pair_index[0], 'gt_observed', cls_name=cls_name)
         pair_rec['image_rendered'] = self.image_path_from_index(pair_index[1], 'rendered')
-        size_real = cv2.imread(pair_rec['image_real']).shape
+        size_real = cv2.imread(pair_rec['image_observed']).shape
         size_rendered = cv2.imread(pair_rec['image_rendered']).shape
         assert size_real==size_rendered
         pair_rec['height'] = size_real[0]
         pair_rec['width'] = size_real[1]
-        pair_rec['depth_real'] = self.depth_path_from_index(pair_index[0], 'real')
-        pair_rec['depth_render_real'] = self.depth_path_from_index(pair_index[0], 'render_real', cls_name=cls_name)
+        pair_rec['depth_observed'] = self.depth_path_from_index(pair_index[0], 'observed')
+        pair_rec['depth_gt_observed'] = self.depth_path_from_index(pair_index[0], 'gt_observed', cls_name=cls_name)
         pair_rec['depth_rendered'] = self.depth_path_from_index(pair_index[1], 'rendered')
 
-        pair_rec['pose_real'] = self.pose_from_index(pair_index[0], 'real', cls_name=cls_name)
-        pair_rec['pose_est'] = self.pose_from_index(pair_index[1], 'rendered')
+        pair_rec['pose_observed'] = self.pose_from_index(pair_index[0], 'observed', cls_name=cls_name)
+        pair_rec['pose_rendered'] = self.pose_from_index(pair_index[1], 'rendered')
 
-        pair_rec['mask_real_gt'] = self.segmentation_path_from_index(pair_index[0], 'real_gt')
-        if self.mask_est_path != '':
-            pair_rec['mask_real_est'] = self.segmentation_path_from_index(pair_index[0], 'real_est')
-        if self.phase == 'train' and self.mask_syn_path != '':
-            pair_rec['mask_syn'] = self.segmentation_path_from_index(pair_index[0], 'syn')
+        pair_rec['mask_gt_observed'] = self.segmentation_path_from_index(pair_index[0], 'gt_observed')
         pair_rec['mask_idx'] = self.class2idx(pair_rec['gt_class'])
 
         pair_rec['pair_flipped'] = False
@@ -710,9 +638,6 @@ class LM6D_v1(IMDB):
 
         print_and_log("=" * 30, logger)
 
-
-################################
-
     def evaluate_pose_dict(self, config, all_poses_est, all_poses_gt, logger):
         # evaluate and display
         print_and_log('evaluating pose', logger)
@@ -917,9 +842,6 @@ class LM6D_v1(IMDB):
             cPickle.dump(plot_data, f, protocol=2)
 
         print_and_log("="*30, logger)
-
-
-
 
     def evaluate_pose_arp_2d_dict(self, config, all_poses_est, all_poses_gt, output_dir, logger):
         '''

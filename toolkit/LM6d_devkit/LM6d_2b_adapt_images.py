@@ -19,12 +19,13 @@ from lib.render_glumpy.render_py_multi import Render_Py
 import scipy.io as sio
 
 LM6d_origin_root = os.path.join(cur_dir, '../../data/LINEMOD_6D/LM6d_origin/test')
-# only origin test images are real images
+# following previous works, part of the real images are used for training and only images.
 
-LM6d_new_root = os.path.join(cur_dir, '../../data/LINEMOD_6D/LM6d_converted/real')
+LM6d_new_root = os.path.join(cur_dir, '../../data/LINEMOD_6D/LM6d_converted/LM6d_refine/data/real')
 mkdir_if_missing(LM6d_new_root)
-real_set_dir = os.path.join(cur_dir, '../../data/LINEMOD_6D/LM6d_converted/image_set/real')
+real_set_dir = os.path.join(cur_dir, '../../data/LINEMOD_6D/LM6d_converted/LM6d_refine/image_set/real')
 mkdir_if_missing(real_set_dir)
+print("target path: {}".format(real_set_dir))
 
 idx2class = {1: 'ape',
             2: 'benchviseblue',
@@ -176,36 +177,6 @@ def main():
             label_path = os.path.join(LM6d_new_root, '{:02d}'.format(class2idx(cls_name)),
                                       "{:06d}-label.png".format(new_img_id))
             cv2.imwrite(label_path, res_label)
-            def vis_check():
-                fig = plt.figure(figsize=(8, 6), dpi=120)
-                plt.subplot(2, 3, 1)
-
-                plt.imshow(color_img[:,:,[2,1,0]])
-                plt.title('color_img')
-
-                plt.subplot(2, 3, 2)
-                plt.imshow(depth_gl)
-                plt.title('depth')
-
-                plt.subplot(2, 3, 3)
-                plt.imshow(depth_gl)
-                plt.title('depth_gl')
-
-                plt.subplot(2, 3, 4)
-                plt.imshow(res_label)
-                plt.title('res_label')
-
-                plt.subplot(2,3,5)
-                label_v1_path = os.path.join('/data/wanggu/Storage/LINEMOD_SIXD_wods/LM6d_render_v1/data/real',
-                                                 '{:02d}'.format(class2idx(cls_name)),
-                                          "{:06d}-label.png".format(new_img_id))
-                assert os.path.exists(label_v1_path), label_v1_path
-                label_v1 = read_img(label_v1_path, 1)
-                plt.imshow(label_v1)
-                plt.title('label_v1')
-
-                plt.show()
-            # vis_check()
 
             # real idx
             real_indices.append("{:02d}/{:06d}".format(class2idx(cls_name), new_img_id))
@@ -216,51 +187,6 @@ def main():
             for real_idx in real_indices:
                 f.write(real_idx + '\n')
 
-def check_real():
-    old_real_dir = '/data/wanggu/Storage/LINEMOD_SIXD_wods/LM6d_render_v1/data/real'
-    new_real_dir = os.path.join(cur_dir, '../../data/LINEMOD_6D/LM6d_converted/real')
-    for cls_idx, cls_name in enumerate(tqdm(classes)):
-        print(cls_idx, cls_name)
-        # if cls_name in ['ape']:
-        #     continue
-        real_idx_file = os.path.join(real_set_dir, '{}_all.txt'.format(cls_name))
-        with open(real_idx_file, 'r') as f:
-            real_indexes = [line.strip('\r\n') for line in f.readlines()]
-        for real_idx in tqdm(real_indexes):
-            old_depth_path = os.path.join(old_real_dir, '{}-depth.png'.format(real_idx))
-            new_depth_path = os.path.join(new_real_dir, '{}-depth.png'.format(real_idx))
-            old_depth = read_img(old_depth_path, 1)
-            new_depth = read_img(new_depth_path, 1)
-            np.testing.assert_array_almost_equal(old_depth, new_depth, decimal=3, err_msg="{}".format(new_depth_path))
-
-            old_label_path = os.path.join(old_real_dir, '{}-label.png'.format(real_idx))
-            new_label_path = os.path.join(new_real_dir, '{}-label.png'.format(real_idx))
-            old_label = read_img(old_label_path, 1)
-            new_label = read_img(new_label_path, 1)
-            try:
-                np.testing.assert_array_almost_equal(old_label, new_label, decimal=-1, err_msg='{}'.format(new_label_path))
-            except:
-                label_diff = np.abs(old_label - new_label)
-                print(np.sum(label_diff))
-
-                fig = plt.figure(figsize=(8, 6), dpi=120)
-                plt.subplot(1, 3, 1)
-                plt.imshow(old_label)
-                plt.title('old label')
-
-                plt.subplot(1, 3, 2)
-                plt.imshow(new_label)
-                plt.title('new label')
-
-                plt.subplot(1, 3, 3)
-
-                plt.imshow(label_diff)
-                plt.title('label diff')
-
-                plt.show()
-
-
-
 if __name__ == "__main__":
     main()
-    check_real()
+    print("{} finished".format(__file__))

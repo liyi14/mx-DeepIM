@@ -4,7 +4,7 @@
 # Written by Gu Wang, Yi Li
 # --------------------------------------------------------
 '''
-input: render real poses
+input: gt observed poses
 generate rendered poses,
 '''
 from __future__ import division, print_function
@@ -23,21 +23,21 @@ np.random.seed(2333)
 
 # =================== global settings ======================
 idx2class = {1: 'ape',
-            2: 'benchviseblue',
-            3: 'bowl',
-            4: 'camera',
-            5: 'can',
-            6: 'cat',
-            7: 'cup',
-            8: 'driller',
-            9: 'duck',
-            10: 'eggbox',
-            11: 'glue',
-            12: 'holepuncher',
-            13: 'iron',
-            14: 'lamp',
-            15: 'phone'
-}
+             2: 'benchviseblue',
+             # 3: 'bowl',
+             4: 'camera',
+             5: 'can',
+             6: 'cat',
+             # 7: 'cup',
+             8: 'driller',
+             9: 'duck',
+             10: 'eggbox',
+             11: 'glue',
+             12: 'holepuncher',
+             13: 'iron',
+             14: 'lamp',
+             15: 'phone'
+             }
 classes = idx2class.values()
 classes = sorted(classes)
 
@@ -47,60 +47,49 @@ def class2idx(class_name, idx2class=idx2class):
         if v == class_name:
             return k
 
-LINEMOD_root = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted')
-# input render real poses
-data_dir = os.path.join(LINEMOD_root, 'LM6d_data_syn_light', 'data', 'render_real')
-image_set_root = os.path.join(LINEMOD_root, 'LM6d_data_syn_light/image_set/real')
+LINEMOD_root = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted/LM6d_refine')
+LINEMOD_syn_root = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted/LM6d_refine_syn')
+# input gt observed poses
+data_dir = os.path.join(LINEMOD_syn_root, 'data', 'gt_observed')
+image_set_root = os.path.join(LINEMOD_syn_root, 'image_set/observed')
 
 # output: generated rendered poses
-pose_dir = os.path.join(LINEMOD_root, 'data_syn_rendered_poses')
+pose_dir = os.path.join(LINEMOD_syn_root, 'poses', 'rendered_poses')
 mkdir_if_missing(pose_dir)
 
 
 sel_classes = classes
-num_rendered_per_real = 1 # 10
+num_rendered_per_observed = 1 # 10
 K = np.array([[572.4114, 0, 325.2611], [0, 573.57043, 242.04899], [0, 0, 1]])
-# version = 'v1'
-# generate a set of my val
-version_params = {'v1': [15.0, 45.0, 0.01, 0.01, 0.05],
-                  'v2': [20.0, 60.0, 0.01, 0.01, 0.05],
-                  'v3': [30.0, 90.0, 0.01, 0.01, 0.05],
-                  'v4': [40.0, 120.0, 0.01, 0.01, 0.05],
-                  'v5': [60.0, 180.0, 0.01, 0.01, 0.05],
-
-                  'v6': [15.0, 45.0, 0.02, 0.02, 0.05],
-                  'v7': [15.0, 45.0, 0.03, 0.03, 0.05],
-                  'v8': [15.0, 45.0, 0.04, 0.04, 0.05],
-                  'v9': [15.0, 45.0, 0.05, 0.05, 0.05]}
-
 version = 'v1'
-angle_std, angle_max, x_std, y_std, z_std = version_params[version]
-print('version: ', version)
+angle_std, angle_max, x_std, y_std, z_std = [15.0, 45.0, 0.01, 0.01, 0.05]
 print(angle_std, angle_max, x_std, y_std, z_std)
 image_set = 'train'
-for cls_idx, cls_name in enumerate(tqdm(sel_classes)):
-    print(cls_idx, cls_name)
+for cls_idx, cls_name in enumerate(sel_classes):
+    # uncomment here to only generate data for ape
+    # if not cls_name in ['ape']:
+    #     continue
     rd_stat = []
     td_stat = []
-    pose_real = []
+    pose_observed = []
     pose_rendered = []
 
     cls_idx_in_all = class2idx(cls_name)  #classes.index(cls_name)
 
-    sel_set_file = os.path.join(image_set_root, "LM6d_data_syn_{}_real_{}.txt".format(image_set, cls_name))
+    sel_set_file = os.path.join(image_set_root, 'LM6d_data_syn_train_observed_{}.txt'.format(cls_name))
     with open(sel_set_file) as f:
         image_list = [x.strip() for x in f.readlines()]
 
-    for real_idx in tqdm(image_list):
-        pose_real_path = os.path.join(data_dir, '{}-pose.txt'.format(real_idx))
-        src_pose_m = np.loadtxt(pose_real_path, skiprows=1)
+    for observed_idx in tqdm(image_list):
+        pose_observed_path = os.path.join(data_dir, '{}-pose.txt'.format(observed_idx))
+        src_pose_m = np.loadtxt(pose_observed_path, skiprows=1)
 
         src_euler = np.squeeze(mat2euler(src_pose_m[:3, :3]))
         src_quat = euler2quat(src_euler[0], src_euler[1], src_euler[2]).reshape(1, -1)
         src_trans = src_pose_m[:, 3]
-        pose_real.append((np.hstack((src_quat, src_trans.reshape(1, 3)))))
+        pose_observed.append((np.hstack((src_quat, src_trans.reshape(1, 3)))))
 
-        for rendered_idx in range(num_rendered_per_real):
+        for rendered_idx in range(num_rendered_per_observed):
             tgt_euler = src_euler + np.random.normal(0, angle_std/180*pi, 3)
             x_error = np.random.normal(0, x_std, 1)[0]
             y_error = np.random.normal(0, y_std, 1)[0]
@@ -126,9 +115,9 @@ for cls_idx, cls_name in enumerate(tqdm(sel_classes)):
                 count += 1
                 if count == 100:
                     print(rendered_idx)
-                    print("{}: {}, {}, {}, {}".format(real_idx, r_dist, t_dist, center_x, center_y))
+                    print("{}: {}, {}, {}, {}".format(observed_idx, r_dist, t_dist, center_x, center_y))
                     print("count: {}, image_path: {}, rendered_idx: {}".format(count,
-                                                                           pose_real_path.replace('pose.txt', 'color.png'),
+                                                                           pose_observed_path.replace('pose.txt', 'color.png'),
                                                                            rendered_idx))
 
             tgt_quat = euler2quat(tgt_euler[0], tgt_euler[1], tgt_euler[2]).reshape(1, -1)
@@ -140,9 +129,9 @@ for cls_idx, cls_name in enumerate(tqdm(sel_classes)):
     print("r dist: {} +/- {}".format(np.mean(rd_stat), np.std(rd_stat)))
     print("t dist: {} +/- {}".format(np.mean(td_stat), np.std(td_stat)))
 
-
-    output_file_name = os.path.join(pose_dir, 'LM6d_data_syn_{}_{}_rendered_pose_{}.txt'.format(version, image_set, cls_name))
+    output_file_name = os.path.join(pose_dir, 'LM6d_ds_rendered_pose_{}.txt'.format(cls_name))
     with open(output_file_name, "w") as text_file:
         for x in pose_rendered:
             text_file.write("{}\n".format(' '.join(map(str, np.squeeze(x)))))
+print("{} finished".format(__file__))
 

@@ -54,10 +54,7 @@ from lib.utils.lr_scheduler import WarmupMultiFactorScheduler
 from lib.utils.print_and_log import print_and_log
 
 def train_net(args, ctx, pretrained, epoch, prefix, begin_epoch, end_epoch, lr, lr_step):
-    if not os.path.basename(args.cfg).split('.')[0].endswith('temp'):
-        new_args_name = os.path.basename(args.cfg).split('.')[0]+'_{}gpus.yaml'.format(len(ctx))
-    else:
-        new_args_name = args.cfg
+    new_args_name = args.cfg
     if args.vis:
         config.TRAIN.VISUALIZE = True
     logger, final_output_path = create_logger(config.output_path, new_args_name, config.dataset.image_set, args.temp)
@@ -114,16 +111,16 @@ def train_net(args, ctx, pretrained, epoch, prefix, begin_epoch, end_epoch, lr, 
 
     train_data.get_batch_parallel()
     max_scale = [max([v[0] for v in config.SCALES]), max(v[1] for v in config.SCALES)]
-    max_data_shape = [('image_real', (config.TRAIN.BATCH_PAIRS, 3, max_scale[0], max_scale[1])),
+    max_data_shape = [('image_observed', (config.TRAIN.BATCH_PAIRS, 3, max_scale[0], max_scale[1])),
                       ('image_rendered', (config.TRAIN.BATCH_PAIRS, 3, max_scale[0], max_scale[1])),
-                      ('depth_render_real', (config.TRAIN.BATCH_PAIRS, 1, max_scale[0], max_scale[1])),
+                      ('depth_gt_observed', (config.TRAIN.BATCH_PAIRS, 1, max_scale[0], max_scale[1])),
                       ('src_pose', (config.TRAIN.BATCH_PAIRS, 3, 4)),
                       ('tgt_pose', (config.TRAIN.BATCH_PAIRS, 3, 4))]
     if config.network.INPUT_DEPTH:
-        max_data_shape.append(('depth_real', (config.TRAIN.BATCH_PAIRS, 1, max_scale[0], max_scale[1])))
+        max_data_shape.append(('depth_observed', (config.TRAIN.BATCH_PAIRS, 1, max_scale[0], max_scale[1])))
         max_data_shape.append(('depth_rendered', (config.TRAIN.BATCH_PAIRS, 1, max_scale[0], max_scale[1])))
     if config.network.INPUT_MASK:
-        max_data_shape.append(('mask_real_est', (config.TRAIN.BATCH_PAIRS, 1, max_scale[0], max_scale[1])))
+        max_data_shape.append(('mask_observed', (config.TRAIN.BATCH_PAIRS, 1, max_scale[0], max_scale[1])))
         max_data_shape.append(('mask_rendered', (config.TRAIN.BATCH_PAIRS, 1, max_scale[0], max_scale[1])))
 
     rot_param = 3 if config.network.ROT_TYPE=="EULER" else 4
@@ -135,9 +132,9 @@ def train_net(args, ctx, pretrained, epoch, prefix, begin_epoch, end_epoch, lr, 
     if config.train_iter.SE3_PM_LOSS:
         max_label_shape.append(('point_cloud_model', (config.TRAIN.BATCH_PAIRS, 3, config.train_iter.NUM_3D_SAMPLE)))
         max_label_shape.append(('point_cloud_weights', (config.TRAIN.BATCH_PAIRS, 3, config.train_iter.NUM_3D_SAMPLE)))
-        max_label_shape.append(('point_cloud_real', (config.TRAIN.BATCH_PAIRS, 3, config.train_iter.NUM_3D_SAMPLE)))
+        max_label_shape.append(('point_cloud_observed', (config.TRAIN.BATCH_PAIRS, 3, config.train_iter.NUM_3D_SAMPLE)))
     if config.network.PRED_MASK:
-        max_label_shape.append(('mask_real_gt', (config.TRAIN.BATCH_PAIRS, 1, max_scale[0], max_scale[1])))
+        max_label_shape.append(('mask_gt_observed', (config.TRAIN.BATCH_PAIRS, 1, max_scale[0], max_scale[1])))
 
     # max_data_shape, max_label_shape = train_data.infer_shape(max_data_shape, max_label_shape)
     print_and_log('providing maximum shape, {}, {}'.format(max_data_shape, max_label_shape), logger)
@@ -190,7 +187,7 @@ def train_net(args, ctx, pretrained, epoch, prefix, begin_epoch, end_epoch, lr, 
                         logger=logger, context=ctx, max_data_shapes=[max_data_shape for _ in xrange(batch_size)],
                         max_label_shapes=[max_label_shape for _ in xrange(batch_size)],
                         fixed_param_prefix=fixed_param_prefix,
-                        CUDA9=config.CUDA9, config=config)
+                        config=config)
 
 
     # decide training params
@@ -284,8 +281,6 @@ def train_net(args, ctx, pretrained, epoch, prefix, begin_epoch, end_epoch, lr, 
 def main():
     print('Called with argument:', args)
     ctx = [mx.gpu(int(i)) for i in args.gpus.split(',')]
-    if len(ctx) != config.NUM_GPUS:
-        print("********** WARNING: length of context doesn't match num_gpus set in config, {} vs. {} ************".format(len(ctx), config.NUM_GPUS))
     train_net(args, ctx, config.network.pretrained, config.network.pretrained_epoch, config.TRAIN.model_prefix,
               config.TRAIN.begin_epoch, config.TRAIN.end_epoch, config.TRAIN.lr, config.TRAIN.lr_step)
 

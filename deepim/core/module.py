@@ -52,7 +52,7 @@ class Module(BaseModule):
     """
     def __init__(self, symbol, data_names=('data',), label_names=('softmax_label',),
                  logger=logging, context=ctx.cpu(), work_load_list=None,
-                 fixed_param_names=None, state_names=None, CUDA9=False, config=None):
+                 fixed_param_names=None, state_names=None, config=None):
         super(Module, self).__init__(logger=logger)
 
         self.config = config
@@ -100,12 +100,6 @@ class Module(BaseModule):
         self._exec_group = None
         self._data_shapes = None
         self._label_shapes = None
-
-        self._CUDA9=CUDA9
-        if self._CUDA9:
-            print("**********BASE MODULE CUDA9************")
-        else:
-            print("**********BASE MODULE NOT CUDA9***********")
 
     @staticmethod
     def load(prefix, epoch, load_optimizer_states=False, **kwargs):
@@ -573,30 +567,17 @@ class Module(BaseModule):
         assert self.binded and self.params_initialized and self.optimizer_initialized
 
         self._params_dirty = True
-        if self._CUDA9:
-            if self._update_on_kvstore:
-                _update_params_on_kvstore(self._exec_group.param_arrays,
-                                          self._exec_group.grad_arrays,
-                                          self._kvstore, self._exec_group.param_names)
-            else:
-                _update_params(self._exec_group.param_arrays,
-                               self._exec_group.grad_arrays,
-                               updater=self._updater,
-                               num_device=len(self._context),
-                               kvstore=self._kvstore,
-                               param_names=self._exec_group.param_names)
-
+        if self._update_on_kvstore:
+            _update_params_on_kvstore(self._exec_group.param_arrays,
+                                      self._exec_group.grad_arrays,
+                                      self._kvstore, self._exec_group.param_names)
         else:
-            if self._update_on_kvstore:
-                _update_params_on_kvstore(self._exec_group.param_arrays,
-                                          self._exec_group.grad_arrays,
-                                          self._kvstore)
-            else:
-                _update_params(self._exec_group.param_arrays,
-                               self._exec_group.grad_arrays,
-                               updater=self._updater,
-                               num_device=len(self._context),
-                               kvstore=self._kvstore)
+            _update_params(self._exec_group.param_arrays,
+                           self._exec_group.grad_arrays,
+                           updater=self._updater,
+                           num_device=len(self._context),
+                           kvstore=self._kvstore,
+                           param_names=self._exec_group.param_names)
 
     def get_outputs(self, merge_multi_context=True):
         """Get outputs of the previous forward computation.
@@ -748,7 +729,7 @@ class MutableModule(BaseModule):
     def __init__(self, symbol, data_names, label_names,
                  logger=logging, context=ctx.cpu(), work_load_list=None,
                  max_data_shapes=None, max_label_shapes=None, fixed_param_prefix=None,
-                 CUDA9=False, config=None):
+                 config=None):
         super(MutableModule, self).__init__(logger=logger)
         self.config = config
         self._symbol = symbol
@@ -770,12 +751,6 @@ class MutableModule(BaseModule):
                         fixed_param_names.append(name)
         self._fixed_param_names = fixed_param_names
         self._preload_opt_states = None
-
-        self._CUDA9 = CUDA9
-        if self._CUDA9:
-            print("**********MUTABLE MODULE CUDA9************")
-        else:
-            print("**********MUTABLE MODULE NOT CUDA9***********")
 
     def _reset_bind(self):
         self.binded = False
@@ -865,7 +840,7 @@ class MutableModule(BaseModule):
 
         module = Module(self._symbol, self._data_names, self._label_names, logger=self.logger,
                         context=self._context, work_load_list=self._work_load_list,
-                        fixed_param_names=self._fixed_param_names, CUDA9=self._CUDA9)
+                        fixed_param_names=self._fixed_param_names)
         module.bind([max_data_shapes for _ in xrange(len(self._context))], [max_label_shapes for _ in xrange(len(self._context))],
                     for_training, inputs_need_grad, force_rebind=False, shared_module=None)
         self._curr_module = module
@@ -1119,7 +1094,7 @@ class MutableModule(BaseModule):
             module = Module(self._symbol, self._data_names, self._label_names,
                             logger=self.logger, context=[self._context[i] for i in xrange(len(data_batch.provide_data))],
                             work_load_list=self._work_load_list,
-                            fixed_param_names=self._fixed_param_names, CUDA9=self._CUDA9)
+                            fixed_param_names=self._fixed_param_names)
             module.bind(data_batch.provide_data, data_batch.provide_label, self._curr_module.for_training,
                         self._curr_module.inputs_need_grad, force_rebind=False,
                         shared_module=self._curr_module)

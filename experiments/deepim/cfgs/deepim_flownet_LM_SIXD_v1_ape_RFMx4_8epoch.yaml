@@ -1,10 +1,7 @@
 ---
 MXNET_VERSION: "mxnet"
-CUDA9: True
 output_path: "./output/deepim_release/"
-symbol: flownet_SE3_ex_u2s16_iter_zoom_all_outer_with_mask
-#NUM_GPUS: 4
-NUM_GPUS: 1
+symbol: deepIM_flownet
 SCALES:
 - 480
 - 640
@@ -13,15 +10,12 @@ default:
   kvstore: device
 dataset:
   NUM_CLASSES: 1
-  dataset: LM6D_v1+LM6D_DATA_SYN_v1
-#  dataset: LM6D_DATA_SYN_v1
-  dataset_path: "./data/LINEMOD_6D/LM6d_converted/LM6d_render_v1"
-  image_set: train_v1_+train_v1_10k_
+  dataset: LM6D_REFINE+LM6D_REFINE_SYN
+  dataset_path: "./data/LINEMOD_6D/LM6d_converted/LM6d_refine"
+  image_set: train_+train_
   root_path: "./data/"
-#  test_image_set: train_10k_
-#  test_image_set: my_val_
-  test_image_set: yu_val_
-  model_dir: './data/LINEMOD_6D/LM6d_converted/models/'
+  test_image_set: PoseCNN_val_
+  model_dir: './data/LINEMOD_6D/LM6d_converted/LM6d_refine/models/'
   DEPTH_FACTOR: 1000
   NORMALIZE_FLOW: 20.0
   NORMALIZE_ROT: 1.0
@@ -95,7 +89,7 @@ TRAIN:
   INIT_MASK: 'box_gt'
   UPDATE_MASK: 'box_gt'
   MASK_DILATE: True
-  REPLACE_REAL_BG_RATIO: 0.0
+  REPLACE_OBSERVED_BG_RATIO: 0.0
   TENSORBOARD_LOG: True
 TEST:
   # size of images for each device
