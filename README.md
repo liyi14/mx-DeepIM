@@ -79,13 +79,13 @@ respectively.
    ``` 	
 4. MXNet from [the official repository](https://github.com/dmlc/mxnet).
 
-   *Option 1*: Use the prebuilt version following [the installation guide.](https://mxnet.incubator.apache.org/install/index.html?platform=Linux&language=Python&processor=GPU).
+   ***Option 1***: Use the prebuilt version following [the installation guide.](https://mxnet.incubator.apache.org/install/index.html?platform=Linux&language=Python&processor=GPU).
     ```
     nvcc --version
     pip install mxnet-cu90 # (change to your cuda version)
     ```
 
-   *Option 2*. Build MXNet from the source:
+   ***Option 2***. Build MXNet from the source following [the official manual](https://mxnet.incubator.apache.org/install/ubuntu_setup.html#manual-mxnet-installation):
 
     2.1 Clone MXNet and checkout to [MXNet@(commit fc9e70b)](https://github.com/dmlc/mxnet/tree/fc9e70b) by
 
