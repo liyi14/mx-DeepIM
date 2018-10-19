@@ -92,19 +92,25 @@ respectively.
     ```
     git clone --recursive https://github.com/dmlc/mxnet.git
     cd mxnet
-    git checkout fc9e70b
-    git submodule update
+    git checkout fc9e70b (optional)
+    git submodule update (optional)
     ```
     or use the latest master directly (code is tested under mxnet 1.2.0).
+    
+    2.2 Compile MXNet
+    ```
+    cd ${MXNET_ROOT}
+    make -j $(nproc) USE_OPENCV=1 USE_BLAS=openblas USE_CUDA=1 USE_CUDA_PATH=/usr/local/cuda USE_CUDNN=1
+    ```
 
-    2.2 Install the MXNet Python binding by
+    2.3 Install the MXNet Python binding by
 
-    ***Note: If you will actively switch between different versions of MXNet, please follow 2.3***
+    ***Note: If you will actively switch between different versions of MXNet, please follow 2.4***
     ```
     cd python
     sudo python setup.py install
     ```
-    2.3 For advanced users,
+    2.4 For advanced users,
     you may put your Python packge into `./external/mxnet/$(YOUR_MXNET_PACKAGE)`,
     and modify `MXNET_VERSION` in `./experiments/deepim/cfgs/*.yaml` to `$(YOUR_MXNET_PACKAGE)`.
     Thus you can switch among different versions of MXNet quickly.
