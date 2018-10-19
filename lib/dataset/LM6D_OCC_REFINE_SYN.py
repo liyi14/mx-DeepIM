@@ -15,7 +15,7 @@ from lib.utils.print_and_log import print_and_log
 from lib.utils.pose_error import *
 from lib.pair_matching.RT_transform import calc_rt_dist_m
 
-class LM6D_REFINE_SYN(IMDB):
+class LM6D_OCC_REFINE_SYN(IMDB):
     def __init__(self, cfg, image_set, root_path, devkit_path, class_name, result_path=None, mask_size=-1, binary_thresh=None, mask_syn_name=''):
         """
         fill basic information to initialize imdb
@@ -26,11 +26,11 @@ class LM6D_REFINE_SYN(IMDB):
         """
         #image_set = image_set[len(year) + 1 : len(image_set)]
         if len(mask_syn_name)>0:
-            super(LM6D_REFINE_SYN, self).__init__('LM6D_data_syn' + mask_syn_name, image_set, root_path, devkit_path, result_path)  # set self.name
+            super(LM6D_OCC_REFINE_SYN, self).__init__('LM6D_occ_data_syn' + mask_syn_name, image_set, root_path, devkit_path, result_path)  # set self.name
         else:
-            super(LM6D_REFINE_SYN, self).__init__('LM6D_data_syn', image_set, root_path, devkit_path, result_path)  # set self.name
+            super(LM6D_OCC_REFINE_SYN, self).__init__('LM6D_occ_data_syn', image_set, root_path, devkit_path, result_path)  # set self.name
         self.root_path = root_path
-        self.devkit_path = os.path.join(devkit_path, '../LM6d_refine_syn')
+        self.devkit_path = os.path.join(devkit_path, '../LM6d_occ_refine_syn')
         print('*******************lm6d data syn devkit path: {}'.format(self.devkit_path))
         self.gt_observed_data_path = os.path.join(self.devkit_path, 'data', 'gt_observed')
         self.observed_data_path = os.path.join(self.devkit_path, 'data', 'observed')
@@ -40,7 +40,7 @@ class LM6D_REFINE_SYN(IMDB):
         else:
             raise Exception("unknown prefix of "+image_set)
 
-        print('LM6d data syn v1 rendered path: {}'.format(self.rendered_data_path))
+        print('LM6d occ data syn v1 rendered path: {}'.format(self.rendered_data_path))
 
         if image_set.startswith('train'):
             self.phase = 'train'
@@ -135,21 +135,21 @@ class LM6D_REFINE_SYN(IMDB):
         if type == 'observed':
             depth_file = os.path.join(self.observed_data_path, index + '-depth.png')
         elif type == 'gt_observed':
-            depth_file = os.path.join(self.gt_observed_data_path, index + '-depth.png')
+            depth_file = os.path.join(self.gt_observed_data_path, cls_name, index + '-depth.png')
         elif type == 'rendered':
             depth_file = os.path.join(self.rendered_data_path, index + '-depth.png')
         if check:
             assert os.path.exists(depth_file), 'type:{}, Path does not exist: {}'.format(type, depth_file)
         return depth_file
 
-    def segmentation_path_from_index(self, index, type, check=True):
+    def segmentation_path_from_index(self, index, type, check=True, cls_name=''):
         """
         given image index, find out the full path of segmentation class
         :param index: index of a specific image
         :return: full path of segmentation class
         """
         if type == 'gt_observed':
-            seg_class_file = os.path.join(self.observed_data_path, index + '-label.png')
+            seg_class_file = os.path.join(self.observed_data_path, cls_name, index + '-label.png')
         elif type == 'rendered':
             seg_class_file = os.path.join(self.rendered_data_path, index + '-label.png')
         if check:
@@ -162,8 +162,10 @@ class LM6D_REFINE_SYN(IMDB):
         :param index: index of a specific image
         :return: full path of segmentation class
         """
-        if type == 'observed' or type == 'gt_observed':
-            pose_file = os.path.join(self.gt_observed_data_path, index + '-pose.txt')
+        if type == 'observed':
+            pose_file = os.path.join(self.gt_observed_data_path, cls_name, index + '-pose.txt')
+        elif type == 'gt_observed':
+            pose_file = os.path.join(self.gt_observed_data_path, cls_name, index + '-pose.txt')
         elif type == 'rendered':
             pose_file = os.path.join(self.rendered_data_path, index + '-pose.txt')
         assert os.path.exists(pose_file), 'type:{}, Path does not exist: {}'.format(type, pose_file)

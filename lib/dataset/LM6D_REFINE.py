@@ -16,7 +16,7 @@ from lib.utils.pose_error import *
 from lib.pair_matching.RT_transform import calc_rt_dist_m
 
 class LM6D_REFINE(IMDB):
-    def __init__(self, cfg, image_set, root_path, devkit_path, class_name, result_path=None, mask_size=-1, binary_thresh=None, mask_syn_name=''):
+    def __init__(self, cfg, image_set, root_path, devkit_path, class_name, result_path=None, mask_size=-1, binary_thresh=None):
         """
         fill basic information to initialize imdb
         :param image_set: train, val, PoseCNN_val, etc
@@ -42,8 +42,6 @@ class LM6D_REFINE(IMDB):
         self.mask_syn_path = ''
         if image_set.startswith('train'):
             self.phase = 'train'
-            if len(mask_syn_name) > 0:
-                self.mask_syn_path = os.path.join(devkit_path, 'data', mask_syn_name)
         elif image_set.startswith('my_val') or image_set.startswith('PoseCNN_val') or image_set.startswith('my_minival'):
             self.phase = 'val'
         else:
@@ -180,8 +178,8 @@ class LM6D_REFINE(IMDB):
     def gt_pairdb(self):
         """
         return ground truth match pair dataset
-        :return: imdb[pair_index]['image_real', 'image_rendered', 'height', 'width',
-                                  'pose_real', 'pose_est', 'flipped']
+        :return: imdb[pair_index]['image_observed', 'image_rendered', 'height', 'width',
+                                  'pose_observed', 'pose_est', 'flipped']
         """
         cache_file = os.path.join(self.cache_path, self.name + '_gt_pairdb.pkl')
         if os.path.exists(cache_file):
@@ -219,11 +217,11 @@ class LM6D_REFINE(IMDB):
         pair_rec['image_observed'] = self.image_path_from_index(pair_index[0], 'observed')
         # pair_rec['image_gt_observed'] = self.image_path_from_index(pair_index[0], 'gt_observed', cls_name=cls_name)
         pair_rec['image_rendered'] = self.image_path_from_index(pair_index[1], 'rendered')
-        size_real = cv2.imread(pair_rec['image_observed']).shape
+        size_observed = cv2.imread(pair_rec['image_observed']).shape
         size_rendered = cv2.imread(pair_rec['image_rendered']).shape
-        assert size_real==size_rendered
-        pair_rec['height'] = size_real[0]
-        pair_rec['width'] = size_real[1]
+        assert size_observed==size_rendered
+        pair_rec['height'] = size_observed[0]
+        pair_rec['width'] = size_observed[1]
         pair_rec['depth_observed'] = self.depth_path_from_index(pair_index[0], 'observed')
         pair_rec['depth_gt_observed'] = self.depth_path_from_index(pair_index[0], 'gt_observed', cls_name=cls_name)
         pair_rec['depth_rendered'] = self.depth_path_from_index(pair_index[1], 'rendered')

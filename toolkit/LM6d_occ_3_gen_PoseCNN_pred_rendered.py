@@ -174,3 +174,5 @@ if __name__=='__main__':
                     text_file.write("{}\n".format(x))
 
         print("{} done, failed in {} images: {}".format(class_name, len(fail_detect), fail_detect))
+
+    print("{} finished".format(__file__))

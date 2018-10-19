@@ -15,73 +15,92 @@ from lib.utils.print_and_log import print_and_log
 from lib.utils.pose_error import *
 from lib.pair_matching.RT_transform import calc_rt_dist_m
 
-class LM6D_REFINE_SYN(IMDB):
-    def __init__(self, cfg, image_set, root_path, devkit_path, class_name, result_path=None, mask_size=-1, binary_thresh=None, mask_syn_name=''):
+class LM6D_OCC_REFINE(IMDB):
+    def __init__(self, cfg, image_set, root_path, devkit_path, class_name, result_path=None, mask_size=-1, binary_thresh=None):
         """
         fill basic information to initialize imdb
-        :param image_set: 2007_trainval, 2007_test, etc
-        :param root_path: 'selective_search_data' and 'cache'
-        :param devkit_path: data and results
+        :param image_set: train, val, PoseCNN_val, etc
+        :param root_path: contains folders of different dataset related to LINEMOD_6D (seems useless now)
+        :param devkit_path: contains folders of data, image_set, etc
         :return: imdb object
         """
-        #image_set = image_set[len(year) + 1 : len(image_set)]
-        if len(mask_syn_name)>0:
-            super(LM6D_REFINE_SYN, self).__init__('LM6D_data_syn' + mask_syn_name, image_set, root_path, devkit_path, result_path)  # set self.name
-        else:
-            super(LM6D_REFINE_SYN, self).__init__('LM6D_data_syn', image_set, root_path, devkit_path, result_path)  # set self.name
+        super(LM6D_OCC_REFINE, self).__init__('LM6D_occ', image_set, root_path, devkit_path, result_path)
         self.root_path = root_path
-        self.devkit_path = os.path.join(devkit_path, '../LM6d_refine_syn')
-        print('*******************lm6d data syn devkit path: {}'.format(self.devkit_path))
-        self.gt_observed_data_path = os.path.join(self.devkit_path, 'data', 'gt_observed')
-        self.observed_data_path = os.path.join(self.devkit_path, 'data', 'observed')
-        self._linemod_path = self._get_default_path()
-        if image_set.startswith('train') or image_set.startswith('my_val') or image_set.startswith('my_minival'):
-            self.rendered_data_path = os.path.join(self.devkit_path, 'data', 'rendered')
+        self.devkit_path = devkit_path
+        self.gt_observed_data_path = os.path.join(devkit_path, 'data', 'gt_observed')
+        self.observed_data_path = os.path.join(devkit_path, 'data', 'observed')
+
+        if image_set.startswith('PoseCNN_val'):
+            self.rendered_data_path = os.path.join(devkit_path, 'data', 'rendered_val_PoseCNN')
+        elif image_set.startswith('train') or image_set.startswith('my_val') or image_set.startswith('my_minival'):
+            self.rendered_data_path = os.path.join(devkit_path, 'data', 'rendered')
         else:
             raise Exception("unknown prefix of "+image_set)
 
-        print('LM6d data syn v1 rendered path: {}'.format(self.rendered_data_path))
+        if image_set.startswith('yu_val') or image_set.startswith('my_val') \
+                or image_set.startswith('vis') or image_set.startswith('yu_vis') \
+                or image_set.startswith('test_vis'):
+            self.gt_observed_data_path = os.path.join(devkit_path, 'data', 'gt_observed/occ_test')
 
+
+        self.mask_syn_path = ''
         if image_set.startswith('train'):
             self.phase = 'train'
-        elif image_set.startswith('my_val') or image_set.startswith('my_minival'):
+        elif image_set.startswith('my_val') or image_set.startswith('PoseCNN_val') or image_set.startswith('my_minival'):
             self.phase = 'val'
         else:
             raise Exception("unknown prefix of "+image_set)
 
-        self.classes = ['ape', 'benchviseblue', 'cam', 'can', 'cat', 'driller',
-                      'duck', 'eggbox', 'glue', 'holepuncher',
-                      'iron', 'lamp', 'phone']
+        if image_set.startswith('yu_val') or image_set.startswith('test_vis'):
+            if os.path.exists(os.path.join(devkit_path, 'data', 'mask_Yu_v01')):
+                self.mask_est_path = os.path.join(devkit_path, 'data', 'mask_Yu_v01')
+            else:
+                self.mask_est_path = '' # os.path.join(devkit_path, 'data', 'mask_Yu_v01')
+        else:
+            self.mask_est_path = ''
+
+        self.idx2class = {1: 'ape',
+            # 2: 'benchviseblue',
+            # 4: 'camera',
+            5: 'can',
+            6: 'cat',
+            8: 'driller',
+            9: 'duck',
+            10: 'eggbox',
+            11: 'glue',
+            12: 'holepuncher',
+            # 13: 'iron',
+            # 14: 'lamp',
+            # 15: 'phone'
+            }
+        self.classes = self.idx2class.values()
+        self.classes.sort()
+
         self.cur_class = class_name
-        self.num_classes = len(self.classes)
+        self.num_classes = len(self.idx2class.keys())
         self.image_set_index = self.load_image_set_index()
         self.num_pairs = len(self.image_set_index)
         print('num_pairs', self.num_pairs)
         self.mask_size = mask_size
         self.binary_thresh = binary_thresh
 
-    def _get_default_path(self):
-        """
-        Return the default path where LOV is expected to be installed.
-        """
-        ROOT_DIR = os.path.join(os.path.dirname(__file__), '..', '..')
-        return os.path.join(ROOT_DIR, 'data', 'LINEMOD')
-
+        self._points = self._load_object_points()
+        self._diameters = self._load_object_diameter()
 
     def _load_object_points(self):
 
-        points = [[] for _ in xrange(len(self.classes))]
+        points = {}
 
-        for i in xrange(0, len(self.classes)):
-            point_file = os.path.join(self._linemod_path, 'models', self.classes[i], 'points.xyz')
+        for cls_idx, cls_name in self.idx2class.items():
+            point_file = os.path.join(self.devkit_path, 'models', cls_name, 'points.xyz')
             assert os.path.exists(point_file), 'Path does not exist: {}'.format(point_file)
-            points[i] = np.loadtxt(point_file)
+            points[cls_name] = np.loadtxt(point_file)
 
         return points
 
     def _load_object_diameter(self):
         diameters = {}
-        models_info_file = os.path.join(self._linemod_path, 'models', 'models_info.txt')
+        models_info_file = os.path.join(self.devkit_path, 'models', 'models_info.txt')
         assert os.path.exists(models_info_file), 'Path does not exist: {}'.format(models_info_file)
         with open(models_info_file, 'r') as f:
             for line in f:
@@ -92,6 +111,17 @@ class LM6D_REFINE_SYN(IMDB):
                 diameter = float(line_list[2])
                 cls_name = self.idx2class[cls_idx]
                 diameters[cls_name] = diameter / 1000.
+
+        return diameters
+
+    def _load_object_diameter_from_extent(self):
+        extent_file = os.path.join(self._linemod_path, 'extents.txt')
+        assert os.path.exists(extent_file), \
+            'Path does not exist: {}'.format(extent_file)
+        extents = np.loadtxt(extent_file)
+        diameters = {}
+        for i, cls_name in enumerate(self.classes):
+            diameters[cls_name] = np.linalg.norm(extents[i, :])
 
         return diameters
 
@@ -114,16 +144,12 @@ class LM6D_REFINE_SYN(IMDB):
         """
         if type == 'observed':
             image_file = os.path.join(self.observed_data_path, index + '-color.png')
-        # elif type == 'gt_observed':
-        #     image_file = os.path.join(self.gt_observed_data_path, index + '-color.png')
+        elif type == 'gt_observed':
+            image_file = os.path.join(self.gt_observed_data_path, cls_name, index.split('/')[1] + '-color.png')
         elif type == 'rendered':
             image_file = os.path.join(self.rendered_data_path, index + '-color.png')
         if check:
-            assert os.path.exists(image_file), \
-                'type: {}, path does not exist: {}, self.real_data_path:{}'.format(type,
-                                                                                   image_file,
-                                                                                   self.observed_data_path)
-
+            assert os.path.exists(image_file), 'type: {}, Path does not exist: {}'.format(type, image_file)
         return image_file
 
     def depth_path_from_index(self, index, type, check=True, cls_name=''):
@@ -135,7 +161,7 @@ class LM6D_REFINE_SYN(IMDB):
         if type == 'observed':
             depth_file = os.path.join(self.observed_data_path, index + '-depth.png')
         elif type == 'gt_observed':
-            depth_file = os.path.join(self.gt_observed_data_path, index + '-depth.png')
+            depth_file = os.path.join(self.gt_observed_data_path, cls_name, index.split('/')[1] + '-depth.png')
         elif type == 'rendered':
             depth_file = os.path.join(self.rendered_data_path, index + '-depth.png')
         if check:
@@ -148,12 +174,12 @@ class LM6D_REFINE_SYN(IMDB):
         :param index: index of a specific image
         :return: full path of segmentation class
         """
-        if type == 'gt_observed':
+        if type == 'observed' or type == 'gt_observed':
             seg_class_file = os.path.join(self.observed_data_path, index + '-label.png')
         elif type == 'rendered':
             seg_class_file = os.path.join(self.rendered_data_path, index + '-label.png')
         if check:
-            assert os.path.exists(seg_class_file), 'type:{}, Path does not exist: {}'.format(type, seg_class_file)
+            assert os.path.exists(seg_class_file), 'Path does not exist: {}'.format(seg_class_file)
         return seg_class_file
 
     def pose_from_index(self, index, type, cls_name=''):
@@ -163,7 +189,7 @@ class LM6D_REFINE_SYN(IMDB):
         :return: full path of segmentation class
         """
         if type == 'observed' or type == 'gt_observed':
-            pose_file = os.path.join(self.gt_observed_data_path, index + '-pose.txt')
+            pose_file = os.path.join(self.gt_observed_data_path, cls_name, index.split('/')[1] + '-pose.txt')
         elif type == 'rendered':
             pose_file = os.path.join(self.rendered_data_path, index + '-pose.txt')
         assert os.path.exists(pose_file), 'type:{}, Path does not exist: {}'.format(type, pose_file)
@@ -172,8 +198,8 @@ class LM6D_REFINE_SYN(IMDB):
     def gt_pairdb(self):
         """
         return ground truth match pair dataset
-        :return: imdb[pair_index]['image_real', 'image_rendered', 'height', 'width',
-                                  'pose_real', 'pose_est', 'flipped']
+        :return: imdb[pair_index]['image_observed', 'image_rendered', 'height', 'width',
+                                  'pose_observed', 'pose_est', 'flipped']
         """
         cache_file = os.path.join(self.cache_path, self.name + '_gt_pairdb.pkl')
         if os.path.exists(cache_file):
@@ -191,6 +217,11 @@ class LM6D_REFINE_SYN(IMDB):
 
         return gt_pairdb
 
+    def class2idx(self, class_name):
+        for k, v in self.idx2class.items():
+            if v == class_name:
+                return k
+
     def load_render_annotation(self, pair_index):
         """
 
@@ -200,19 +231,18 @@ class LM6D_REFINE_SYN(IMDB):
         """
         # from lib.utils.tictoc import tic,toc
         pair_rec = dict()
-        class_to_index = dict(zip(self.classes, range(self.num_classes)))
         cls_name = self.cur_class
         pair_rec['gt_class'] = cls_name
 
-        pair_rec['image_observed'] = self.image_path_from_index(pair_index[0], 'observed', cls_name=cls_name)
+        pair_rec['image_observed'] = self.image_path_from_index(pair_index[0], 'observed')
         # pair_rec['image_gt_observed'] = self.image_path_from_index(pair_index[0], 'gt_observed', cls_name=cls_name)
         pair_rec['image_rendered'] = self.image_path_from_index(pair_index[1], 'rendered')
-        size_real = cv2.imread(pair_rec['image_observed']).shape
+        size_observed = cv2.imread(pair_rec['image_observed']).shape
         size_rendered = cv2.imread(pair_rec['image_rendered']).shape
-        assert size_real==size_rendered
-        pair_rec['height'] = size_real[0]
-        pair_rec['width'] = size_real[1]
-        pair_rec['depth_observed'] = self.depth_path_from_index(pair_index[0], 'observed', cls_name=cls_name)
+        assert size_observed==size_rendered
+        pair_rec['height'] = size_observed[0]
+        pair_rec['width'] = size_observed[1]
+        pair_rec['depth_observed'] = self.depth_path_from_index(pair_index[0], 'observed')
         pair_rec['depth_gt_observed'] = self.depth_path_from_index(pair_index[0], 'gt_observed', cls_name=cls_name)
         pair_rec['depth_rendered'] = self.depth_path_from_index(pair_index[1], 'rendered')
 
@@ -220,11 +250,11 @@ class LM6D_REFINE_SYN(IMDB):
         pair_rec['pose_rendered'] = self.pose_from_index(pair_index[1], 'rendered')
 
         pair_rec['mask_gt_observed'] = self.segmentation_path_from_index(pair_index[0], 'gt_observed')
-        pair_rec['mask_idx'] = 1 if self.phase=='train' else class_to_index[pair_rec['gt_class']]+1 # test may be not this
+        pair_rec['mask_idx'] = self.class2idx(pair_rec['gt_class'])
 
         pair_rec['pair_flipped'] = False
         pair_rec['img_flipped'] = False
-        pair_rec['data_syn'] = True
+        pair_rec['data_syn'] = False
         return pair_rec
 
     def evaluate_flow(self, flow_pred, flow_gt, flow_type):
@@ -234,7 +264,6 @@ class LM6D_REFINE_SYN(IMDB):
         for i in range(len(flow_gt)):
             cur_flow_pred = flow_pred[i]
             cur_flow_gt = flow_gt[i][flow_type][0]
-            #cur_flow_pred = np.zeros(cur_flow_gt.shape) #for debug
             cur_flow_gt_vis = flow_gt[i][flow_type][1]
             x_diff = (cur_flow_gt[:,:,0]-cur_flow_pred[:,:,0])[cur_flow_gt_vis!=0]
             y_diff = (cur_flow_gt[:,:,1]-cur_flow_pred[:,:,1])[cur_flow_gt_vis!=0]
@@ -249,11 +278,7 @@ class LM6D_REFINE_SYN(IMDB):
         rot_thresh_list = np.arange(1, 11, 1)
         trans_thresh_list = np.arange(0.01, 0.11, 0.01)
         num_metric = len(rot_thresh_list)
-        if config.TEST.AVERAGE_ITERS and config.TEST.test_iter >= 4:
-            print_and_log('average last 2 and 4 iters', logger)
-            num_iter = config.TEST.test_iter + 2
-        else:
-            num_iter = config.TEST.test_iter
+        num_iter = config.TEST.test_iter
         rot_acc = np.zeros((self.num_classes, num_iter, num_metric))
         trans_acc = np.zeros((self.num_classes, num_iter, num_metric))
         space_acc = np.zeros((self.num_classes, num_iter, num_metric))
@@ -266,20 +291,7 @@ class LM6D_REFINE_SYN(IMDB):
             for iter_i in range(num_iter):
                 curr_poses_gt = all_poses_gt[cls_idx][0]
                 num = len(curr_poses_gt)
-                if config.TEST.AVERAGE_ITERS and config.TEST.test_iter >= 4:
-                    if iter_i == num_iter - 2:
-                        curr_poses_est = [
-                            0.5 * (all_poses_est[cls_idx][iter_i - 1][j] + all_poses_est[cls_idx][iter_i - 2][j])
-                            for j in range(num)]
-                    elif iter_i == num_iter - 1:
-                        curr_poses_est = [
-                            0.25 * (all_poses_est[cls_idx][iter_i - 2][j] + all_poses_est[cls_idx][iter_i - 3][j]
-                                    + all_poses_est[cls_idx][iter_i - 4][j] + all_poses_est[cls_idx][iter_i - 5][j])
-                            for j in range(num)]
-                    else:
-                        curr_poses_est = all_poses_est[cls_idx][iter_i]
-                else:
-                    curr_poses_est = all_poses_est[cls_idx][iter_i]
+                curr_poses_est = all_poses_est[cls_idx][iter_i]
 
                 cur_rot_rst = np.zeros((num, 1))
                 cur_trans_rst = np.zeros((num, 1))
@@ -290,12 +302,9 @@ class LM6D_REFINE_SYN(IMDB):
                         RT_z = np.array([[-1, 0, 0, 0], [0, -1, 0, 0], [0, 0, 1, 0]])
                         curr_pose_est_sym = se3_mul(curr_poses_est[j], RT_z)
                         r_dist_est, t_dist_est = calc_rt_dist_m(curr_pose_est_sym, curr_poses_gt[j])
-                        print('eggbox r_dist_est after symmetry: {}'.format(r_dist_est))
                     cur_rot_rst[j,0] = r_dist_est
                     cur_trans_rst[j,0] = t_dist_est
 
-                # cur_rot_rst = np.vstack(all_rot_err[cls_idx, iter_i])
-                # cur_trans_rst = np.vstack(all_trans_err[cls_idx, iter_i])
                 for thresh_idx in range(num_metric):
                     rot_acc[cls_idx, iter_i, thresh_idx] = np.mean(cur_rot_rst < rot_thresh_list[thresh_idx])
                     trans_acc[cls_idx, iter_i, thresh_idx] = np.mean(cur_trans_rst < trans_thresh_list[thresh_idx])
@@ -364,11 +373,7 @@ class LM6D_REFINE_SYN(IMDB):
         '''
         print_and_log('evaluating pose add', logger)
         eval_method = 'add'
-        if config.TEST.AVERAGE_ITERS and config.TEST.test_iter >= 4:
-            print_and_log('average last 2 and 4 iters', logger)
-            num_iter = config.TEST.test_iter + 2
-        else:
-            num_iter = config.TEST.test_iter
+        num_iter = config.TEST.test_iter
 
         count_all = np.zeros((self.num_classes,), dtype=np.float32)
         count_correct = {k: np.zeros((self.num_classes, num_iter), dtype=np.float32) for k in ['0.02', '0.05', '0.10']}
@@ -396,27 +401,14 @@ class LM6D_REFINE_SYN(IMDB):
             for iter_i in range(num_iter):
                 curr_poses_gt = all_poses_gt[cls_idx][0]
                 num = len(curr_poses_gt)
-                if config.TEST.AVERAGE_ITERS and config.TEST.test_iter >= 4:
-                    if iter_i == num_iter - 2:
-                        curr_poses_est = [
-                            0.5 * (all_poses_est[cls_idx][iter_i - 1][j] + all_poses_est[cls_idx][iter_i - 2][j])
-                            for j in range(num)]
-                    elif iter_i == num_iter - 1:
-                        curr_poses_est = [
-                            0.25 * (all_poses_est[cls_idx][iter_i - 2][j] + all_poses_est[cls_idx][iter_i - 3][j]
-                                    + all_poses_est[cls_idx][iter_i - 4][j] + all_poses_est[cls_idx][iter_i - 5][j])
-                            for j in range(num)]
-                    else:
-                        curr_poses_est = all_poses_est[cls_idx][iter_i]
-                else:
-                    curr_poses_est = all_poses_est[cls_idx][iter_i]
+                curr_poses_est = all_poses_est[cls_idx][iter_i]
 
                 for j in xrange(num):
                     if iter_i == 0:
                         count_all[cls_idx] += 1
                     RT = curr_poses_est[j]  # est pose
                     pose_gt = curr_poses_gt[j]  # gt pose
-                    if  cls_name == 'eggbox' or cls_name == 'glue':
+                    if  cls_name == 'eggbox' or cls_name == 'glue' or cls_name == 'bowl' or cls_name == 'cup':
                         eval_method = 'adi'
                         error = adi(RT[:3, :3], RT[:, 3], pose_gt[:3, :3], pose_gt[:, 3],
                                     self._points[cls_name])
@@ -448,7 +440,7 @@ class LM6D_REFINE_SYN(IMDB):
                 print_and_log("** {}, iter {} **".format(cls_name, iter_i + 1), logger)
                 from scipy.integrate import simps
                 area = simps(count_correct['mean'][cls_idx, iter_i] / float(count_all[cls_idx]),
-                             dx=dx) / 0.1
+                             dx = dx) / 0.1
 
                 fig = plt.figure()
                 x_s = np.arange(0, 0.1, dx).astype(np.float32)
@@ -479,7 +471,35 @@ class LM6D_REFINE_SYN(IMDB):
 
         with open(os.path.join(output_dir, '{}_xys.pkl'.format(eval_method)), 'wb') as f:
             cPickle.dump(plot_data, f, protocol=2)
+
         print_and_log("="*30, logger)
+
+        print(' ')
+        # overall performance of add
+        # iter sum of 'mean'
+        count_correct_mean_all = np.sum(count_correct['mean'], 0)
+        for iter_i in range(num_iter):
+            print_and_log("---------- add performance over {} classes -----------".format(num_valid_class), logger)
+            print_and_log("** iter {} **".format(iter_i + 1), logger)
+            area = simps(count_correct_mean_all[iter_i] / float(np.sum(count_all[:])),
+                                      dx=dx) / 0.1
+
+            print_and_log('threshold=[0.0, 0.10], area: {:.2f}'.format(area * 100), logger)
+            print_and_log('threshold=0.02, correct poses: {}, all poses: {}, accuracy: {:.2f}'.format(
+                np.sum(count_correct['0.02'][:, iter_i]),
+                np.sum(count_all[:]),
+                100 * float(np.sum(count_correct['0.02'][:, iter_i])) / float(np.sum(count_all[:]))), logger)
+            print_and_log('threshold=0.05, correct poses: {}, all poses: {}, accuracy: {:.2f}'.format(
+                np.sum(count_correct['0.05'][:, iter_i]),
+                np.sum(count_all[:]),
+                100 * float(np.sum(count_correct['0.05'][:, iter_i])) / float(np.sum(count_all[:]))), logger)
+            print_and_log('threshold=0.10, correct poses: {}, all poses: {}, accuracy: {:.2f}'.format(
+                np.sum(count_correct['0.10'][:, iter_i]),
+                np.sum(count_all[:]),
+                100 * float(np.sum(count_correct['0.10'][:, iter_i])) / float(np.sum(count_all[:]))), logger)
+            print(' ')
+
+        print_and_log("=" * 30, logger)
 
 
     def evaluate_pose_arp_2d(self, config, all_poses_est, all_poses_gt, output_dir, logger):
@@ -493,16 +513,13 @@ class LM6D_REFINE_SYN(IMDB):
         :return: 
         '''
         print_and_log('evaluating pose average re-projection 2d error', logger)
-        if config.TEST.AVERAGE_ITERS and config.TEST.test_iter >= 4:
-            print_and_log('average last 2 and 4 iters', logger)
-            num_iter = config.TEST.test_iter + 2
-        else:
-            num_iter = config.TEST.test_iter
+        num_iter = config.TEST.test_iter
         K = config.dataset.INTRINSIC_MATRIX
 
         count_all = np.zeros((self.num_classes,), dtype=np.float32)
-        count_correct = {k: np.zeros((self.num_classes, num_iter), dtype=np.float32) for k in ['5', '10', '20']}
+        count_correct = {k: np.zeros((self.num_classes, num_iter), dtype=np.float32) for k in ['2', '5', '10', '20']}
 
+        threshold_2 = np.zeros((self.num_classes, num_iter), dtype=np.float32)
         threshold_5 = np.zeros((self.num_classes, num_iter), dtype=np.float32)
         threshold_10 = np.zeros((self.num_classes, num_iter), dtype=np.float32)
         threshold_20 = np.zeros((self.num_classes, num_iter), dtype=np.float32)
@@ -513,6 +530,7 @@ class LM6D_REFINE_SYN(IMDB):
         count_correct['mean'] = np.zeros((self.num_classes, num_iter, num_thresh), dtype=np.float32)
 
         for i in xrange(self.num_classes):
+            threshold_2[i, :] = 2
             threshold_5[i, :] = 5
             threshold_10[i, :] = 10
             threshold_20[i, :] = 20
@@ -526,21 +544,7 @@ class LM6D_REFINE_SYN(IMDB):
             for iter_i in range(num_iter):
                 curr_poses_gt = all_poses_gt[cls_idx][0]
                 num = len(curr_poses_gt)
-                if config.TEST.AVERAGE_ITERS and config.TEST.test_iter >= 4:
-                    if iter_i == num_iter - 2:
-                        curr_poses_est = [
-                            0.5 * (all_poses_est[cls_idx][iter_i - 1][j] + all_poses_est[cls_idx][iter_i - 2][j])
-                            for j in range(num)]
-
-                    elif iter_i == num_iter - 1:
-                        curr_poses_est = [
-                            0.25 * (all_poses_est[cls_idx][iter_i - 2][j] + all_poses_est[cls_idx][iter_i - 3][j]
-                                    + all_poses_est[cls_idx][iter_i - 4][j] + all_poses_est[cls_idx][iter_i - 5][j])
-                            for j in range(num)]
-                    else:
-                        curr_poses_est = all_poses_est[cls_idx][iter_i]
-                else:
-                    curr_poses_est = all_poses_est[cls_idx][iter_i]
+                curr_poses_est = all_poses_est[cls_idx][iter_i]
 
                 for j in xrange(num):
                     if iter_i == 0:
@@ -553,11 +557,13 @@ class LM6D_REFINE_SYN(IMDB):
                         RT_z = np.array([[-1, 0, 0, 0], [0, -1, 0, 0], [0, 0, 1, 0]])
                         RT_sym = se3_mul(RT, RT_z)
                         error = arp_2d(RT_sym[:3, :3], RT_sym[:, 3], pose_gt[:3, :3], pose_gt[:, 3],
-                                    self._points[cls_name], K)
+                                       self._points[cls_name], K)
                     else:
                         error = arp_2d(RT[:3, :3], RT[:, 3], pose_gt[:3, :3], pose_gt[:, 3],
-                                    self._points[cls_name], K)
+                                       self._points[cls_name], K)
 
+                    if error < threshold_2[cls_idx, iter_i]:
+                        count_correct['2'][cls_idx, iter_i] += 1
                     if error < threshold_5[cls_idx, iter_i]:
                         count_correct['5'][cls_idx, iter_i] += 1
                     if error < threshold_10[cls_idx, iter_i]:
@@ -598,6 +604,10 @@ class LM6D_REFINE_SYN(IMDB):
                             dpi=fig.dpi)
 
                 print_and_log('threshold=[0, 50], area: {:.2f}'.format(area * 100), logger)
+                print_and_log('threshold=2, correct poses: {}, all poses: {}, accuracy: {:.2f}'.format(
+                    count_correct['2'][cls_idx, iter_i],
+                    count_all[cls_idx],
+                    100 * float(count_correct['2'][cls_idx, iter_i]) / float(count_all[cls_idx])), logger)
                 print_and_log('threshold=5, correct poses: {}, all poses: {}, accuracy: {:.2f}'.format(
                     count_correct['5'][cls_idx, iter_i],
                     count_all[cls_idx],
@@ -614,4 +624,34 @@ class LM6D_REFINE_SYN(IMDB):
 
         with open(os.path.join(output_dir, 'arp_2d_xys.pkl'), 'wb') as f:
             cPickle.dump(plot_data, f, protocol=2)
+        print_and_log("=" * 30, logger)
+
+        print(' ')
+        # overall performance of arp 2d
+        count_correct_mean_all = np.sum(count_correct['mean'], 0)
+        for iter_i in range(num_iter):
+            print_and_log("---------- arp 2d performance over {} classes -----------".format(num_valid_class), logger)
+            print_and_log("** iter {} **".format(iter_i + 1), logger)
+            area = simps(count_correct_mean_all[iter_i] / float(np.sum(count_all[:])),
+                         dx=dx) / (50.0)
+
+            print_and_log('threshold=[0, 50], area: {:.2f}'.format(area * 100), logger)
+            print_and_log('threshold=2, correct poses: {}, all poses: {}, accuracy: {:.2f}'.format(
+                np.sum(count_correct['2'][:, iter_i]),
+                np.sum(count_all[:]),
+                100 * float(np.sum(count_correct['2'][:, iter_i])) / float(np.sum(count_all[:]))), logger)
+            print_and_log('threshold=5, correct poses: {}, all poses: {}, accuracy: {:.2f}'.format(
+                np.sum(count_correct['5'][:, iter_i]),
+                np.sum(count_all[:]),
+                100 * float(np.sum(count_correct['5'][:, iter_i])) / float(np.sum(count_all[:]))), logger)
+            print_and_log('threshold=10, correct poses: {}, all poses: {}, accuracy: {:.2f}'.format(
+                np.sum(count_correct['10'][:, iter_i]),
+                np.sum(count_all[:]),
+                100 * float(np.sum(count_correct['10'][:, iter_i])) / float(np.sum(count_all[:]))), logger)
+            print_and_log('threshold=20, correct poses: {}, all poses: {}, accuracy: {:.2f}'.format(
+                np.sum(count_correct['20'][:, iter_i]),
+                np.sum(count_all[:]),
+                100 * float(np.sum(count_correct['20'][:, iter_i])) / float(np.sum(count_all[:]))), logger)
+            print_and_log(" ", logger)
+
         print_and_log("=" * 30, logger)
