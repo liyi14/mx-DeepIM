@@ -129,7 +129,7 @@ Any NVIDIA GPUs with at least 4GB memory should be OK.
 
 ## Installation
 
-1. Clone the DeepIM repository, and we'll call the directory that you cloned mx-DeepPose as ${DeepIM_ROOT}.
+1. Clone the DeepIM repository, and we'll call the directory that you cloned mx-DeepIM as ${DeepIM_ROOT}.
 ```
 git clone https://github.com/liyi14/mx-DeepIM.git
 ```
