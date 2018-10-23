@@ -484,12 +484,12 @@ def par_generate_gt(config, pair_rec, flow_depth_rendered=None):
         flow_depth_rendered, _ = resize(flow_depth_rendered, target_size, max_size)
 
     if 'depth_render_real' in pair_rec:
-        flow_depth_real = cv2.imread(pair_rec['depth_render_real'],
+        flow_depth_real = cv2.imread(pair_rec['depth_gt_observed'],
                                  cv2.IMREAD_UNCHANGED).astype(np.float32)
         flow_depth_real /= config.dataset.DEPTH_FACTOR
     else:
         print('not using render_real depth in par_generate_gt')
-        flow_depth_real = cv2.imread(pair_rec['depth_real'],
+        flow_depth_real = cv2.imread(pair_rec['depth_observed'],
                                  cv2.IMREAD_UNCHANGED).astype(np.float32)
         flow_depth_real /= config.dataset.DEPTH_FACTOR
 
@@ -502,28 +502,15 @@ def par_generate_gt(config, pair_rec, flow_depth_rendered=None):
         mask_observed, _ = resize(mask_observed, target_size, max_size)
         flow_depth_real[mask_observed != pair_rec['mask_idx']] = 0
 
-    if config.network.FLOW_I2R:
-        if config.FLOW_CLASS_AGNOSTIC:
-            flow_i2r, visible, _ = calc_flow(flow_depth_rendered, pair_rec['pose_rendered'], pair_rec['pose_observed'],
-                                             config.dataset.INTRINSIC_MATRIX, flow_depth_real,
-                                             standard_rep=config.network.STANDARD_FLOW_REP)
-            flow_i2r_list = [flow_i2r, visible, np.logical_and(visible == 0, flow_depth_rendered == 0)]
-        else:
-            raise Exception('NOT_IMPLEMENTED')
+    if config.network.PRED_FLOW:
+        flow_i2r, visible, _ = calc_flow(flow_depth_rendered, pair_rec['pose_rendered'], pair_rec['pose_observed'],
+                                         config.dataset.INTRINSIC_MATRIX, flow_depth_real,
+                                         standard_rep=config.network.STANDARD_FLOW_REP)
+        flow_i2r_list = [flow_i2r, visible, np.logical_and(visible == 0, flow_depth_rendered == 0)]
     else:
         flow_i2r_list = None
 
-    if config.network.FLOW_R2I:
-        if config.FLOW_CLASS_AGNOSTIC:
-            flow_r2i, visible, _ = calc_flow(flow_depth_real, pair_rec['pose_observed'], pair_rec['pose_rendered'],
-                                             config.dataset.INTRINSIC_MATRIX, flow_depth_rendered,
-                                             standard_rep=config.network.STANDARD_FLOW_REP)
-            flow_r2i_list = [flow_r2i, visible, np.logical_and(visible == 0, flow_depth_real == 0)]
-        else:
-            raise Exception('NOT_IMPLEMENTED')
-    else:
-        flow_r2i_list = None
-    return {'flow_i2r': flow_i2r_list, 'flow_r2i': flow_r2i_list}
+    return {'flow': flow_i2r_list}
 
 def calc_EPE_one_pair(flow_pred_list, flow_gt, flow_type):
     cur_flow_pred = flow_pred_list[flow_type]

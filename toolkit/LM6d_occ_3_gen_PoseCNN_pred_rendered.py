@@ -57,7 +57,7 @@ if __name__=='__main__':
 
     # config for external method results
     keyframe_path = "%s/{}_val.txt"%(os.path.join(LINEMOD_occ_root, 'image_set/observed'))
-    exMethod_pred_dir = os.path.join(cur_path, '../data/LINEMOD_6D/LM6d_converted/LM6d_occ_refine/{}_LINEMOD_6D_occ_results'.format(version))
+    exMethod_pred_dir = os.path.join(LINEMOD_occ_root, '{}_LINEMOD_6D_occ_results'.format(version))
 
     # output_path
     rendered_root_dir = os.path.join(LINEMOD_occ_root, 'data/rendered_val_{}'.format(version))
@@ -89,7 +89,7 @@ if __name__=='__main__':
         for idx, observed_index in enumerate(tqdm(observed_index_list)):
             rendered_dir = os.path.join(rendered_root_dir, video_name_list[idx], class_name)
             mkdir_if_missing(rendered_dir)
-            exMethod_idx = idx
+            exMethod_idx = int(observed_prefix_list[idx]) - 1
             exMethod_pred_file = os.path.join(exMethod_pred_dir, "{:04d}.mat".format(exMethod_idx))
             exMethod_pred = sio.loadmat(exMethod_pred_file)
             labels = exMethod_pred['rois'][:, 1] # 1: found; -1: not found
@@ -105,10 +105,8 @@ if __name__=='__main__':
                     pose_ori_q = exMethod_pred['poses'][proposal_idx].reshape(7)
                     pose_icp_q = exMethod_pred['poses_icp'][proposal_idx].reshape(7)
                     pose_ori_m = RT_transform.se3_q2m(pose_ori_q)
-                    pose_ori_q[:4] = RT_transform.mat2quat(pose_ori_m[:, :3])
                     pose_icp_m = RT_transform.se3_q2m(pose_icp_q)
-                    pose_icp_q[:4] = RT_transform.mat2quat(pose_icp_m[:, :3])
-    
+                    
                     pose_gt = meta_data['poses']
                     if len(pose_gt.shape)>2:
                         pose_gt = pose_gt[:, :, list(meta_data['cls_indexes'][0]).index(big_class_idx)]

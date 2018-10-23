@@ -144,8 +144,6 @@ class LM6D_OCC_REFINE(IMDB):
         """
         if type == 'observed':
             image_file = os.path.join(self.observed_data_path, index + '-color.png')
-        elif type == 'gt_observed':
-            image_file = os.path.join(self.gt_observed_data_path, cls_name, index.split('/')[1] + '-color.png')
         elif type == 'rendered':
             image_file = os.path.join(self.rendered_data_path, index + '-color.png')
         if check:
@@ -161,21 +159,24 @@ class LM6D_OCC_REFINE(IMDB):
         if type == 'observed':
             depth_file = os.path.join(self.observed_data_path, index + '-depth.png')
         elif type == 'gt_observed':
-            depth_file = os.path.join(self.gt_observed_data_path, cls_name, index.split('/')[1] + '-depth.png')
+            if self.phase == 'train':
+                depth_file = os.path.join(self.gt_observed_data_path, cls_name, index.split('/')[1] + '-depth.png')
+            elif self.phase == 'val':
+                depth_file = os.path.join(self.gt_observed_data_path, 'val', cls_name, index.split('/')[1] + '-depth.png')
         elif type == 'rendered':
             depth_file = os.path.join(self.rendered_data_path, index + '-depth.png')
         if check:
             assert os.path.exists(depth_file), 'type:{}, Path does not exist: {}'.format(type, depth_file)
         return depth_file
 
-    def segmentation_path_from_index(self, index, type, check=True):
+    def segmentation_path_from_index(self, index, type, cls_name='', check=True):
         """
         given image index, find out the full path of segmentation class
         :param index: index of a specific image
         :return: full path of segmentation class
         """
-        if type == 'observed' or type == 'gt_observed':
-            seg_class_file = os.path.join(self.observed_data_path, index + '-label.png')
+        if type == 'gt_observed':
+            seg_class_file = os.path.join(self.gt_observed_data_path, 'val', cls_name, index.split('/')[1] + '-label.png')
         elif type == 'rendered':
             seg_class_file = os.path.join(self.rendered_data_path, index + '-label.png')
         if check:
@@ -189,7 +190,10 @@ class LM6D_OCC_REFINE(IMDB):
         :return: full path of segmentation class
         """
         if type == 'observed' or type == 'gt_observed':
-            pose_file = os.path.join(self.gt_observed_data_path, cls_name, index.split('/')[1] + '-pose.txt')
+            if self.phase == 'train':
+                pose_file = os.path.join(self.gt_observed_data_path, cls_name, index.split('/')[1] + '-pose.txt')
+            elif self.phase =='val':
+                pose_file = os.path.join(self.gt_observed_data_path, 'val', cls_name, index.split('/')[1] + '-pose.txt')
         elif type == 'rendered':
             pose_file = os.path.join(self.rendered_data_path, index + '-pose.txt')
         assert os.path.exists(pose_file), 'type:{}, Path does not exist: {}'.format(type, pose_file)
@@ -249,7 +253,7 @@ class LM6D_OCC_REFINE(IMDB):
         pair_rec['pose_observed'] = self.pose_from_index(pair_index[0], 'observed', cls_name=cls_name)
         pair_rec['pose_rendered'] = self.pose_from_index(pair_index[1], 'rendered')
 
-        pair_rec['mask_gt_observed'] = self.segmentation_path_from_index(pair_index[0], 'gt_observed')
+        pair_rec['mask_gt_observed'] = self.segmentation_path_from_index(pair_index[0], 'gt_observed', cls_name=cls_name)
         pair_rec['mask_idx'] = self.class2idx(pair_rec['gt_class'])
 
         pair_rec['pair_flipped'] = False
