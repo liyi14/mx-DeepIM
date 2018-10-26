@@ -13,6 +13,8 @@ import os
 import math
 import numpy as np
 from scipy import spatial
+from scipy.linalg import logm
+import numpy.linalg as LA
 
 def transform_pts_Rt(pts, R, t):
     """
@@ -102,7 +104,7 @@ def adi(R_est, t_est, R_gt, t_gt, pts):
     e = nn_dists.mean()
     return e
 
-def re(R_est, R_gt):
+def re_old(R_est, R_gt):
     """
     Rotational Error.
 
@@ -116,6 +118,13 @@ def re(R_est, R_gt):
     error = math.acos(error_cos)
     error = 180.0 * error / np.pi # [rad] -> [deg]
     return error
+
+def re(R_est, R_gt):
+    assert (R_est.shape == R_gt.shape == (3, 3))
+    temp = logm(np.dot(np.transpose(R_est), R_gt))
+    rd_rad = LA.norm(temp, 'fro') / np.sqrt(2)
+    rd_deg = rd_rad / np.pi * 180
+    return rd_deg
 
 def te(t_est, t_gt):
     """
