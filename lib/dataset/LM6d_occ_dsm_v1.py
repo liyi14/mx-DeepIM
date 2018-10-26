@@ -269,7 +269,6 @@ class LM6D_occ_DSM_v1(IMDB):
         for i in range(len(flow_gt)):
             cur_flow_pred = flow_pred[i]
             cur_flow_gt = flow_gt[i][flow_type][0]
-            #cur_flow_pred = np.zeros(cur_flow_gt.shape) #for debug
             cur_flow_gt_vis = flow_gt[i][flow_type][1]
             x_diff = (cur_flow_gt[:,:,0]-cur_flow_pred[:,:,0])[cur_flow_gt_vis!=0]
             y_diff = (cur_flow_gt[:,:,1]-cur_flow_pred[:,:,1])[cur_flow_gt_vis!=0]
@@ -284,11 +283,7 @@ class LM6D_occ_DSM_v1(IMDB):
         rot_thresh_list = np.arange(1, 11, 1)
         trans_thresh_list = np.arange(0.01, 0.11, 0.01)
         num_metric = len(rot_thresh_list)
-        if config.TEST.AVERAGE_ITERS and config.TEST.test_iter >= 4:
-            print_and_log('average last 2 and 4 iters', logger)
-            num_iter = config.TEST.test_iter + 2
-        else:
-            num_iter = config.TEST.test_iter
+        num_iter = config.TEST.test_iter
         rot_acc = np.zeros((self.num_classes, num_iter, num_metric))
         trans_acc = np.zeros((self.num_classes, num_iter, num_metric))
         space_acc = np.zeros((self.num_classes, num_iter, num_metric))
@@ -301,20 +296,7 @@ class LM6D_occ_DSM_v1(IMDB):
             for iter_i in range(num_iter):
                 curr_poses_gt = all_poses_gt[cls_idx][0]
                 num = len(curr_poses_gt)
-                if config.TEST.AVERAGE_ITERS and config.TEST.test_iter >= 4:
-                    if iter_i == num_iter - 2:
-                        curr_poses_est = [
-                            0.5 * (all_poses_est[cls_idx][iter_i - 1][j] + all_poses_est[cls_idx][iter_i - 2][j])
-                            for j in range(num)]
-                    elif iter_i == num_iter - 1:
-                        curr_poses_est = [
-                            0.25 * (all_poses_est[cls_idx][iter_i - 2][j] + all_poses_est[cls_idx][iter_i - 3][j]
-                                    + all_poses_est[cls_idx][iter_i - 4][j] + all_poses_est[cls_idx][iter_i - 5][j])
-                            for j in range(num)]
-                    else:
-                        curr_poses_est = all_poses_est[cls_idx][iter_i]
-                else:
-                    curr_poses_est = all_poses_est[cls_idx][iter_i]
+                curr_poses_est = all_poses_est[cls_idx][iter_i]
 
                 cur_rot_rst = np.zeros((num, 1))
                 cur_trans_rst = np.zeros((num, 1))
@@ -325,7 +307,6 @@ class LM6D_occ_DSM_v1(IMDB):
                         RT_z = np.array([[-1, 0, 0, 0], [0, -1, 0, 0], [0, 0, 1, 0]])
                         curr_pose_est_sym = se3_mul(curr_poses_est[j], RT_z)
                         r_dist_est, t_dist_est = calc_rt_dist_m(curr_pose_est_sym, curr_poses_gt[j])
-                        print('eggbox r_dist_est after symmetry: {}'.format(r_dist_est))
                     cur_rot_rst[j,0] = r_dist_est
                     cur_trans_rst[j,0] = t_dist_est
 
@@ -397,11 +378,7 @@ class LM6D_occ_DSM_v1(IMDB):
         '''
         print_and_log('evaluating pose add', logger)
         eval_method = 'add'
-        if config.TEST.AVERAGE_ITERS and config.TEST.test_iter >= 4:
-            print_and_log('average last 2 and 4 iters', logger)
-            num_iter = config.TEST.test_iter + 2
-        else:
-            num_iter = config.TEST.test_iter
+        num_iter = config.TEST.test_iter
 
         count_all = np.zeros((self.num_classes,), dtype=np.float32)
         count_correct = {k: np.zeros((self.num_classes, num_iter), dtype=np.float32) for k in ['0.02', '0.05', '0.10']}
@@ -429,27 +406,14 @@ class LM6D_occ_DSM_v1(IMDB):
             for iter_i in range(num_iter):
                 curr_poses_gt = all_poses_gt[cls_idx][0]
                 num = len(curr_poses_gt)
-                if config.TEST.AVERAGE_ITERS and config.TEST.test_iter >= 4:
-                    if iter_i == num_iter - 2:
-                        curr_poses_est = [
-                            0.5 * (all_poses_est[cls_idx][iter_i - 1][j] + all_poses_est[cls_idx][iter_i - 2][j])
-                            for j in range(num)]
-                    elif iter_i == num_iter - 1:
-                        curr_poses_est = [
-                            0.25 * (all_poses_est[cls_idx][iter_i - 2][j] + all_poses_est[cls_idx][iter_i - 3][j]
-                                    + all_poses_est[cls_idx][iter_i - 4][j] + all_poses_est[cls_idx][iter_i - 5][j])
-                            for j in range(num)]
-                    else:
-                        curr_poses_est = all_poses_est[cls_idx][iter_i]
-                else:
-                    curr_poses_est = all_poses_est[cls_idx][iter_i]
+                curr_poses_est = all_poses_est[cls_idx][iter_i]
 
                 for j in xrange(num):
                     if iter_i == 0:
                         count_all[cls_idx] += 1
                     RT = curr_poses_est[j]  # est pose
                     pose_gt = curr_poses_gt[j]  # gt pose
-                    if  cls_name == 'eggbox' or cls_name == 'glue':
+                    if  cls_name == 'eggbox' or cls_name == 'glue' or cls_name == 'bowl' or cls_name == 'cup':
                         eval_method = 'adi'
                         error = adi(RT[:3, :3], RT[:, 3], pose_gt[:3, :3], pose_gt[:, 3],
                                     self._points[cls_name])
@@ -473,6 +437,10 @@ class LM6D_occ_DSM_v1(IMDB):
 
         plot_data = {}
 
+        sum_acc_mean = np.zeros(num_iter)
+        sum_acc_002 = np.zeros(num_iter)
+        sum_acc_005 = np.zeros(num_iter)
+        sum_acc_010 = np.zeros(num_iter)
         for cls_idx, cls_name in enumerate(self.classes):
             if count_all[cls_idx] == 0:
                 continue
@@ -481,7 +449,15 @@ class LM6D_occ_DSM_v1(IMDB):
                 print_and_log("** {}, iter {} **".format(cls_name, iter_i + 1), logger)
                 from scipy.integrate import simps
                 area = simps(count_correct['mean'][cls_idx, iter_i] / float(count_all[cls_idx]),
-                             dx=dx) / 0.1
+                             dx = dx) / 0.1
+                acc_mean = area * 100
+                sum_acc_mean[iter_i] += acc_mean
+                acc_002 = 100 * float(count_correct['0.02'][cls_idx, iter_i]) / float(count_all[cls_idx])
+                sum_acc_002[iter_i] += acc_002
+                acc_005 = 100 * float(count_correct['0.05'][cls_idx, iter_i]) / float(count_all[cls_idx])
+                sum_acc_005[iter_i] += acc_005
+                acc_010 = 100 * float(count_correct['0.10'][cls_idx, iter_i]) / float(count_all[cls_idx])
+                sum_acc_010[iter_i] += acc_010
 
                 fig = plt.figure()
                 x_s = np.arange(0, 0.1, dx).astype(np.float32)
@@ -495,24 +471,39 @@ class LM6D_occ_DSM_v1(IMDB):
                 plt.savefig(os.path.join(output_dir, 'acc_thres_{}_iter{}.png'.format(cls_name, iter_i + 1)),
                             dpi=fig.dpi)
 
-                print_and_log('threshold=[0.0, 0.10], area: {:.2f}'.format(area * 100), logger)
+                print_and_log('threshold=[0.0, 0.10], area: {:.2f}'.format(acc_mean), logger)
                 print_and_log('threshold=0.02, correct poses: {}, all poses: {}, accuracy: {:.2f}'.format(
                     count_correct['0.02'][cls_idx, iter_i],
-                    count_all[cls_idx],
-                    100 * float(count_correct['0.02'][cls_idx, iter_i]) / float(count_all[cls_idx])), logger)
+                    count_all[cls_idx], acc_002), logger)
                 print_and_log('threshold=0.05, correct poses: {}, all poses: {}, accuracy: {:.2f}'.format(
                     count_correct['0.05'][cls_idx, iter_i],
-                    count_all[cls_idx],
-                    100 * float(count_correct['0.05'][cls_idx, iter_i]) / float(count_all[cls_idx])), logger)
+                    count_all[cls_idx], acc_005), logger)
                 print_and_log('threshold=0.10, correct poses: {}, all poses: {}, accuracy: {:.2f}'.format(
                     count_correct['0.10'][cls_idx, iter_i],
-                    count_all[cls_idx],
-                    100 * float(count_correct['0.10'][cls_idx, iter_i]) / float(count_all[cls_idx])), logger)
+                    count_all[cls_idx], acc_010), logger)
                 print_and_log(" ", logger)
 
         with open(os.path.join(output_dir, '{}_xys.pkl'.format(eval_method)), 'wb') as f:
             cPickle.dump(plot_data, f, protocol=2)
+
         print_and_log("="*30, logger)
+
+        print(' ')
+        # overall performance of add
+        for iter_i in range(num_iter):
+            print_and_log("---------- add performance over {} classes -----------".format(num_valid_class), logger)
+            print_and_log("** iter {} **".format(iter_i + 1), logger)
+            print_and_log('threshold=[0.0, 0.10], area: {:.2f}'.format(
+                sum_acc_mean[iter_i] / num_valid_class), logger)
+            print_and_log('threshold=0.02, mean accuracy: {:.2f}'.format(
+                sum_acc_002[iter_i] / num_valid_class), logger)
+            print_and_log('threshold=0.05, mean accuracy: {:.2f}'.format(
+                sum_acc_005[iter_i] / num_valid_class), logger)
+            print_and_log('threshold=0.10, mean accuracy: {:.2f}'.format(
+                sum_acc_010[iter_i] / num_valid_class), logger)
+            print(' ')
+
+        print_and_log("=" * 30, logger)
 
 
     def evaluate_pose_arp_2d(self, config, all_poses_est, all_poses_gt, output_dir, logger):
@@ -526,16 +517,13 @@ class LM6D_occ_DSM_v1(IMDB):
         :return:
         '''
         print_and_log('evaluating pose average re-projection 2d error', logger)
-        if config.TEST.AVERAGE_ITERS and config.TEST.test_iter >= 4:
-            print_and_log('average last 2 and 4 iters', logger)
-            num_iter = config.TEST.test_iter + 2
-        else:
-            num_iter = config.TEST.test_iter
+        num_iter = config.TEST.test_iter
         K = config.dataset.INTRINSIC_MATRIX
 
         count_all = np.zeros((self.num_classes,), dtype=np.float32)
-        count_correct = {k: np.zeros((self.num_classes, num_iter), dtype=np.float32) for k in ['5', '10', '20']}
+        count_correct = {k: np.zeros((self.num_classes, num_iter), dtype=np.float32) for k in ['2', '5', '10', '20']}
 
+        threshold_2 = np.zeros((self.num_classes, num_iter), dtype=np.float32)
         threshold_5 = np.zeros((self.num_classes, num_iter), dtype=np.float32)
         threshold_10 = np.zeros((self.num_classes, num_iter), dtype=np.float32)
         threshold_20 = np.zeros((self.num_classes, num_iter), dtype=np.float32)
@@ -546,6 +534,7 @@ class LM6D_occ_DSM_v1(IMDB):
         count_correct['mean'] = np.zeros((self.num_classes, num_iter, num_thresh), dtype=np.float32)
 
         for i in xrange(self.num_classes):
+            threshold_2[i, :] = 2
             threshold_5[i, :] = 5
             threshold_10[i, :] = 10
             threshold_20[i, :] = 20
@@ -559,21 +548,7 @@ class LM6D_occ_DSM_v1(IMDB):
             for iter_i in range(num_iter):
                 curr_poses_gt = all_poses_gt[cls_idx][0]
                 num = len(curr_poses_gt)
-                if config.TEST.AVERAGE_ITERS and config.TEST.test_iter >= 4:
-                    if iter_i == num_iter - 2:
-                        curr_poses_est = [
-                            0.5 * (all_poses_est[cls_idx][iter_i - 1][j] + all_poses_est[cls_idx][iter_i - 2][j])
-                            for j in range(num)]
-
-                    elif iter_i == num_iter - 1:
-                        curr_poses_est = [
-                            0.25 * (all_poses_est[cls_idx][iter_i - 2][j] + all_poses_est[cls_idx][iter_i - 3][j]
-                                    + all_poses_est[cls_idx][iter_i - 4][j] + all_poses_est[cls_idx][iter_i - 5][j])
-                            for j in range(num)]
-                    else:
-                        curr_poses_est = all_poses_est[cls_idx][iter_i]
-                else:
-                    curr_poses_est = all_poses_est[cls_idx][iter_i]
+                curr_poses_est = all_poses_est[cls_idx][iter_i]
 
                 for j in xrange(num):
                     if iter_i == 0:
@@ -586,11 +561,13 @@ class LM6D_occ_DSM_v1(IMDB):
                         RT_z = np.array([[-1, 0, 0, 0], [0, -1, 0, 0], [0, 0, 1, 0]])
                         RT_sym = se3_mul(RT, RT_z)
                         error = arp_2d(RT_sym[:3, :3], RT_sym[:, 3], pose_gt[:3, :3], pose_gt[:, 3],
-                                    self._points[cls_name], K)
+                                       self._points[cls_name], K)
                     else:
                         error = arp_2d(RT[:3, :3], RT[:, 3], pose_gt[:3, :3], pose_gt[:, 3],
-                                    self._points[cls_name], K)
+                                       self._points[cls_name], K)
 
+                    if error < threshold_2[cls_idx, iter_i]:
+                        count_correct['2'][cls_idx, iter_i] += 1
                     if error < threshold_5[cls_idx, iter_i]:
                         count_correct['5'][cls_idx, iter_i] += 1
                     if error < threshold_10[cls_idx, iter_i]:
@@ -606,7 +583,11 @@ class LM6D_occ_DSM_v1(IMDB):
 
         # store plot data
         plot_data = {}
-
+        sum_acc_mean = np.zeros(num_iter)
+        sum_acc_02 = np.zeros(num_iter)
+        sum_acc_05 = np.zeros(num_iter)
+        sum_acc_10 = np.zeros(num_iter)
+        sum_acc_20 = np.zeros(num_iter)
         for cls_idx, cls_name in enumerate(self.classes):
             if count_all[cls_idx] == 0:
                 continue
@@ -616,6 +597,16 @@ class LM6D_occ_DSM_v1(IMDB):
                 from scipy.integrate import simps
                 area = simps(count_correct['mean'][cls_idx, iter_i] / float(count_all[cls_idx]),
                              dx=dx) / (50.0)
+                acc_mean = area * 100
+                sum_acc_mean[iter_i] += acc_mean
+                acc_02 = 100 * float(count_correct['2'][cls_idx, iter_i]) / float(count_all[cls_idx])
+                sum_acc_02[iter_i] += acc_02
+                acc_05 = 100 * float(count_correct['5'][cls_idx, iter_i]) / float(count_all[cls_idx])
+                sum_acc_05[iter_i] += acc_05
+                acc_10 = 100 * float(count_correct['10'][cls_idx, iter_i]) / float(count_all[cls_idx])
+                sum_acc_10[iter_i] += acc_10
+                acc_20 = 100 * float(count_correct['20'][cls_idx, iter_i]) / float(count_all[cls_idx])
+                sum_acc_20[iter_i] += acc_20
 
                 fig = plt.figure()
                 x_s = np.arange(0, 50, dx).astype(np.float32)
@@ -630,21 +621,41 @@ class LM6D_occ_DSM_v1(IMDB):
                 plt.savefig(os.path.join(output_dir, 'arp_2d_{}_iter{}.png'.format(cls_name, iter_i + 1)),
                             dpi=fig.dpi)
 
-                print_and_log('threshold=[0, 50], area: {:.2f}'.format(area * 100), logger)
+                print_and_log('threshold=[0, 50], area: {:.2f}'.format(acc_mean), logger)
+                print_and_log('threshold=2, correct poses: {}, all poses: {}, accuracy: {:.2f}'.format(
+                    count_correct['2'][cls_idx, iter_i],
+                    count_all[cls_idx], acc_02), logger)
                 print_and_log('threshold=5, correct poses: {}, all poses: {}, accuracy: {:.2f}'.format(
                     count_correct['5'][cls_idx, iter_i],
-                    count_all[cls_idx],
-                    100 * float(count_correct['5'][cls_idx, iter_i]) / float(count_all[cls_idx])), logger)
+                    count_all[cls_idx], acc_05), logger)
                 print_and_log('threshold=10, correct poses: {}, all poses: {}, accuracy: {:.2f}'.format(
                     count_correct['10'][cls_idx, iter_i],
-                    count_all[cls_idx],
-                    100 * float(count_correct['10'][cls_idx, iter_i]) / float(count_all[cls_idx])), logger)
+                    count_all[cls_idx], acc_10), logger)
                 print_and_log('threshold=20, correct poses: {}, all poses: {}, accuracy: {:.2f}'.format(
                     count_correct['20'][cls_idx, iter_i],
-                    count_all[cls_idx],
-                    100 * float(count_correct['20'][cls_idx, iter_i]) / float(count_all[cls_idx])), logger)
+                    count_all[cls_idx], acc_20), logger)
                 print_and_log(" ", logger)
 
         with open(os.path.join(output_dir, 'arp_2d_xys.pkl'), 'wb') as f:
             cPickle.dump(plot_data, f, protocol=2)
+        print_and_log("=" * 30, logger)
+
+        print(' ')
+        # overall performance of arp 2d
+        for iter_i in range(num_iter):
+            print_and_log("---------- arp 2d performance over {} classes -----------".format(num_valid_class), logger)
+            print_and_log("** iter {} **".format(iter_i + 1), logger)
+
+            print_and_log('threshold=[0, 50], area: {:.2f}'.format(
+                sum_acc_mean[iter_i] / num_valid_class), logger)
+            print_and_log('threshold=2, mean accuracy: {:.2f}'.format(
+                sum_acc_02[iter_i] / num_valid_class), logger)
+            print_and_log('threshold=5, mean accuracy: {:.2f}'.format(
+                sum_acc_05[iter_i] / num_valid_class), logger)
+            print_and_log('threshold=10, mean accuracy: {:.2f}'.format(
+                sum_acc_10[iter_i] / num_valid_class), logger)
+            print_and_log('threshold=20, mean accuracy: {:.2f}'.format(
+                sum_acc_20[iter_i] / num_valid_class), logger)
+            print_and_log(" ", logger)
+
         print_and_log("=" * 30, logger)
