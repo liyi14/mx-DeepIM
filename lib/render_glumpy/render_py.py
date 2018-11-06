@@ -55,12 +55,12 @@ class Render_Py():
         self.rgb_buffer = np.zeros((self.height, self.width, 4), dtype=np.float32)
         self.depth_buffer = np.zeros((self.height, self.width), dtype=np.float32)
 
-        log.info("Loading brain mesh")
+        log.info("Loading mesh")
         vertices, indices = data.objload("{}/textured.obj"
                                          .format(model_folder), rescale=False)
         self.render_kernel = gloo.Program(self.vertex, self.fragment)
         self.render_kernel.bind(vertices)
-        log.info("Loading brain texture")
+        log.info("Loading texture")
         self.render_kernel['u_texture'] = np.copy(data.load("{}/texture_map.png"
                                                             .format(model_folder))[::-1, :, :])
 
@@ -98,13 +98,13 @@ class Render_Py():
         rgb_gl = np.flipud(self.rgb_buffer)
         depth_gl = np.flipud(self.depth_buffer)
 
-        rgb_gl = rgb_gl[:, :, [2, 1, 0]]
-        rgb_gl *= 255
+        bgr_gl = rgb_gl[:, :, [2, 1, 0]] # convert to BGR format as cv2
+        bgr_gl *= 255
 
         depth_bg = depth_gl == 1
         depth_gl = 2*self.zFar*self.zNear / (self.zFar+self.zNear-(self.zFar-self.zNear)*(2*depth_gl-1))
-        depth_gl[depth_bg] = 0  # Convert to [0, 255]
-        return rgb_gl, depth_gl
+        depth_gl[depth_bg] = 0
+        return bgr_gl, depth_gl
 
     def __del__(self):
         self.window.close()

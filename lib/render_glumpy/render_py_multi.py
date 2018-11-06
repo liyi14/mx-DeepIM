@@ -55,7 +55,7 @@ class Render_Py():
         self.rgb_buffer = np.zeros((self.height, self.width, 4), dtype=np.float32)
         self.depth_buffer = np.zeros((self.height, self.width), dtype=np.float32)
 
-        log.info("Loading brain mesh")
+        log.info("Loading mesh")
         self.render_kernel_list = [[] for cls in classes]
         self.classes = classes
         self.cls_idx = 0
@@ -66,7 +66,7 @@ class Render_Py():
                                              .format(model_folder), rescale=False)
             render_kernel = gloo.Program(self.vertex, self.fragment)
             render_kernel.bind(vertices)
-            log.info("Loading brain texture")
+            log.info("Loading texture")
             render_kernel['u_texture'] = np.copy(data.load("{}/texture_map.png"
                                                                 .format(model_folder))[::-1, :, :])
 
@@ -101,11 +101,9 @@ class Render_Py():
         self.cls_idx = cls_idx
         self.render_kernel_list[cls_idx]['u_view'] = self._get_view_mtx(R, t)
 
-        # print('before: ', self.render_kernel_list[cls_idx]['u_projection'])
         if K is not None:
             u_projection = self.my_compute_calib_proj(K, self.width, self.height, self.zNear, self.zFar)
             self.render_kernel_list[cls_idx]['u_projection'] = np.copy(u_projection)
-            # print('after: ', self.render_kernel_list[cls_idx]['u_projection'])
 
         # import time
         # t = time.time()
@@ -116,13 +114,13 @@ class Render_Py():
         rgb_gl = np.flipud(self.rgb_buffer)
         depth_gl = np.flipud(self.depth_buffer)
 
-        rgb_gl = rgb_gl[:, :, [2, 1, 0]] # convert to BGR format as cv2
-        rgb_gl *= 255
+        bgr_gl = rgb_gl[:, :, [2, 1, 0]] # convert to BGR format as cv2
+        bgr_gl *= 255
 
         depth_bg = depth_gl == 1
         depth_gl = 2*self.zFar*self.zNear / (self.zFar+self.zNear-(self.zFar-self.zNear)*(2*depth_gl-1))
-        depth_gl[depth_bg] = 0  # Convert to [0, 255]
-        return rgb_gl, depth_gl
+        depth_gl[depth_bg] = 0
+        return bgr_gl, depth_gl
 
     def __del__(self):
         self.window.close()
@@ -157,6 +155,7 @@ class Render_Py():
 
 if __name__ == "__main__":
     import cv2
+    import matplotlib.pyplot as plt
 
     def mat2quat(M):
         # Qyx refers to the contribution of the y input vector component to
@@ -180,10 +179,10 @@ if __name__ == "__main__":
     cur_dir = os.path.abspath(os.path.dirname(__file__))
 
     classes = ['driller'] #'002_master_chef_can'
-    model_dir = os.path.join(cur_dir, '../../data/LINEMOD_Dataset/models/')
-    pose_path = os.path.join(cur_dir, '../../data/LINEMOD/LM_render_v1/data/render_real/{}/{}-pose.txt')
-    color_path = os.path.join(cur_dir, '../../data/LINEMOD/LM_render_v1/data/render_real/{}/{}-color.png')
-    depth_path = os.path.join(cur_dir, '../../data/LINEMOD/LM_render_v1/data/render_real/{}/{}-depth.png')
+    model_dir = os.path.join(cur_dir, '../../data/LINEMOD_6D/LM6d_converted/LM6d_refine/models/')
+    pose_path = os.path.join(cur_dir, '../../data/LINEMOD_6D/LM6d_converted/LM6d_refine/data/gt_observed/{}/{}-pose.txt')
+    color_path = os.path.join(cur_dir, '../../data/LINEMOD_6D/LM6d_converted/LM6d_refine/data/gt_observed/{}/{}-color.png')
+    depth_path = os.path.join(cur_dir, '../../data/LINEMOD_6D/LM6d_converted/LM6d_refine/data/gt_observed/{}/{}-depth.png')
     K = np.array([[572.4114, 0.0, 325.2611], [0.0, 573.57043, 242.04899], [0.0, 0.0, 1.0]])
 
     width = 640
@@ -194,39 +193,43 @@ if __name__ == "__main__":
 
     render_machine = Render_Py(model_dir, classes, K, width, height, ZNEAR, ZFAR)
     for idx in range(len(classes)):
+        # warm up
+        bgr_gl, _ = render_machine.render(idx, (0.5, 0.5, 0.5, 0.5), np.array([0, 0, 1]))
+        bgr_gl = bgr_gl.astype(np.uint8)
+        fig = plt.figure()
+        plt.axis('off')
+        fig.add_subplot(2, 3, 1)
+        plt.imshow(bgr_gl[:, :, [2, 1, 0]])
+        plt.show()
+
         cur_class = classes[idx]
         cur_img_idx = img_idx_list[idx]
         pose_real_est = np.loadtxt(pose_path.format(cur_class, cur_img_idx), skiprows=1)
         r_quat = mat2quat(pose_real_est[:, :3])
         t = pose_real_est[:, 3]
-        # warm up
-        rgb_gl, _ = render_machine.render(idx, (1 / 2, 1 / 2, 1 / 2, 1 / 2), t)
         import time
-
         start_t = time.time()
-        rgb_gl, depth_gl = render_machine.render(idx, r_quat, t)
+        bgr_gl, depth_gl = render_machine.render(idx, r_quat, t)
         print("using {} seconds".format(time.time() - start_t))
-        rgb_gl = rgb_gl.astype(np.uint8)
+        bgr_gl = bgr_gl.astype(np.uint8)
         c = np.dot(K, t)
         c_x = int(round(c[0]/c[2]))
         c_y = int(round(c[1]/c[2]))
-        rgb_gl[c_y, c_x, :] = np.array([255, 0, 0])
+        bgr_gl[c_y, c_x, :] = np.array([255, 0, 0])
 
-        rgb_pa = cv2.imread(color_path.format(cur_class, cur_img_idx),
+        bgr_pa = cv2.imread(color_path.format(cur_class, cur_img_idx),
                             cv2.IMREAD_COLOR)
         depth_pa = cv2.imread(depth_path.format(cur_class, cur_img_idx),
                             cv2.IMREAD_UNCHANGED).astype(np.float32) / 1000.0
 
-        import matplotlib.pyplot as plt
-
         fig = plt.figure()
         plt.axis('off')
         fig.add_subplot(2, 3, 1)
-        plt.imshow(rgb_gl)
+        plt.imshow(bgr_gl[:,:,[2,1,0]])
         fig.add_subplot(2, 3, 2)
-        plt.imshow(rgb_pa)
+        plt.imshow(bgr_pa[:,:,[2,1,0]])
         fig.add_subplot(2, 3, 3)
-        plt.imshow(rgb_gl - rgb_pa)
+        plt.imshow(bgr_gl - bgr_pa)
         fig.add_subplot(2, 3, 4)
         plt.imshow(depth_gl)
         fig.add_subplot(2, 3, 5)
