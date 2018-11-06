@@ -8,7 +8,7 @@ The major contributors of this repository include [Yi Li](https://github.com/liy
 ### Citing DeepIM
 If you find DeepIM useful in your research, please consider citing:
 ```
-@inproceedings{li2017deepim,
+@inproceedings{li2018deepim,
 title     = {DeepIM: Deep Iterative Matching for 6D Pose Estimation},
 author    = {Yi Li and Gu Wang and Xiangyang Ji and Yu Xiang and Dieter Fox},
 booktitle = {European Conference on Computer Vision (ECCV)},
