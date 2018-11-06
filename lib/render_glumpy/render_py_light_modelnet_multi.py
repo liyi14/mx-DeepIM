@@ -101,7 +101,7 @@ class Render_Py_Light_ModelNet_Multi():
                 render_kernel = gloo.Program(vertex, fragment)
                 render_kernel.bind(vertices)
 
-                log.info("Loading brain texture")
+                log.info("Loading texture")
                 render_kernel['u_texture'] = np.copy(data.load("{}"
                                                                .format(texture_path))[::-1, :, :])
 
@@ -158,7 +158,7 @@ class Render_Py_Light_ModelNet_Multi():
         rgb_gl.shape = 480, 640, 4
         rgb_gl = rgb_gl[::-1, :]
         rgb_gl = np.round(rgb_gl[:, :, :3] * 255).astype(np.uint8)  # Convert to [0, 255]
-        rgb_gl = rgb_gl[:, :, [2, 1, 0]]
+        bgr_gl = rgb_gl[:, :, [2, 1, 0]]
 
         depth_buffer = np.zeros((self.height, self.width), dtype=np.float32)
         gl.glReadPixels(0, 0, self.width, self.height, gl.GL_DEPTH_COMPONENT, gl.GL_FLOAT, depth_buffer)
@@ -168,7 +168,7 @@ class Render_Py_Light_ModelNet_Multi():
         depth_bg = depth_gl == 1
         depth_gl = 2 * self.zFar * self.zNear / (self.zFar + self.zNear - (self.zFar - self.zNear) * (2 * depth_gl - 1))
         depth_gl[depth_bg] = 0
-        return rgb_gl, depth_gl
+        return bgr_gl, depth_gl
 
     def __del__(self):
         self.window.close()
