@@ -4,7 +4,7 @@ The `./toolkit` folder contains scripts to prepare data.
 Download the dataset from [http://ptak.felk.cvut.cz/6DB/public/datasets/hinterstoisser/](http://ptak.felk.cvut.cz/6DB/public/datasets/hinterstoisser/).
 More specifically, only `test` have to be downloaded.
 (Only the `test` folder contains real images which are used for training and testing in previous works, including ours)
-Extract the `test` files to folder `$(DeepIM_root)/data/LM6d_origin`
+Extract the `test` files to folder `$(DeepIM_root)/data/LINEMOD_6D/LM6d_origin`
 
 Run these commands successively to prepare `LM6d_refine`:
 
