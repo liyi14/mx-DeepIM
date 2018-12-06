@@ -15,7 +15,7 @@ app.use('glfw')
 # Set logging level
 from glumpy.log import log
 import logging
-log.setLevel(logging.WARNING) # ERROR, WARNING, DEBUG, INFO
+log.setLevel(logging.WARNING)  # ERROR, WARNING, DEBUG, INFO
 
 # Color vertex shader
 #-------------------------------------------------------------------------------
@@ -47,7 +47,7 @@ void main() {
 """
 
 # Color fragment shader - flat shading
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 _color_fragment_flat_code = """
 uniform float u_light_ambient_w;
 uniform sampler2D u_texture;
@@ -76,7 +76,7 @@ void main() {
 """
 
 # Color fragment shader - Phong shading
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 _color_fragment_phong_code = """
 uniform float u_light_ambient_w;
 uniform sampler2D u_texture;
@@ -104,7 +104,7 @@ void main() {
 
 # Depth vertex shader
 # Ref: https://github.com/julienr/vertex_visibility/blob/master/depth.py
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Getting the depth from the depth buffer in OpenGL is doable, see here:
 #   http://web.archive.org/web/20130416194336/http://olivers.posterous.com/linear-depth-in-glsl-for-real
 #   http://web.archive.org/web/20130426093607/http://www.songho.ca/opengl/gl_projectionmatrix.html
@@ -133,7 +133,7 @@ void main() {
 """
 
 # Depth fragment shader
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 _depth_fragment_code = """
 varying float v_eye_depth;
 
@@ -142,24 +142,28 @@ void main() {
 }
 """
 
+
 # Functions to calculate transformation matrices
 # Note that OpenGL expects the matrices to be saved column-wise
 # (Ref: http://www.songho.ca/opengl/gl_transform.html)
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Model-view matrix
 def _compute_model_view(model, view):
     return np.dot(model, view)
+
 
 # Model-view-projection matrix
 def _compute_model_view_proj(model, view, proj):
     return np.dot(np.dot(model, view), proj)
 
+
 # Normal matrix (Ref: http://www.songho.ca/opengl/gl_normaltransform.html)
 def _compute_normal_matrix(model, view):
     return np.linalg.inv(np.dot(model, view)).T
 
+
 # Conversion of Hartley-Zisserman intrinsic matrix to OpenGL projection matrix
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Ref:
 # 1) https://strawlab.org/2011/11/05/augmented-reality-with-OpenGL
 # 2) https://github.com/strawlab/opengl-hz/blob/master/src/calib_test_utils.py
@@ -182,37 +186,48 @@ def _compute_calib_proj(K, x0, y0, w, h, nc, fc, window_coords='y_down'):
     # systems are the same
     if window_coords == 'y_up':
         proj = np.array([
-            [2 * K[0, 0] / w, -2 * K[0, 1] / w, (-2 * K[0, 2] + w + 2 * x0) / w, 0],
+            [
+                2 * K[0, 0] / w, -2 * K[0, 1] / w,
+                (-2 * K[0, 2] + w + 2 * x0) / w, 0
+            ],
             [0, -2 * K[1, 1] / h, (-2 * K[1, 2] + h + 2 * y0) / h, 0],
-            [0, 0, q, qn], # This row is standard glPerspective and sets near and far planes
+            [
+                0, 0, q, qn
+            ],  # This row is standard glPerspective and sets near and far planes
             [0, 0, -1, 0]
-        ]) # This row is also standard glPerspective
+        ])  # This row is also standard glPerspective
 
     # Draw the images right side up and modify the projection matrix so that OpenGL
     # will generate window coords that compensate for the flipped image coords
     else:
         assert window_coords == 'y_down'
         proj = np.array([
-            [2 * K[0, 0] / w, -2 * K[0, 1] / w, (-2 * K[0, 2] + w + 2 * x0) / w, 0],
+            [
+                2 * K[0, 0] / w, -2 * K[0, 1] / w,
+                (-2 * K[0, 2] + w + 2 * x0) / w, 0
+            ],
             [0, 2 * K[1, 1] / h, (2 * K[1, 2] - h + 2 * y0) / h, 0],
-            [0, 0, q, qn], # This row is standard glPerspective and sets near and far planes
+            [
+                0, 0, q, qn
+            ],  # This row is standard glPerspective and sets near and far planes
             [0, 0, -1, 0]
-        ]) # This row is also standard glPerspective
+        ])  # This row is also standard glPerspective
     return proj.T
 
-#-------------------------------------------------------------------------------
-def draw_color(shape, vertex_buffer, index_buffer, texture, mat_model, mat_view,
-               mat_proj, ambient_weight, bg_color, shading):
+
+# -------------------------------------------------------------------------------
+def draw_color(shape, vertex_buffer, index_buffer, texture, mat_model,
+               mat_view, mat_proj, ambient_weight, bg_color, shading):
 
     # Set shader for the selected shading
     if shading == 'flat':
         color_fragment_code = _color_fragment_flat_code
-    else: # 'phong'
+    else:  # 'phong'
         color_fragment_code = _color_fragment_phong_code
 
     program = gloo.Program(_color_vertex_code, color_fragment_code)
     program.bind(vertex_buffer)
-    program['u_light_eye_pos'] = [0, 0, 0] # Camera origin
+    program['u_light_eye_pos'] = [0, 0, 0]  # Camera origin
     program['u_light_ambient_w'] = ambient_weight
     program['u_mv'] = _compute_model_view(mat_model, mat_view)
     program['u_nm'] = _compute_normal_matrix(mat_model, mat_view)
@@ -225,8 +240,10 @@ def draw_color(shape, vertex_buffer, index_buffer, texture, mat_model, mat_view,
         program['u_texture'] = np.zeros((1, 1, 4), np.float32)
 
     # Frame buffer object
-    color_buf = np.zeros((shape[0], shape[1], 4), np.float32).view(gloo.TextureFloat2D)
-    depth_buf = np.zeros((shape[0], shape[1]), np.float32).view(gloo.DepthTexture)
+    color_buf = np.zeros((shape[0], shape[1], 4),
+                         np.float32).view(gloo.TextureFloat2D)
+    depth_buf = np.zeros((shape[0], shape[1]),
+                         np.float32).view(gloo.DepthTexture)
     fbo = gloo.FrameBuffer(color=color_buf, depth=depth_buf)
     fbo.activate()
 
@@ -258,13 +275,15 @@ def draw_color(shape, vertex_buffer, index_buffer, texture, mat_model, mat_view,
     gl.glReadPixels(0, 0, shape[1], shape[0], gl.GL_RGBA, gl.GL_FLOAT, rgb)
     rgb.shape = shape[0], shape[1], 4
     rgb = rgb[::-1, :]
-    rgb = np.round(rgb[:, :, :3] * 255).astype(np.uint8) # Convert to [0, 255]
+    rgb = np.round(rgb[:, :, :3] * 255).astype(np.uint8)  # Convert to [0, 255]
 
     fbo.deactivate()
 
     return rgb
 
-def draw_depth(shape, vertex_buffer, index_buffer, mat_model, mat_view, mat_proj):
+
+def draw_depth(shape, vertex_buffer, index_buffer, mat_model, mat_view,
+               mat_proj):
 
     program = gloo.Program(_depth_vertex_code, _depth_fragment_code)
     program.bind(vertex_buffer)
@@ -272,8 +291,10 @@ def draw_depth(shape, vertex_buffer, index_buffer, mat_model, mat_view, mat_proj
     program['u_mvp'] = _compute_model_view_proj(mat_model, mat_view, mat_proj)
 
     # Frame buffer object
-    color_buf = np.zeros((shape[0], shape[1], 4), np.float32).view(gloo.TextureFloat2D)
-    depth_buf = np.zeros((shape[0], shape[1]), np.float32).view(gloo.DepthTexture)
+    color_buf = np.zeros((shape[0], shape[1], 4),
+                         np.float32).view(gloo.TextureFloat2D)
+    depth_buf = np.zeros((shape[0], shape[1]),
+                         np.float32).view(gloo.DepthTexture)
     fbo = gloo.FrameBuffer(color=color_buf, depth=depth_buf)
     fbo.activate()
 
@@ -297,21 +318,32 @@ def draw_depth(shape, vertex_buffer, index_buffer, mat_model, mat_view, mat_proj
     gl.glReadPixels(0, 0, shape[1], shape[0], gl.GL_RGBA, gl.GL_FLOAT, depth)
     depth.shape = shape[0], shape[1], 4
     depth = depth[::-1, :]
-    depth = depth[:, :, 0] # Depth is saved in the first channel
+    depth = depth[:, :, 0]  # Depth is saved in the first channel
 
     fbo.deactivate()
 
     return depth
 
-#-------------------------------------------------------------------------------
-def render(model, im_size, K, R, t, clip_near=100, clip_far=2000,
-           texture=None, surf_color=None, bg_color=(0.0, 0.0, 0.0, 0.0),
-           ambient_weight=0.5, shading='flat', mode='rgb+depth'):
+
+# -------------------------------------------------------------------------------
+def render(model,
+           im_size,
+           K,
+           R,
+           t,
+           clip_near=100,
+           clip_far=2000,
+           texture=None,
+           surf_color=None,
+           bg_color=(0.0, 0.0, 0.0, 0.0),
+           ambient_weight=0.5,
+           shading='flat',
+           mode='rgb+depth'):
 
     # Process input data
-    #---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
     # Make sure vertices and faces are provided in the model
-    assert({'pts', 'faces'}.issubset(set(model.keys())))
+    assert ({'pts', 'faces'}.issubset(set(model.keys())))
 
     # Set texture / color of vertices
     if texture is not None:
@@ -324,14 +356,15 @@ def render(model, im_size, K, R, t, clip_near=100, clip_far=2000,
         texture_uv = np.zeros((model['pts'].shape[0], 2), np.float32)
         if not surf_color:
             if 'colors' in model.keys():
-                assert(model['pts'].shape[0] == model['colors'].shape[0])
+                assert (model['pts'].shape[0] == model['colors'].shape[0])
                 colors = model['colors']
                 if colors.max() > 1.0:
-                    colors /= 255.0 # Color values are expected in range [0, 1]
+                    colors /= 255.0  # Color values are expected in range [0, 1]
             else:
                 colors = np.ones((model['pts'].shape[0], 3), np.float32) * 0.5
         else:
-            colors = np.tile(list(surf_color) + [1.0], [model['pts'].shape[0], 1])
+            colors = np.tile(
+                list(surf_color) + [1.0], [model['pts'].shape[0], 1])
 
     # Set the vertex data
     if mode == 'depth':
@@ -343,39 +376,42 @@ def render(model, im_size, K, R, t, clip_near=100, clip_far=2000,
             vertices_type = [('a_position', np.float32, 3),
                              ('a_color', np.float32, colors.shape[1]),
                              ('a_texcoord', np.float32, 2)]
-            vertices = np.array(zip(model['pts'], colors, texture_uv),
-                                vertices_type)
-        else: # shading == 'phong'
+            vertices = np.array(
+                zip(model['pts'], colors, texture_uv), vertices_type)
+        else:  # shading == 'phong'
             vertices_type = [('a_position', np.float32, 3),
                              ('a_normal', np.float32, 3),
                              ('a_color', np.float32, colors.shape[1]),
                              ('a_texcoord', np.float32, 2)]
-            vertices = np.array(zip(model['pts'], model['normals'],
-                                    colors, texture_uv), vertices_type)
+            vertices = np.array(
+                zip(model['pts'], model['normals'], colors, texture_uv),
+                vertices_type)
 
     # Rendering
-    #---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
     render_rgb = mode in ['rgb', 'rgb+depth']
     render_depth = mode in ['depth', 'rgb+depth']
 
     # Model matrix
-    mat_model = np.eye(4, dtype=np.float32) # From object space to world space
+    mat_model = np.eye(4, dtype=np.float32)  # From object space to world space
 
     # View matrix (transforming also the coordinate system from OpenCV to
     # OpenGL camera space)
-    mat_view = np.eye(4, dtype=np.float32) # From world space to eye space
+    mat_view = np.eye(4, dtype=np.float32)  # From world space to eye space
     mat_view[:3, :3], mat_view[:3, 3] = R, t.squeeze()
     yz_flip = np.eye(4, dtype=np.float32)
     yz_flip[1, 1], yz_flip[2, 2] = -1, -1
-    mat_view = yz_flip.dot(mat_view) # OpenCV to OpenGL camera system
-    mat_view = mat_view.T # OpenGL expects column-wise matrix format
+    mat_view = yz_flip.dot(mat_view)  # OpenCV to OpenGL camera system
+    mat_view = mat_view.T  # OpenGL expects column-wise matrix format
 
     # Projection matrix
-    mat_proj = _compute_calib_proj(K, 0, 0, im_size[0], im_size[1], clip_near, clip_far)
+    mat_proj = _compute_calib_proj(K, 0, 0, im_size[0], im_size[1], clip_near,
+                                   clip_far)
 
     # Create buffers
     vertex_buffer = vertices.view(gloo.VertexBuffer)
-    index_buffer = model['faces'].flatten().astype(np.uint32).view(gloo.IndexBuffer)
+    index_buffer = model['faces'].flatten().astype(np.uint32).view(
+        gloo.IndexBuffer)
 
     # Create window
     # config = app.configuration.Configuration()
@@ -397,19 +433,20 @@ def render(model, im_size, K, R, t, clip_near=100, clip_far=2000,
         if render_rgb:
             # Render color image
             global rgb
-            rgb = draw_color(shape, vertex_buffer, index_buffer, texture, mat_model,
-                             mat_view, mat_proj, ambient_weight, bg_color, shading)
+            rgb = draw_color(shape, vertex_buffer, index_buffer, texture,
+                             mat_model, mat_view, mat_proj, ambient_weight,
+                             bg_color, shading)
         if render_depth:
             # Render depth image
             global depth
             depth = draw_depth(shape, vertex_buffer, index_buffer, mat_model,
                                mat_view, mat_proj)
 
-    app.run(framecount=0) # The on_draw function is called framecount+1 times
+    app.run(framecount=0)  # The on_draw function is called framecount+1 times
     window.close()
 
     # Set output
-    #---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
     if mode == 'rgb':
         return rgb
     elif mode == 'depth':
