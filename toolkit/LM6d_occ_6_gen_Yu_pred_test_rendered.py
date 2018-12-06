@@ -18,7 +18,7 @@ if __name__=='__main__':
     file_type_list = ['-color.png', '-depth.png', '-pose.txt']
 
     big_idx2class = {1: 'ape',
-                 # 2: 'benchviseblue',
+                 # 2: 'benchvise',
                  # 4: 'camera',
                  5: 'can',
                  6: 'cat',

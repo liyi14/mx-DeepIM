@@ -17,13 +17,13 @@ import cv2
 from tqdm import tqdm
 
 if __name__=='__main__':
-    class_name_list = ['__back_ground__', 'ape', 'benchviseblue',
+    class_name_list = ['__back_ground__', 'ape', 'benchvise',
                       'camera', 'can', 'cat', 'driller',
                       'duck', 'eggbox', 'glue', 'holepuncher',
                       'iron', 'lamp', 'phone']
     big_idx2class = {
         1: 'ape',
-        2: 'benchviseblue',
+        2: 'benchvise',
         4: 'camera',
         5: 'can',
         6: 'cat',
@@ -66,7 +66,7 @@ if __name__=='__main__':
     pair_set_dir = os.path.join(LINEMOD_root, 'image_set')
     mkdir_if_missing(rendered_root_dir)
     mkdir_if_missing(pair_set_dir)
-    
+
     all_pair = []
     for small_class_idx, class_name in enumerate(class_name_list):
         if class_name in ['__back_ground__']:

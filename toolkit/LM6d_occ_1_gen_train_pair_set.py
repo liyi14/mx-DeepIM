@@ -27,7 +27,7 @@ image_set_dir = os.path.join(cur_path, '..',
                              'data/LINEMOD_6D/LM6d_occ_render_v1/image_set')
 
 idx2class = {1: 'ape',
-            # 2: 'benchviseblue',
+            # 2: 'benchvise',
             # 4: 'camera',
             5: 'can',
             6: 'cat',

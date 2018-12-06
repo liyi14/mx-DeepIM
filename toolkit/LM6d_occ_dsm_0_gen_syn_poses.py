@@ -62,7 +62,7 @@ LOV_classes = ['__background__', '002_master_chef_can', '003_cracker_box', '004_
 
 
 idx2class = {1: 'ape',
-            # 2: 'benchviseblue',
+            # 2: 'benchvise',
             # 4: 'camera',
             5: 'can',
             6: 'cat',
@@ -85,7 +85,7 @@ def class2idx(class_name, idx2class=idx2class):
 classes = idx2class.values()
 classes.sort()
 
-def get_poses_from_meta(meta_path): 
+def get_poses_from_meta(meta_path):
     meta_data = sio.loadmat(meta_path)
     cls_idxs = meta_data['cls_indexes']
     poses = []

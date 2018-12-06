@@ -16,7 +16,7 @@ if __name__=='__main__':
 
     big_idx2class = {
         1: 'ape',
-        2: 'benchviseblue',
+        2: 'benchvise',
         4: 'camera',
         5: 'can',
         6: 'cat',

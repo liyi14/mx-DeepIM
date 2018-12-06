@@ -70,7 +70,7 @@ class LM6D_occ_v1(IMDB):
             self.mask_est_path = ''
 
         self.idx2class = {1: 'ape',
-            # 2: 'benchviseblue',
+            # 2: 'benchvise',
             # 4: 'camera',
             5: 'can',
             6: 'cat',

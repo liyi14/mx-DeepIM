@@ -21,7 +21,7 @@ real_set_dir = os.path.join(cur_path, '..', 'data', 'LINEMOD_6D/LM6d_occ_ds_mult
 render_real_dir = os.path.join(cur_path, '..', 'data', 'LINEMOD_6D/LM6d_occ_ds_multi/data/render_real')
 
 idx2class = {1: 'ape',
-            # 2: 'benchviseblue',
+            # 2: 'benchvise',
             # 4: 'camera',
             5: 'can',
             6: 'cat',
@@ -113,11 +113,11 @@ def check_real_render_real():
         color_rr = read_img(render_real_color_file, 3)
         depth_rr = read_img(render_real_depth_file, 1) / depth_factor
         label_rr = read_img(render_real_label_file, 1)
-        
+
         visible_pixels = np.sum(np.logical_and(label_r==classes.index(cls_name)+1, label_rr==1))
         all_pixels = np.sum(label_rr[label_rr==1])
         print('visible: {}, all: {}'.format(visible_pixels, all_pixels))
-        
+
         import matplotlib.pyplot as plt
         fig = plt.figure(figsize=(8, 6), dpi=120)
         plt.axis('off')
@@ -134,7 +134,7 @@ def check_real_render_real():
         plt.subplot(2, 3, 3)
         plt.imshow(label_r)
         plt.axis('off')
-        
+
         fig.add_subplot(2, 3, 4)
         plt.imshow(color_rr[:, :, [2, 1, 0]])
         plt.axis('off')

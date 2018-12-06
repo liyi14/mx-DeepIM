@@ -51,7 +51,7 @@ class LM6D_REFINE(IMDB):
 
         self.idx2class = {
                      1: 'ape',
-                     2: 'benchviseblue',
+                     2: 'benchvise',
                      3: 'bowl',
                      4: 'camera',
                      5: 'can',

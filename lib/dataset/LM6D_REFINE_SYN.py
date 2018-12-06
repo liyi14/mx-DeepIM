@@ -49,7 +49,7 @@ class LM6D_REFINE_SYN(IMDB):
         else:
             raise Exception("unknown prefix of "+image_set)
 
-        self.classes = ['ape', 'benchviseblue', 'cam', 'can', 'cat', 'driller',
+        self.classes = ['ape', 'benchvise', 'cam', 'can', 'cat', 'driller',
                       'duck', 'eggbox', 'glue', 'holepuncher',
                       'iron', 'lamp', 'phone']
         self.cur_class = class_name

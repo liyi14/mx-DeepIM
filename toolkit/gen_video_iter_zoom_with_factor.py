@@ -38,7 +38,7 @@ def my_cmp(x, y):
 
 idx2class = {
                      1: 'ape',
-                     2: 'benchviseblue',
+                     2: 'benchvise',
                      3: 'bowl',
                      4: 'camera',
                      5: 'can',
@@ -121,7 +121,7 @@ def main():
     print('exp_dir: ', exp_dir)
 
     ctx = mx.gpu(0)
-    pixel_means = np.array([0, 0, 0]) 
+    pixel_means = np.array([0, 0, 0])
     batch_size = 1
     height = 600
     width = 800
@@ -370,6 +370,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-

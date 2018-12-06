@@ -23,7 +23,7 @@ np.random.seed(2333)
 
 # =================== global settings ======================
 idx2class = {1: 'ape',
-             2: 'benchviseblue',
+             2: 'benchvise',
              # 3: 'bowl',
              4: 'camera',
              5: 'can',
@@ -134,4 +134,3 @@ for cls_idx, cls_name in enumerate(sel_classes):
         for x in pose_rendered:
             text_file.write("{}\n".format(' '.join(map(str, np.squeeze(x)))))
 print("{} finished".format(__file__))
-

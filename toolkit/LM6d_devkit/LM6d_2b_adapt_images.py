@@ -28,7 +28,7 @@ mkdir_if_missing(real_set_dir)
 print("target path: {}".format(real_set_dir))
 
 idx2class = {1: 'ape',
-            2: 'benchviseblue',
+            2: 'benchvise',
             3: 'bowl',
             4: 'camera',
             5: 'can',

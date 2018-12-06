@@ -26,7 +26,7 @@ from tqdm import tqdm
 
 if __name__=='__main__':
     idx2class = {1: 'ape',
-                 2: 'benchviseblue',
+                 2: 'benchvise',
                  # 3: 'bowl',
                  4: 'camera',
                  5: 'can',

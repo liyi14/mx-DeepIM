@@ -21,7 +21,7 @@ random.seed(2333)
 np.random.seed(2333)
 
 idx2class = {1: 'ape',
-             2: 'benchviseblue',
+             2: 'benchvise',
              # 3: 'bowl',
              4: 'camera',
              5: 'can',
@@ -238,4 +238,3 @@ if __name__=='__main__':
     # pose_dict, quat_stat, trans_stat, new_points = stat_poses()
     gen_poses()
     print("{} finished".format(__file__))
-

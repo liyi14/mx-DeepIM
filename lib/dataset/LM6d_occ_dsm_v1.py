@@ -57,7 +57,7 @@ class LM6D_occ_DSM_v1(IMDB):
             print("invalid, no yu_val in olm_data_syn")
 
         self.idx2class = {1: 'ape',
-                          # 2: 'benchviseblue',
+                          # 2: 'benchvise',
                           # 4: 'camera',
                           5: 'can',
                           6: 'cat',
@@ -82,7 +82,7 @@ class LM6D_occ_DSM_v1(IMDB):
         self.binary_thresh = binary_thresh
 
         self._points = self._load_object_points()
-        self._diameters = self._load_object_diameter()       
+        self._diameters = self._load_object_diameter()
 
     def class2idx(self, class_name):
         for k, v in self.idx2class.items():
