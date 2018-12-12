@@ -5,6 +5,8 @@
 # --------------------------------------------------------
 from __future__ import print_function, division
 import numpy as np
+
+
 class Symbol:
     def __init__(self):
         self.arg_shape_dict = None
@@ -34,12 +36,18 @@ class Symbol:
 
     def infer_shape(self, data_shape_dict):
         # infer shape
-        arg_shape, out_shape, aux_shape = self.sym.infer_shape(**data_shape_dict)
+        arg_shape, out_shape, aux_shape = self.sym.infer_shape(
+            **data_shape_dict)
         self.arg_shape_dict = dict(zip(self.sym.list_arguments(), arg_shape))
         self.out_shape_dict = dict(zip(self.sym.list_outputs(), out_shape))
-        self.aux_shape_dict = dict(zip(self.sym.list_auxiliary_states(), aux_shape))
+        self.aux_shape_dict = dict(
+            zip(self.sym.list_auxiliary_states(), aux_shape))
 
-    def check_parameter_shapes(self, arg_params, aux_params, data_shape_dict, is_train=True):
+    def check_parameter_shapes(self,
+                               arg_params,
+                               aux_params,
+                               data_shape_dict,
+                               is_train=True):
         for k in self.sym.list_arguments():
             if k in data_shape_dict or (False if is_train else 'label' in k):
                 continue

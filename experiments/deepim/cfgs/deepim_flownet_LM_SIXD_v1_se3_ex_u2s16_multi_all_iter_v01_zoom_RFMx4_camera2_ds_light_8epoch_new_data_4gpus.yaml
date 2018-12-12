@@ -112,7 +112,8 @@ TRAIN:
 TEST:
   # size of images for each device
   BATCH_PAIRS: 1
-  test_epoch: 8
+  # test_epoch: 8
+  test_epoch: 9
   VISUALIZE: False
   test_iter: 4
   FLIP_PAIR: False

@@ -62,4 +62,7 @@ def load_param(prefix, epoch, convert=False, ctx=None, process=False):
         tests = [k for k in arg_params.keys() if '_test' in k]
         for test in tests:
             arg_params[test.replace('_test', '')] = arg_params.pop(test)
+        i2rs = [k for k in arg_params.keys() if '_i2r' in k]
+        for i2r in i2rs:
+            arg_params[i2r.replace('_i2r', '')] = arg_params.pop(i2r)
     return arg_params, aux_params

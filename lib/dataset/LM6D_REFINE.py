@@ -123,7 +123,7 @@ class LM6D_REFINE(IMDB):
             for line in f:
                 line_list = line.strip().split()
                 cls_idx = int(line_list[0])
-                if not cls_idx in self.idx2class.keys():
+                if cls_idx not in self.idx2class.keys():
                     continue
                 diameter = float(line_list[2])
                 cls_name = self.idx2class[cls_idx]
@@ -370,14 +370,14 @@ class LM6D_REFINE(IMDB):
                 print_and_log("** iter {} **".format(iter_i + 1), logger)
                 print_and_log(
                     "{:<16}{:>8}: {:>7.2f}, {:>7.2f}, {:>7.2f}".format(
-                        'average_accuracy', '[{:>2}, {:>4}]'.format(-1, -1),
+                        'average_accuracy', '[{:>2}, {:>5.2f}]'.format(-1, -1),
                         np.mean(rot_acc[cls_idx, iter_i, :]) * 100,
                         np.mean(trans_acc[cls_idx, iter_i, :]) * 100,
                         np.mean(space_acc[cls_idx, iter_i, :]) * 100), logger)
                 for i, show_idx in enumerate(show_list):
                     print_and_log(
                         "{:>16}{:>8}: {:>7.2f}, {:>7.2f}, {:>7.2f}".format(
-                            'average_accuracy', '[{:>2}, {:>4}]'.format(
+                            'average_accuracy', '[{:>2}, {:>5.2f}]'.format(
                                 rot_thresh_list[show_idx],
                                 trans_thresh_list[show_idx]),
                             rot_acc[cls_idx, iter_i, show_idx] * 100,
@@ -398,7 +398,7 @@ class LM6D_REFINE(IMDB):
                 logger)
             print_and_log(
                 "{:<16}{:>8}: {:>7.2f}, {:>7.2f}, {:>7.2f}".format(
-                    'average_accuracy', '[{:>2}, {:>4}]'.format(-1, -1),
+                    'average_accuracy', '[{:>2}, {:>5.2f}]'.format(-1, -1),
                     np.sum(rot_acc[:, iter_i, :]) /
                     (num_valid_class * num_metric) * 100,
                     np.sum(trans_acc[:, iter_i, :]) /
@@ -408,7 +408,7 @@ class LM6D_REFINE(IMDB):
             for i, show_idx in enumerate(show_list):
                 print_and_log(
                     "{:>16}{:>8}: {:>7.2f}, {:>7.2f}, {:>7.2f}".format(
-                        'average_accuracy', '[{:>2}, {:>4}]'.format(
+                        'average_accuracy', '[{:>2}, {:>5.2f}]'.format(
                             rot_thresh_list[show_idx],
                             trans_thresh_list[show_idx]),
                         np.sum(rot_acc[:, iter_i, show_idx]) / num_valid_class
