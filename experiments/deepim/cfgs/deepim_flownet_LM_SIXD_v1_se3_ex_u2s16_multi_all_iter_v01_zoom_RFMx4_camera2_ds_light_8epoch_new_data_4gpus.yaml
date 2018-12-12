@@ -1,7 +1,10 @@
 ---
-MXNET_VERSION: "mxnet"
+MXNET_VERSION: "mxnet_v00_0303"
+CUDA9: True
 output_path: "./output/deepim_release/"
 symbol: deepIM_flownet
+# NUM_GPUS: 4
+# NUM_GPUS: 1
 SCALES:
 - 480
 - 640
@@ -11,9 +14,12 @@ default:
 dataset:
   NUM_CLASSES: 1
   dataset: LM6D_REFINE+LM6D_REFINE_SYN
+#  dataset: LM6D_DATA_SYN_v1
   dataset_path: "./data/LINEMOD_6D/LM6d_converted/LM6d_refine"
   image_set: train_+train_
   root_path: "./data/"
+#  test_image_set: train_10k_
+#  test_image_set: my_val_
   test_image_set: PoseCNN_val_
   model_dir: './data/LINEMOD_6D/LM6d_converted/LM6d_refine/models/'
   DEPTH_FACTOR: 1000
