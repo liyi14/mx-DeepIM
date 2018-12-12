@@ -1,8 +1,8 @@
-### DeepIM: Deep Iterative Matching for 6D Pose Estimation    
-Yi Li, Gu Wang, Xiangyang Ji, Yu Xiang and Dieter Fox.  
-In ECCV, 2018.    
+### DeepIM: Deep Iterative Matching for 6D Pose Estimation
+Yi Li, Gu Wang, Xiangyang Ji, Yu Xiang and Dieter Fox.
+In ECCV, 2018.
 [arXiv](https://arxiv.org/abs/1804.00175), [project page](https://rse-lab.cs.washington.edu/projects/deepim/)
-    
+
 The major contributors of this repository include [Yi Li](https://github.com/liyi14) and [Gu Wang](https://github.com/wangg12).
 
 ### Citing DeepIM
@@ -59,7 +59,7 @@ respectively.
 
 1. Python 2.7. We recommend using Anaconda. (python 3.x should also be OK.)
 2. GLFW for OpenGL:
-`sudo apt-get install libglfw3-dev libglfw3` (on Ubuntu 16.04)   
+`sudo apt-get install libglfw3-dev libglfw3` (on Ubuntu 16.04)
 3. Python packages might missing:
 	```
 	conda install scipy
@@ -76,7 +76,7 @@ respectively.
    git clone https://github.com/glumpy/glumpy.git
    cd glumpy
    pip install .
-   ``` 	
+   ```
 4. MXNet from [the official repository](https://github.com/dmlc/mxnet).
 
    ***Option 1***: Use the prebuilt version following [the installation guide.](https://mxnet.incubator.apache.org/install/index.html?platform=Linux&language=Python&processor=GPU).
@@ -96,7 +96,7 @@ respectively.
     git submodule update (optional)
     ```
     or use the latest master directly (code is tested under mxnet 1.2.0).
-    
+
     2.2 Compile MXNet
     ```
     cd ${MXNET_ROOT}
@@ -116,10 +116,10 @@ respectively.
     Thus you can switch among different versions of MXNet quickly.
 5. Use tensorboard to visualize loss:
 
-    Install [mxboard](https://github.com/awslabs/mxboard) 
+    Install [mxboard](https://github.com/awslabs/mxboard)
     following [https://github.com/awslabs/mxboard#installation](https://github.com/awslabs/mxboard#installation).
-    
-    ``pip install mxboard`` 
+
+    ``pip install mxboard``
 
 
 
@@ -140,21 +140,21 @@ git clone https://github.com/liyi14/mx-DeepIM.git
     (**Note:** For python3, need to install pytorch first to jit compile flow_c module.)
 
     2.2 (Optional) Delete the data folder and link (i.e. `ln -sf`) the root folder of data to `./data`.
-    
-     
+
+
 
 ## Preparation for Training & Testing
 
 
 1. Prepare datasets, see `./toolkit/` and [prepare_data.md](./prepare_data.md) for details.
-   
+
     The datasets should be put in folder:
 	```
 	./data/
 	```
 
 2. Please download FlowNet model manually from [Google Drive](https://drive.google.com/open?id=1wU1QkG5h5Yyg0G-l9SjoGOIzUgLT4ntR)
- or [Baidu NetDisk](https://pan.baidu.com/s/1qjLw8_gNzcywbWXa2NK9ig) (password: shga), 
+ or [Baidu NetDisk](https://pan.baidu.com/s/1qjLw8_gNzcywbWXa2NK9ig) (password: shga),
 and put it under folder `./model`. Make sure it looks like this:
 	```
 	./model/pretrained_model/flownet-0000.params
@@ -178,6 +178,8 @@ and put it under folder `./model`. Make sure it looks like this:
     sh train_and_test_deepim_all.sh
     ```
     to train and test the model on all categories.
+
+    Trained weights for LINEMOD and Occlusion LINEMOD can be found [here, Google Drive](https://drive.google.com/drive/folders/1BR_RN5jg9YgzTRwpI-MWjF9-KWTlzVe3).
 3. Please find more details in config files and in our code.
 
 ## Misc.
@@ -185,6 +187,3 @@ and put it under folder `./model`. Make sure it looks like this:
 Code has been tested under:
 
 - Ubuntu 14.04/16.04 with 4 GTX 1080Ti GPUs or a single GTX 1070 GPU
-
-
-

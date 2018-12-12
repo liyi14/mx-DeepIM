@@ -11,9 +11,6 @@ from easydict import EasyDict as edict
 config = edict()
 
 config.MXNET_VERSION = ''
-config.CUDA9 = True
-config.ModelNet = False
-config.modelnet_root = './data/ModelNet/'
 
 config.output_path = ''
 config.symbol = ''
