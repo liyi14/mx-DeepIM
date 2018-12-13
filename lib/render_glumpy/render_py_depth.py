@@ -5,7 +5,7 @@
 # --------------------------------------------------------
 from __future__ import print_function, division
 import numpy as np
-from glumpy import app, gl, gloo, glm, data, log
+from glumpy import app, gl, gloo, data, log
 import logging
 
 log.setLevel(logging.WARNING)  # ERROR, WARNING, DEBUG, INFO
@@ -30,7 +30,7 @@ void main()
 """
 
 fragment = """
-uniform sampler2D u_texture;  // Texture 
+uniform sampler2D u_texture;  // Texture
 varying vec2      v_texcoord; // Interpolated fragment texture coordinates (in)
 
 void main()
@@ -45,7 +45,13 @@ void main()
 
 
 class Render_Py_depth():
-    def __init__(self, model_folder, K, width=640, height=480, zNear=0.25, zFar=6.0):
+    def __init__(self,
+                 model_folder,
+                 K,
+                 width=640,
+                 height=480,
+                 zNear=0.25,
+                 zFar=6.0):
         self.width = width
         self.height = height
         self.zNear = zNear
@@ -54,19 +60,21 @@ class Render_Py_depth():
         self.model_folder = model_folder
 
         log.info("Loading mesh")
-        vertices, indices = data.objload("{}/textured.obj"
-                                         .format(model_folder), rescale=False)
+        vertices, indices = data.objload(
+            "{}/textured.obj".format(model_folder), rescale=False)
         self.render_kernel = gloo.Program(vertex, fragment)
         self.render_kernel.bind(vertices)
         log.info("Loading texture")
-        self.render_kernel['u_texture'] = np.copy(data.load("{}/texture_map.png"
-                                                            .format(model_folder))[::-1, :, :])
+        self.render_kernel['u_texture'] = np.copy(
+            data.load("{}/texture_map.png".format(model_folder))[::-1, :, :])
 
         self.render_kernel['u_model'] = np.eye(4, dtype=np.float32)
-        u_projection = self.my_compute_calib_proj(K, width, height, zNear, zFar)
+        u_projection = self.my_compute_calib_proj(K, width, height, zNear,
+                                                  zFar)
         self.render_kernel['u_projection'] = np.copy(u_projection)
 
         self.window = app.Window(width=width, height=height, visible=False)
+
         @self.window.event
         def on_draw(dt):
             global trans
@@ -87,21 +95,26 @@ class Render_Py_depth():
         self.render_kernel['u_view'] = self._get_view_mtx(R, t)
         app.run(framecount=0)
         rgb_buffer = np.zeros((self.height, self.width, 4), dtype=np.float32)
-        gl.glReadPixels(0, 0, self.width, self.height, gl.GL_RGBA, gl.GL_FLOAT, rgb_buffer)
+        gl.glReadPixels(0, 0, self.width, self.height, gl.GL_RGBA, gl.GL_FLOAT,
+                        rgb_buffer)
 
         rgb_gl = np.copy(rgb_buffer)
         rgb_gl.shape = 480, 640, 4
         rgb_gl = rgb_gl[::-1, :]
-        rgb_gl = np.round(rgb_gl[:, :, :3] * 255).astype(np.uint8)  # Convert to [0, 255]
+        rgb_gl = np.round(rgb_gl[:, :, :3] * 255).astype(
+            np.uint8)  # Convert to [0, 255]
         bgr_gl = rgb_gl[:, :, [2, 1, 0]]
 
         depth_buffer = np.zeros((self.height, self.width), dtype=np.float32)
-        gl.glReadPixels(0, 0, self.width, self.height, gl.GL_DEPTH_COMPONENT, gl.GL_FLOAT, depth_buffer)
+        gl.glReadPixels(0, 0, self.width, self.height, gl.GL_DEPTH_COMPONENT,
+                        gl.GL_FLOAT, depth_buffer)
         depth_gl = np.copy(depth_buffer)
         depth_gl.shape = 480, 640
         depth_gl = depth_gl[::-1, :]
         depth_bg = depth_gl == 1
-        depth_gl = 2*self.zFar*self.zNear / (self.zFar+self.zNear-(self.zFar-self.zNear)*(2*depth_gl-1))
+        depth_gl = 2 * self.zFar * self.zNear / (self.zFar + self.zNear -
+                                                 (self.zFar - self.zNear) *
+                                                 (2 * depth_gl - 1))
         depth_gl[depth_bg] = 0
         return bgr_gl, depth_gl
 
@@ -146,12 +159,10 @@ if __name__ == "__main__":
         # M[0,1].  The notation is from the Wikipedia article.
         Qxx, Qyx, Qzx, Qxy, Qyy, Qzy, Qxz, Qyz, Qzz = M.flat
         # Fill only lower half of symmetric matrix
-        K = np.array([
-            [Qxx - Qyy - Qzz, 0, 0, 0],
-            [Qyx + Qxy, Qyy - Qxx - Qzz, 0, 0],
-            [Qzx + Qxz, Qzy + Qyz, Qzz - Qxx - Qyy, 0],
-            [Qyz - Qzy, Qzx - Qxz, Qxy - Qyx, Qxx + Qyy + Qzz]]
-        ) / 3.0
+        K = np.array(
+            [[Qxx - Qyy - Qzz, 0, 0, 0], [Qyx + Qxy, Qyy - Qxx - Qzz, 0, 0],
+             [Qzx + Qxz, Qzy + Qyz, Qzz - Qxx - Qyy, 0],
+             [Qyz - Qzy, Qzx - Qxz, Qxy - Qyx, Qxx + Qyy + Qzz]]) / 3.0
         # Use Hermitian eigenvectors, values for speed
         vals, vecs = np.linalg.eigh(K)
         # Select largest eigenvector, reorder to w,x,y,z quaternion
@@ -163,10 +174,14 @@ if __name__ == "__main__":
         return q
 
     class_name = '002_master_chef_can'
-    model_dir = '/home/yili/PoseEst/mx-DeepPose/data/LOV/models/{}'.format(class_name)
-    pose_path = '/home/yili/PoseEst/render/synthesize/train/%s/{}_pose.txt' % (class_name)
-    color_path = '/home/yili/PoseEst/render/synthesize/train/%s/{}_color.png' % (class_name)
-    depth_path = '/home/yili/PoseEst/render/synthesize/train/%s/{}_depth.png' % (class_name)
+    model_dir = '/home/yili/PoseEst/mx-DeepPose/data/LOV/models/{}'.format(
+        class_name)
+    pose_path = '/home/yili/PoseEst/render/synthesize/train/%s/{}_pose.txt' % (
+        class_name)
+    color_path = '/home/yili/PoseEst/render/synthesize/train/%s/{}_color.png' % (
+        class_name)
+    depth_path = '/home/yili/PoseEst/render/synthesize/train/%s/{}_depth.png' % (
+        class_name)
     width = 640
     height = 480
     K = np.array([[1066.778, 0, 312.9869], [0, 1067.487, 241.3109], [0, 0, 1]])
@@ -187,12 +202,12 @@ if __name__ == "__main__":
     print(depth_gl.shape, np.max(depth_gl))
     print("using {} seconds".format(time.time() - start_t))
 
-    rgb_pa = cv2.imread('/home/yili/PoseEst/render/synthesize/train/002_master_chef_can/{}_color.png'.format(idx),
-                        cv2.IMREAD_COLOR)
-    rgb_pa = cv2.imread(color_path.format(idx),
-                        cv2.IMREAD_COLOR)
-    depth_pa = cv2.imread(depth_path.format(idx),
-                          cv2.IMREAD_UNCHANGED).astype(np.float32)/10000.0
+    rgb_pa = cv2.imread(
+        '/home/yili/PoseEst/render/synthesize/train/002_master_chef_can/{}_color.png'
+        .format(idx), cv2.IMREAD_COLOR)
+    rgb_pa = cv2.imread(color_path.format(idx), cv2.IMREAD_COLOR)
+    depth_pa = cv2.imread(depth_path.format(idx), cv2.IMREAD_UNCHANGED).astype(
+        np.float32) / 10000.0
     print(depth_pa.shape, np.max(depth_pa))
     import matplotlib.pyplot as plt
 
@@ -209,5 +224,5 @@ if __name__ == "__main__":
     fig.add_subplot(2, 3, 5)
     plt.imshow(depth_pa)
     fig.add_subplot(2, 3, 6)
-    plt.imshow(depth_gl-depth_pa)
+    plt.imshow(depth_gl - depth_pa)
     plt.show()

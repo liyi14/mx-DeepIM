@@ -5,7 +5,7 @@
 # --------------------------------------------------------
 from __future__ import print_function, division
 import mxnet as mx
-from mxnet.io import DataDesc, DataBatch
+from mxnet.io import DataDesc
 import threading
 
 
@@ -30,16 +30,18 @@ class PrefetchingIter(mx.io.DataIter):
     iter = PrefetchingIter([NDArrayIter({'data': X1}), NDArrayIter({'data': X2})],
                            rename_data=[{'data': 'data1'}, {'data': 'data2'}])
     """
+
     def __init__(self, iters, rename_data=None, rename_label=None):
         super(PrefetchingIter, self).__init__()
         if not isinstance(iters, list):
             iters = [iters]
         self.n_iter = len(iters)
-        assert self.n_iter ==1, "Our prefetching iter only support 1 DataIter"
+        assert self.n_iter == 1, "Our prefetching iter only support 1 DataIter"
         self.iters = iters
         self.rename_data = rename_data
         self.rename_label = rename_label
-        self.batch_size = len(self.provide_data) * self.provide_data[0][0][1][0]
+        self.batch_size = len(
+            self.provide_data) * self.provide_data[0][0][1][0]
         self.data_ready = [threading.Event() for i in range(self.n_iter)]
         self.data_taken = [threading.Event() for i in range(self.n_iter)]
         for e in self.data_taken:
@@ -47,6 +49,7 @@ class PrefetchingIter(mx.io.DataIter):
         self.started = True
         self.current_batch = [None for _ in range(self.n_iter)]
         self.next_batch = [None for _ in range(self.n_iter)]
+
         def prefetch_func(self, i):
             """Thread entry"""
             while True:
@@ -59,8 +62,11 @@ class PrefetchingIter(mx.io.DataIter):
                     self.next_batch[i] = None
                 self.data_taken[i].clear()
                 self.data_ready[i].set()
-        self.prefetch_threads = [threading.Thread(target=prefetch_func, args=[self, i]) \
-                                 for i in range(self.n_iter)]
+
+        self.prefetch_threads = [
+            threading.Thread(target=prefetch_func, args=[self, i])
+            for i in range(self.n_iter)
+        ]
         for thread in self.prefetch_threads:
             thread.setDaemon(True)
             thread.start()
@@ -79,9 +85,8 @@ class PrefetchingIter(mx.io.DataIter):
             return sum([i.provide_data for i in self.iters], [])
         else:
             return sum([[
-                DataDesc(r[x.name], x.shape, x.dtype)
-                if isinstance(x, DataDesc) else DataDesc(*x)
-                for x in i.provide_data
+                DataDesc(r[x.name], x.shape, x.dtype) if isinstance(
+                    x, DataDesc) else DataDesc(*x) for x in i.provide_data
             ] for r, i in zip(self.rename_data, self.iters)], [])
 
     @property
@@ -91,9 +96,8 @@ class PrefetchingIter(mx.io.DataIter):
             return sum([i.provide_label for i in self.iters], [])
         else:
             return sum([[
-                DataDesc(r[x.name], x.shape, x.dtype)
-                if isinstance(x, DataDesc) else DataDesc(*x)
-                for x in i.provide_label
+                DataDesc(r[x.name], x.shape, x.dtype) if isinstance(
+                    x, DataDesc) else DataDesc(*x) for x in i.provide_label
             ] for r, i in zip(self.rename_label, self.iters)], [])
 
     def reset(self):

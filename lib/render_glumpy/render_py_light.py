@@ -5,7 +5,7 @@
 # --------------------------------------------------------
 from __future__ import print_function, division
 import numpy as np
-from glumpy import app, gl, gloo, glm, data, log
+from glumpy import app, gl, gloo, data, log
 import logging
 
 log.setLevel(logging.WARNING)  # ERROR, WARNING, DEBUG, INFO
@@ -39,7 +39,7 @@ def get_fragment(brightness_ratio=0.4):
     uniform mat4      u_view;            // View matrix
     uniform mat4      u_normal;          // Normal matrix
     uniform mat4      u_projection;      // Projection matrix
-    uniform sampler2D u_texture;         // Texture 
+    uniform sampler2D u_texture;         // Texture
     uniform vec3      u_light_position;  // Light position
     uniform vec3      u_light_intensity; // Light intensity
 
@@ -78,7 +78,14 @@ def get_fragment(brightness_ratio=0.4):
 
 
 class Render_Py_Light():
-    def __init__(self, model_folder, K, width=640, height=480, zNear=0.25, zFar=6.0, brightness_ratios=[0.4, 0.3, 0.2]):
+    def __init__(self,
+                 model_folder,
+                 K,
+                 width=640,
+                 height=480,
+                 zNear=0.25,
+                 zFar=6.0,
+                 brightness_ratios=[0.4, 0.3, 0.2]):
         self.width = width
         self.height = height
         self.zNear = zNear
@@ -87,8 +94,8 @@ class Render_Py_Light():
         self.model_folder = model_folder
 
         log.info("Loading mesh")
-        vertices, indices = data.objload("{}/textured.obj"
-                                         .format(model_folder), rescale=False)
+        vertices, indices = data.objload(
+            "{}/textured.obj".format(model_folder), rescale=False)
         self.render_kernels = []
         for brightness_ratio in brightness_ratios:
             fragment = get_fragment(brightness_ratio=brightness_ratio)
@@ -96,11 +103,13 @@ class Render_Py_Light():
             render_kernel.bind(vertices)
 
             log.info("Loading texture")
-            render_kernel['u_texture'] = np.copy(data.load("{}/texture_map.png"
-                                                           .format(model_folder))[::-1, :, :])
+            render_kernel['u_texture'] = np.copy(
+                data.load(
+                    "{}/texture_map.png".format(model_folder))[::-1, :, :])
 
             render_kernel['u_model'] = np.eye(4, dtype=np.float32)
-            u_projection = self.my_compute_calib_proj(K, width, height, zNear, zFar)
+            u_projection = self.my_compute_calib_proj(K, width, height, zNear,
+                                                      zFar)
             render_kernel['u_projection'] = np.copy(u_projection)
 
             render_kernel['u_light_intensity'] = 1, 1, 1
@@ -120,15 +129,22 @@ class Render_Py_Light():
         def on_init():
             gl.glEnable(gl.GL_DEPTH_TEST)
 
-    def render(self, r, t, light_position, light_intensity, brightness_k=0, r_type='quat', K=None):
+    def render(self,
+               r,
+               t,
+               light_position,
+               light_intensity,
+               brightness_k=0,
+               r_type='quat',
+               K=None):
         '''
-        :param r: 
-        :param t: 
-        :param light_position: 
-        :param light_intensity: 
-        :param brightness_k: choose which brightness in __init__ 
-        :param r_type: 
-        :return: 
+        :param r:
+        :param t:
+        :param light_position:
+        :param light_intensity:
+        :param brightness_k: choose which brightness in __init__
+        :param r_type:
+        :return:
         '''
         if r_type == 'quat':
             R = quat2mat(r)
@@ -138,31 +154,42 @@ class Render_Py_Light():
         self.render_kernels[brightness_k]['u_view'] = self._get_view_mtx(R, t)
         self.render_kernels[brightness_k]['u_light_position'] = light_position
         self.render_kernels[brightness_k]['u_normal'] = np.array(
-            np.matrix(np.dot(self.render_kernels[brightness_k]['u_view'].reshape(4, 4),
-                             self.render_kernels[brightness_k]['u_model'].reshape(4, 4))).I.T)
-        self.render_kernels[brightness_k]['u_light_intensity'] = light_intensity
+            np.matrix(
+                np.dot(
+                    self.render_kernels[brightness_k]['u_view'].reshape(4, 4),
+                    self.render_kernels[brightness_k]['u_model'].reshape(
+                        4, 4))).I.T)
+        self.render_kernels[brightness_k][
+            'u_light_intensity'] = light_intensity
 
         if K is not None:
-            u_projection = self.my_compute_calib_proj(K, self.width, self.height, self.zNear, self.zFar)
-            self.render_kernels[brightness_k]['u_projection'] = np.copy(u_projection)
+            u_projection = self.my_compute_calib_proj(
+                K, self.width, self.height, self.zNear, self.zFar)
+            self.render_kernels[brightness_k]['u_projection'] = np.copy(
+                u_projection)
 
         app.run(framecount=0)
         rgb_buffer = np.zeros((self.height, self.width, 4), dtype=np.float32)
-        gl.glReadPixels(0, 0, self.width, self.height, gl.GL_RGBA, gl.GL_FLOAT, rgb_buffer)
+        gl.glReadPixels(0, 0, self.width, self.height, gl.GL_RGBA, gl.GL_FLOAT,
+                        rgb_buffer)
 
         rgb_gl = np.copy(rgb_buffer)
         rgb_gl.shape = 480, 640, 4
         rgb_gl = rgb_gl[::-1, :]
-        rgb_gl = np.round(rgb_gl[:, :, :3] * 255).astype(np.uint8)  # Convert to [0, 255]
+        rgb_gl = np.round(rgb_gl[:, :, :3] * 255).astype(
+            np.uint8)  # Convert to [0, 255]
         bgr_gl = rgb_gl[:, :, [2, 1, 0]]
 
         depth_buffer = np.zeros((self.height, self.width), dtype=np.float32)
-        gl.glReadPixels(0, 0, self.width, self.height, gl.GL_DEPTH_COMPONENT, gl.GL_FLOAT, depth_buffer)
+        gl.glReadPixels(0, 0, self.width, self.height, gl.GL_DEPTH_COMPONENT,
+                        gl.GL_FLOAT, depth_buffer)
         depth_gl = np.copy(depth_buffer)
         depth_gl.shape = 480, 640
         depth_gl = depth_gl[::-1, :]
         depth_bg = depth_gl == 1
-        depth_gl = 2 * self.zFar * self.zNear / (self.zFar + self.zNear - (self.zFar - self.zNear) * (2 * depth_gl - 1))
+        depth_gl = 2 * self.zFar * self.zNear / (self.zFar + self.zNear -
+                                                 (self.zFar - self.zNear) *
+                                                 (2 * depth_gl - 1))
         depth_gl[depth_bg] = 0
         return bgr_gl, depth_gl
 
@@ -207,19 +234,16 @@ if __name__ == "__main__":
     cur_path = os.path.abspath(os.path.dirname(__file__))
     sys.path.insert(1, os.path.join(cur_path, '../..'))
 
-
     def mat2quat(M):
         # Qyx refers to the contribution of the y input vector component to
         # the x output vector component.  Qyx is therefore the same as
         # M[0,1].  The notation is from the Wikipedia article.
         Qxx, Qyx, Qzx, Qxy, Qyy, Qzy, Qxz, Qyz, Qzz = M.flat
         # Fill only lower half of symmetric matrix
-        K = np.array([
-            [Qxx - Qyy - Qzz, 0, 0, 0],
-            [Qyx + Qxy, Qyy - Qxx - Qzz, 0, 0],
-            [Qzx + Qxz, Qzy + Qyz, Qzz - Qxx - Qyy, 0],
-            [Qyz - Qzy, Qzx - Qxz, Qxy - Qyx, Qxx + Qyy + Qzz]]
-        ) / 3.0
+        K = np.array(
+            [[Qxx - Qyy - Qzz, 0, 0, 0], [Qyx + Qxy, Qyy - Qxx - Qzz, 0, 0],
+             [Qzx + Qxz, Qzy + Qyz, Qzz - Qxx - Qyy, 0],
+             [Qyz - Qzy, Qzx - Qxz, Qxy - Qyx, Qxx + Qyy + Qzz]]) / 3.0
         # Use Hermitian eigenvectors, values for speed
         vals, vecs = np.linalg.eigh(K)
         # Select largest eigenvector, reorder to w,x,y,z quaternion
@@ -229,12 +253,16 @@ if __name__ == "__main__":
             q *= -1
         return q
 
-
     class_name = '002_master_chef_can'
 
-    model_dir = os.path.join(cur_path, '../../data/LOV/models/{}'.format(class_name))
-    pose_path = os.path.join(cur_path, '../../data/render_v5/data/render_real/%s/0001/{}-pose.txt' % (class_name))
-    color_path = os.path.join(cur_path, '../../data/render_v5/data/render_real/%s/0001/{}-color.png' % (class_name))
+    model_dir = os.path.join(cur_path,
+                             '../../data/LOV/models/{}'.format(class_name))
+    pose_path = os.path.join(
+        cur_path, '../../data/render_v5/data/render_real/%s/0001/{}-pose.txt' %
+        (class_name))
+    color_path = os.path.join(
+        cur_path, '../../data/render_v5/data/render_real/%s/0001/{}-color.png'
+        % (class_name))
     width = 640
     height = 480
     K = np.array([[1066.778, 0, 312.9869], [0, 1067.487, 241.3109], [0, 0, 1]])
@@ -243,29 +271,69 @@ if __name__ == "__main__":
     idx = '000001'
 
     brightness_ratios = [0.3, 0.4]
-    render_machine = Render_Py_Light(model_dir, K, width, height, ZNEAR, ZFAR, brightness_ratios=brightness_ratios)
+    render_machine = Render_Py_Light(
+        model_dir,
+        K,
+        width,
+        height,
+        ZNEAR,
+        ZFAR,
+        brightness_ratios=brightness_ratios)
     pose_real_est = np.loadtxt(pose_path.format(idx), skiprows=1)
     r_quat = mat2quat(pose_real_est[:, :3])
     t = pose_real_est[:, 3]
     # warm up
-    rgb_gl, _ = render_machine.render((0.5, 0.5, 0.5, 0.5), t, light_position=[0, 0, 1], light_intensity=[1, 1, 1])
+    rgb_gl, _ = render_machine.render((0.5, 0.5, 0.5, 0.5),
+                                      t,
+                                      light_position=[0, 0, 1],
+                                      light_intensity=[1, 1, 1])
     import time
 
     start_t = time.time()
-    rgb_gl_1, _ = render_machine.render(r_quat, t, light_position=[0, 0, -1], light_intensity=[1, 1, 1], brightness_k=0)
-    rgb_gl_2, _ = render_machine.render(r_quat, t, light_position=[0, 0, -1],
-                                        light_intensity=[1 * 1.5, 1 * 1.5, 1.2 * 1.5], brightness_k=1)
-    rgb_gl_3, _ = render_machine.render(r_quat, t, light_position=[0, 0, -1], light_intensity=np.array([1, 1.2, 1]) * 2,
-                                        brightness_k=0)
-    rgb_gl_4, _ = render_machine.render(r_quat, t, light_position=[0, 0, -1], light_intensity=np.array([1.2, 1, 1]) * 3,
-                                        brightness_k=1)
-    rgb_gl_5, _ = render_machine.render(r_quat, t, light_position=[0, 0, -1], light_intensity=[1, 0, 1], brightness_k=0)
-    rgb_gl_6, _ = render_machine.render(r_quat, t, light_position=[0, 0, -1], light_intensity=[0, 1, 1], brightness_k=0)
-    rgb_gl_7, _ = render_machine.render(r_quat, t, light_position=[0, 0, -1], light_intensity=[10, 10, 10],
-                                        brightness_k=0)
+    rgb_gl_1, _ = render_machine.render(
+        r_quat,
+        t,
+        light_position=[0, 0, -1],
+        light_intensity=[1, 1, 1],
+        brightness_k=0)
+    rgb_gl_2, _ = render_machine.render(
+        r_quat,
+        t,
+        light_position=[0, 0, -1],
+        light_intensity=[1 * 1.5, 1 * 1.5, 1.2 * 1.5],
+        brightness_k=1)
+    rgb_gl_3, _ = render_machine.render(
+        r_quat,
+        t,
+        light_position=[0, 0, -1],
+        light_intensity=np.array([1, 1.2, 1]) * 2,
+        brightness_k=0)
+    rgb_gl_4, _ = render_machine.render(
+        r_quat,
+        t,
+        light_position=[0, 0, -1],
+        light_intensity=np.array([1.2, 1, 1]) * 3,
+        brightness_k=1)
+    rgb_gl_5, _ = render_machine.render(
+        r_quat,
+        t,
+        light_position=[0, 0, -1],
+        light_intensity=[1, 0, 1],
+        brightness_k=0)
+    rgb_gl_6, _ = render_machine.render(
+        r_quat,
+        t,
+        light_position=[0, 0, -1],
+        light_intensity=[0, 1, 1],
+        brightness_k=0)
+    rgb_gl_7, _ = render_machine.render(
+        r_quat,
+        t,
+        light_position=[0, 0, -1],
+        light_intensity=[10, 10, 10],
+        brightness_k=0)
     print("using {} seconds".format(time.time() - start_t))
-    rgb_pa = cv2.imread(color_path.format(idx),
-                        cv2.IMREAD_COLOR)
+    rgb_pa = cv2.imread(color_path.format(idx), cv2.IMREAD_COLOR)
 
     pprint(rgb_gl_1[rgb_gl_1.nonzero()])
     pprint(rgb_gl_2[rgb_gl_2.nonzero()])

@@ -13,9 +13,10 @@ can be obtained via meshlab. (or you can download it here https://drive.google.c
 2. Filters/Texture/Parametrization: Trivial - Per Triangle
  (if you get an error about the inter-triangle border being too much, increase the texture dimension)
 3. Then Filters/Texture/Transfer: Vertex Color to Texture
-4. File/Export Mesh As -> textured.obj and points.xyz (for .xyz, uncheck the Normal option)  
-'''
-import sys, os
+4. File/Export Mesh As -> textured.obj and points.xyz (for .xyz, uncheck the Normal option)
+'''  # noqa:E501
+import sys
+import os
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(1, os.path.join(cur_dir, '../..'))
 import numpy as np
@@ -23,13 +24,16 @@ from lib.utils.mkdir_if_missing import mkdir_if_missing
 
 LM6d_origin_root = os.path.join(cur_dir, '../../data/LINEMOD_6D/LM6d_origin')
 version = 'v1'
-LM6d_new_root = os.path.join(cur_dir, '../../data/LINEMOD_6D/LM6d_converted/LM6d_render_{}/'.format(version))
+LM6d_new_root = os.path.join(
+    cur_dir,
+    '../../data/LINEMOD_6D/LM6d_converted/LM6d_render_{}/'.format(version))
 src_model_root = os.path.join(LM6d_origin_root, 'models')
 dst_model_root = os.path.join(LM6d_new_root, 'models')
 mkdir_if_missing(dst_model_root)
 print("target path: {}".format(dst_model_root))
 
 class_list = ['{:02d}'.format(i) for i in range(1, 16)]
+
 
 def read_points_from_mesh(mesh_path):
     '''
@@ -47,10 +51,11 @@ def read_points_from_mesh(mesh_path):
             line_list = line.strip('\r\n').split()
             if len(line_list) < 10:
                 break
-            xyz = [float(m)/1000. for m in line_list[:3]]
+            xyz = [float(m) / 1000. for m in line_list[:3]]
             points.append(xyz)
         points_np = np.array(points)
     return points_np
+
 
 def scale_ply(mesh_path, res_mesh_path, transform=None):
     '''
@@ -73,13 +78,13 @@ def scale_ply(mesh_path, res_mesh_path, transform=None):
                 res_line = '{}\n'.format(line)
 
             if len(line_list) == 10:
-                xyz = [float(m)/1000. for m in line_list[:3]]
+                xyz = [float(m) / 1000. for m in line_list[:3]]
                 if transform is not None:
                     R = transform[:3, :3]
                     T = transform[:3, 3]
                     xyz = np.array(xyz)
                     xyz_new = R.dot(xyz.reshape((3, 1))) + T.reshape((3, 1))
-                    xyz = xyz_new.reshape((3,))
+                    xyz = xyz_new.reshape((3, ))
                 for i in range(3):
                     line_list[i] = '{}'.format(xyz[i])
                 res_line = ' '.join(line_list) + '\n'
@@ -91,6 +96,7 @@ def scale_ply(mesh_path, res_mesh_path, transform=None):
         # points_np = np.array(points)
     # return points_np
 
+
 def scale_ply_main():
     for cls_idx, cls_name in enumerate(class_list):
         print(cls_idx, cls_name)
@@ -101,7 +107,8 @@ def scale_ply_main():
         if not os.path.exists(mesh_path):
             print("{} not exists!".format(mesh_path))
 
-        res_mesh_filename = os.path.basename(mesh_path.replace('.ply', '_scaled.ply'))
+        res_mesh_filename = os.path.basename(
+            mesh_path.replace('.ply', '_scaled.ply'))
         res_mesh_path = os.path.join(dst_model_root, res_mesh_filename)
         scale_ply(mesh_path, res_mesh_path)
 
@@ -123,6 +130,8 @@ def check_model_points():
 # =================================
 
 if __name__ == "__main__":
-    print('processed model files (models.tar.gz) can be downloaded at https://drive.google.com/drive/folders/1dxbEn9NOhlWjiEop3QPjT2wi-FB-N1if?usp=sharing')
+    print(
+        'processed model files (models.tar.gz) can be downloaded at https://drive.google.com/drive/folders/1dxbEn9NOhlWjiEop3QPjT2wi-FB-N1if?usp=sharing'  # noqa:E501
+    )
     scale_ply_main()
     print("{} finished".format(__file__))

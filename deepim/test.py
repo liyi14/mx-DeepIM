@@ -4,13 +4,11 @@
 # Written by Yi Li, Gu Wang
 # --------------------------------------------------------
 from __future__ import print_function, division
-import _init_paths
+import _init_paths  # noqa: F401
 
 import argparse
 import os
 import sys
-import time
-import logging
 from config.config import config, update_config
 
 
@@ -63,8 +61,8 @@ if args.vis_video_zoom:
 import pprint
 import mxnet as mx
 
-from symbols import *
-from lib.dataset import *
+from symbols import *  # noqa: F401, F403
+from lib.dataset import *  # noqa: F401, F403
 from core.loader import TestDataLoader
 from core.tester import Predictor, pred_eval
 from lib.utils.load_data import load_gt_pairdb, merge_pairdb

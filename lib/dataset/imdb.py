@@ -15,11 +15,18 @@ from six.moves import cPickle
 import numpy as np
 from PIL import Image
 
+
 def get_flipped_entry_outclass_wrapper(IMDB_instance, seg_rec):
     return IMDB_instance.get_flipped_entry(seg_rec)
 
+
 class IMDB(object):
-    def __init__(self, name, image_set, root_path, dataset_path, result_path=None):
+    def __init__(self,
+                 name,
+                 image_set,
+                 root_path,
+                 dataset_path,
+                 result_path=None):
         """
         basic information about an image database
         :param name: name of image database will be used for any output
@@ -80,11 +87,14 @@ class IMDB(object):
 
     def load_rpn_data(self, full=False):
         if full:
-            rpn_file = os.path.join(self.result_path, 'rpn_data', self.name + '_full_rpn.pkl')
+            rpn_file = os.path.join(self.result_path, 'rpn_data',
+                                    self.name + '_full_rpn.pkl')
         else:
-            rpn_file = os.path.join(self.result_path, 'rpn_data', self.name + '_rpn.pkl')
+            rpn_file = os.path.join(self.result_path, 'rpn_data',
+                                    self.name + '_rpn.pkl')
         print('loading {}'.format(rpn_file))
-        assert os.path.exists(rpn_file), 'rpn data not found at {}'.format(rpn_file)
+        assert os.path.exists(rpn_file), 'rpn data not found at {}'.format(
+            rpn_file)
         with open(rpn_file, 'rb') as f:
             box_list = cPickle.load(f)
         return box_list
@@ -113,14 +123,14 @@ class IMDB(object):
             roidb = self.load_rpn_roidb(gt_roidb)
         return roidb
 
-
-
     def get_flipped_entry(self, seg_rec):
-        return {'image': self.flip_and_save(seg_rec['image']),
-                'seg_cls_path': self.flip_and_save(seg_rec['seg_cls_path']),
-                'height': seg_rec['height'],
-                'width': seg_rec['width'],
-                'flipped': True}
+        return {
+            'image': self.flip_and_save(seg_rec['image']),
+            'seg_cls_path': self.flip_and_save(seg_rec['seg_cls_path']),
+            'height': seg_rec['height'],
+            'width': seg_rec['width'],
+            'flipped': True
+        }
 
     def append_flipped_images_for_segmentation(self, segdb):
         """
@@ -129,7 +139,7 @@ class IMDB(object):
         :param segdb: [image_index]['seg_cls_path', 'flipped']
         :return: segdb: [image_index]['seg_cls_path', 'flipped']
         """
-        print('append flipped images to segdb...',)
+        print('append flipped images to segdb...', )
         assert self.num_images == len(segdb)
 
         segdb_flip = []
@@ -158,20 +168,24 @@ class IMDB(object):
             boxes[:, 0] = roi_rec['width'] - oldx2 - 1
             boxes[:, 2] = roi_rec['width'] - oldx1 - 1
             assert (boxes[:, 2] >= boxes[:, 0]).all()
-            entry = {'image': roi_rec['image'],
-                     'height': roi_rec['height'],
-                     'width': roi_rec['width'],
-                     'boxes': boxes,
-                     'gt_classes': roidb[i]['gt_classes'],
-                     'gt_overlaps': roidb[i]['gt_overlaps'],
-                     'max_classes': roidb[i]['max_classes'],
-                     'max_overlaps': roidb[i]['max_overlaps'],
-                     'flipped': True}
+            entry = {
+                'image': roi_rec['image'],
+                'height': roi_rec['height'],
+                'width': roi_rec['width'],
+                'boxes': boxes,
+                'gt_classes': roidb[i]['gt_classes'],
+                'gt_overlaps': roidb[i]['gt_overlaps'],
+                'max_classes': roidb[i]['max_classes'],
+                'max_overlaps': roidb[i]['max_overlaps'],
+                'flipped': True
+            }
 
             # if roidb has mask
             if 'cache_seg_inst' in roi_rec:
-                [filename, extension] = os.path.splitext(roi_rec['cache_seg_inst'])
-                entry['cache_seg_inst'] = os.path.join(filename + '_flip' + extension)
+                [filename,
+                 extension] = os.path.splitext(roi_rec['cache_seg_inst'])
+                entry['cache_seg_inst'] = os.path.join(filename + '_flip' +
+                                                       extension)
 
             roidb.append(entry)
 
@@ -184,29 +198,33 @@ class IMDB(object):
         :param path: the path of specific image
         :return: the path of saved image
         """
-        [image_name, image_ext] = os.path.splitext(os.path.basename(image_path))
+        [image_name, image_ext] = os.path.splitext(
+            os.path.basename(image_path))
         image_dir = os.path.dirname(image_path)
-        saved_image_path = os.path.join(image_dir, image_name + '_flip' + image_ext)
+        saved_image_path = os.path.join(image_dir,
+                                        image_name + '_flip' + image_ext)
         try:
             flipped_image = Image.open(saved_image_path)
-        except:
+        except:  # noqa: E722
             flipped_image = Image.open(image_path)
             flipped_image = flipped_image.transpose(Image.FLIP_LEFT_RIGHT)
             flipped_image.save(saved_image_path, 'png')
         return saved_image_path
 
     def get_flipped_pairs_entry(self, pair_rec):
-        return {'image_real': pair_rec['image_rendered'],
-                'image_rendered': pair_rec['image_real'],
-                'depth_real': pair_rec['depth_rendered'],
-                'depth_rendered': pair_rec['depth_real'],
-                'pose_real': pair_rec['pose_est'],
-                'pose_est': pair_rec['pose_real'],
-                'height': pair_rec['height'],
-                'width': pair_rec['width'],
-                'pair_flipped': True,
-                'img_flipped': False,
-                'gt_class': pair_rec['gt_class']}
+        return {
+            'image_real': pair_rec['image_rendered'],
+            'image_rendered': pair_rec['image_real'],
+            'depth_real': pair_rec['depth_rendered'],
+            'depth_rendered': pair_rec['depth_real'],
+            'pose_real': pair_rec['pose_est'],
+            'pose_est': pair_rec['pose_real'],
+            'height': pair_rec['height'],
+            'width': pair_rec['width'],
+            'pair_flipped': True,
+            'img_flipped': False,
+            'gt_class': pair_rec['gt_class']
+        }
 
     def append_flipped_pairs(self, pairdb):
         """
@@ -215,8 +233,9 @@ class IMDB(object):
         :param pairdb: [pair_index]['*_real', '*_rendered', 'pair_flipped', 'img_flipped']
         :return: pairdb: [pair_index]['*_real', '*_rendered', 'pair_flipped', 'img_flipped']
         """
-        print('append flipped images to pairdb...',)
-        assert self.num_pairs == len(pairdb), '{} vs {}'.format(self.num_pairs, len(pairdb))
+        print('append flipped images to pairdb...', )
+        assert self.num_pairs == len(pairdb), '{} vs {}'.format(
+            self.num_pairs, len(pairdb))
         pair_flip = []
         for i in range(self.num_pairs):
             pair_rec = pairdb[i]
@@ -225,8 +244,6 @@ class IMDB(object):
         self.image_set_index *= 2
         print('done')
         return pairdb
-
-
 
     @staticmethod
     def merge_roidbs(a, b):
@@ -239,8 +256,12 @@ class IMDB(object):
         assert len(a) == len(b)
         for i in range(len(a)):
             a[i]['boxes'] = np.vstack((a[i]['boxes'], b[i]['boxes']))
-            a[i]['gt_classes'] = np.hstack((a[i]['gt_classes'], b[i]['gt_classes']))
-            a[i]['gt_overlaps'] = np.vstack((a[i]['gt_overlaps'], b[i]['gt_overlaps']))
-            a[i]['max_classes'] = np.hstack((a[i]['max_classes'], b[i]['max_classes']))
-            a[i]['max_overlaps'] = np.hstack((a[i]['max_overlaps'], b[i]['max_overlaps']))
+            a[i]['gt_classes'] = np.hstack((a[i]['gt_classes'],
+                                            b[i]['gt_classes']))
+            a[i]['gt_overlaps'] = np.vstack((a[i]['gt_overlaps'],
+                                             b[i]['gt_overlaps']))
+            a[i]['max_classes'] = np.hstack((a[i]['max_classes'],
+                                             b[i]['max_classes']))
+            a[i]['max_overlaps'] = np.hstack((a[i]['max_overlaps'],
+                                              b[i]['max_overlaps']))
         return a

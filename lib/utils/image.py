@@ -6,17 +6,13 @@
 from __future__ import print_function, division
 import numpy as np
 import os
-import sys
-cur_dir = os.path.abspath(os.path.dirname(__file__))
 import cv2
 import random
 from PIL import Image
-from lib.utils.tictoc import tic, toc
 from lib.pair_matching.load_object_points import load_object_points, load_points_from_obj
 from lib.utils.mask_dilate import mask_dilate
-from lib.utils.mask_augment import mask_augment
 from lib.utils.get_min_rect import get_min_rect
-
+cur_dir = os.path.abspath(os.path.dirname(__file__))
 # TODO: This two functions should be merged with individual data loader
 
 
@@ -108,8 +104,8 @@ def get_pair_image(pairdb, config, phase='train', random_k=18):
 
         # add random background to data_syn observed image
         if 'data_syn' in pair_rec.keys() and phase == 'train':
-            if pair_rec['data_syn'] == True \
-                    or (pair_rec['data_syn'] == False and np.random.rand() < config.TRAIN.REPLACE_OBSERVED_BG_RATIO):
+            if pair_rec['data_syn'] is True \
+                    or (pair_rec['data_syn'] is False and np.random.rand() < config.TRAIN.REPLACE_OBSERVED_BG_RATIO):
                 VOC_root = os.path.join(config.dataset.root_path,
                                         'VOCdevkit/VOC2012')
                 VOC_image_set_dir = os.path.join(VOC_root, 'ImageSets/Main')
@@ -589,7 +585,7 @@ def get_point_cloud_observed(config, points_model, pose_observed):
 
 def get_point_cloud(pairdb, config, scale_ind_list, X_list=None,
                     phase='train'):
-    assert config.TRAIN.MASK_SYN == False, "NOT IMPLEMENTED"
+    assert config.TRAIN.MASK_SYN is False, "NOT IMPLEMENTED"
     from lib.utils.projection import backproject_camera, se3_inverse, se3_mul
     num_pairs = len(pairdb)
     X_obj_tensor = []

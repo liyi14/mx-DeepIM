@@ -5,6 +5,7 @@
 # --------------------------------------------------------
 import numpy as np
 
+
 def get_min_rect(mask):
     """
     input mask, return minimum rectangle including all non-zero elements

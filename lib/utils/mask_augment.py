@@ -5,6 +5,8 @@
 # --------------------------------------------------------
 from __future__ import print_function, division
 import numpy as np
+
+
 def mask_augment(mask_origin, augment_type):
     """
 
@@ -32,9 +34,9 @@ def mask_augment(mask_origin, augment_type):
     x_end_ind = 0
     y_start_ind = 0
     y_end_ind = 0
-    if augment_type <9 and augment_type!=4: # not mask center
-        x_start_ind = np.floor(augment_type/3)
-        x_end_ind = np.floor(augment_type/3)+1
+    if augment_type < 9 and augment_type != 4:  # not mask center
+        x_start_ind = np.floor(augment_type / 3)
+        x_end_ind = np.floor(augment_type / 3) + 1
         y_start_ind = augment_type % 3
         y_end_ind = augment_type % 3 + 1
 
@@ -86,18 +88,19 @@ def mask_augment(mask_origin, augment_type):
     mask_expand[patch_start_y:patch_end_y, patch_start_x:patch_end_x] = 0
 
     patch_xy = [patch_start_x, patch_end_x, patch_start_y, patch_end_y]
-    if np.sum(mask_expand) / (np.sum(mask_origin)+0.0)<0.4:
+    if np.sum(mask_expand) / (np.sum(mask_origin) + 0.0) < 0.4:
         mask_expand = mask_origin
         patch_xy = None
 
     return mask_expand, patch_xy
+
 
 if __name__ == '__main__':
     origin = np.zeros([20, 20])
     origin[6:15, 5:15] = 1
     import matplotlib.pyplot as plt
     for i in range(18):
-        plt.subplot(3, 6, i+1)
+        plt.subplot(3, 6, i + 1)
         mask_res, patch_xy = mask_augment(origin, i)
         plt.imshow(mask_res)
         print(patch_xy)

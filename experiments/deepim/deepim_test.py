@@ -4,7 +4,6 @@
 # Written by Yi Li
 # --------------------------------------------------------
 from __future__ import print_function, division
-import cv2
 import os
 import sys
 os.environ['PYTHONUNBUFFERED'] = '1'
@@ -18,7 +17,3 @@ import test
 
 if __name__ == "__main__":
     test.main()
-
-
-
-

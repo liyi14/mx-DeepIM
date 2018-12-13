@@ -5,9 +5,10 @@
 # --------------------------------------------------------
 from __future__ import print_function, division
 import numpy as np
-from lib.utils.projection import se3_inverse, se3_mul, backproject_camera
+from lib.utils.projection import backproject_camera
 from lib.pair_matching import RT_transform
 import cv2
+
 
 def flow2se3(depth_object, flow, mask_image, K):
     """
@@ -22,7 +23,7 @@ def flow2se3(depth_object, flow, mask_image, K):
     height = depth_object.shape[0]
     width = depth_object.shape[1]
     assert mask_image.shape == (height, width)
-    valid_in_object = (depth_object!=0).flatten()
+    valid_in_object = (depth_object != 0).flatten()
     all_op = backproject_camera(depth_object, intrinsic_matrix=K)
     # all_op = all_op.reshape((3, width, height))
 
@@ -33,14 +34,15 @@ def flow2se3(depth_object, flow, mask_image, K):
     y += flow[:, :, 1]
     x = x.flatten()
     y = y.flatten()
-    all_ip = np.vstack((x,y))
+    all_ip = np.vstack((x, y))
 
-    valid_in_image = (mask_image!=0).flatten()
+    valid_in_image = (mask_image != 0).flatten()
 
     valid = np.where(np.logical_and(valid_in_object, valid_in_image))[0]
     objectPoints = all_op[:, valid].astype(np.float64).transpose()
     imagePoints = all_ip[:, valid].astype(np.float64).transpose()
-    convex, rvec, tvec, inliers = cv2.solvePnPRansac(objectPoints, imagePoints, K, np.zeros(4))
+    convex, rvec, tvec, inliers = cv2.solvePnPRansac(objectPoints, imagePoints,
+                                                     K, np.zeros(4))
 
     se3_q = np.zeros(7)
     if convex:
@@ -51,6 +53,3 @@ def flow2se3(depth_object, flow, mask_image, K):
     else:
         se3_q[0] = 1
         return convex, se3_q
-
-
-

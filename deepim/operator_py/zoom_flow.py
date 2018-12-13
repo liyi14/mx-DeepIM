@@ -4,7 +4,8 @@
 # Written by Yi Li, Gu Wang
 # --------------------------------------------------------
 from __future__ import print_function, division
-import sys, os
+import sys
+import os
 sys.path.insert(0, os.path.join('../../external/mxnet/mxnet_v00_origin'))
 sys.path.insert(0, '../../')
 """
@@ -14,6 +15,8 @@ Simple zoom for flow
 import cv2
 import mxnet as mx
 import numpy as np
+
+
 class ZoomFlowOperator(mx.operator.CustomOp):
     def __init__(self, height, width, b_inv_zoom):
         super(ZoomFlowOperator, self).__init__()
@@ -25,23 +28,28 @@ class ZoomFlowOperator(mx.operator.CustomOp):
         ctx = in_data[0].context
         batch_size = in_data[0].shape[0]
 
-        grid_array = mx.ndarray.zeros([batch_size, 2, self.height, self.width], ctx=ctx)
+        grid_array = mx.ndarray.zeros([batch_size, 2, self.height, self.width],
+                                      ctx=ctx)
         zoom_factor_array = in_data[0].asnumpy()
         for batch_idx in range(batch_size):
             if self.b_inv_zoom:
                 wx_in, wy_in, tx_in, ty_in = zoom_factor_array[batch_idx]
-                wx = 1/wx_in
-                wy = 1/wy_in
+                wx = 1 / wx_in
+                wy = 1 / wy_in
                 crop_width = wx_in * self.width
                 crop_height = wy_in * self.height
-                obj_real_c_x = tx_in*0.5*self.width+0.5*self.width
-                obj_real_c_y = ty_in*0.5*self.height+0.5*self.height
-                tx = (self.width*0.5-obj_real_c_x)/crop_width*2
-                ty = (self.height*0.5-obj_real_c_y)/crop_height*2
+                obj_real_c_x = tx_in * 0.5 * self.width + 0.5 * self.width
+                obj_real_c_y = ty_in * 0.5 * self.height + 0.5 * self.height
+                tx = (self.width * 0.5 - obj_real_c_x) / crop_width * 2
+                ty = (self.height * 0.5 - obj_real_c_y) / crop_height * 2
             else:
                 wx, wy, tx, ty = zoom_factor_array[batch_idx]
-            affine_matrix = mx.ndarray.array([[wx, 0, tx], [0, wy, ty]], ctx=ctx).reshape((1, 6))
-            a = mx.ndarray.GridGenerator(data=affine_matrix, transform_type='affine', target_shape=(self.height, self.width))
+            affine_matrix = mx.ndarray.array([[wx, 0, tx], [0, wy, ty]],
+                                             ctx=ctx).reshape((1, 6))
+            a = mx.ndarray.GridGenerator(
+                data=affine_matrix,
+                transform_type='affine',
+                target_shape=(self.height, self.width))
             grid_array[batch_idx] = a[0]
 
         flow_array = in_data[1]
@@ -58,14 +66,17 @@ class ZoomFlowOperator(mx.operator.CustomOp):
 
         if not self.b_inv_zoom:
             flow_weights_array = in_data[2]
-            zoom_flow_weights_array = mx.ndarray.BilinearSampler(flow_weights_array, grid_array)
-            bin_zoom_flow_weights_array = mx.ndarray.round(zoom_flow_weights_array - 0.45) # binarize zoomed flow_weights
+            zoom_flow_weights_array = mx.ndarray.BilinearSampler(
+                flow_weights_array, grid_array)
+            bin_zoom_flow_weights_array = mx.ndarray.round(
+                zoom_flow_weights_array - 0.45)  # binarize zoomed flow_weights
             self.assign(out_data[1], req[1], bin_zoom_flow_weights_array)
 
     def backward(self, req, out_grad, in_data, out_data, in_grad, aux):
         self.assign(in_grad[0], req[0], 0)
         self.assign(in_grad[1], req[1], 0)
         self.assign(in_grad[2], req[2], 0)
+
 
 @mx.operator.register('ZoomFlow')
 class ZoomFlowProp(mx.operator.CustomOpProp):
@@ -131,88 +142,124 @@ if __name__ == '__main__':
     v_zoom_factor = np.zeros((batch_size, 4), dtype=np.float32)
     v_flow = np.zeros((batch_size, 2, height, width), dtype=np.float32)
     v_flow_weights = np.zeros((batch_size, 2, height, width), dtype=np.float32)
-    for idx in range(batch_size):        
+    for idx in range(batch_size):
         v_image_rendered[idx] = cv2.imread(
-            '../../data/render_v5/data/rendered/0006/{}_{}-color.png'.format(img_idx[idx], sub_idx1[idx]),
+            '../../data/render_v5/data/rendered/0006/{}_{}-color.png'.format(
+                img_idx[idx], sub_idx1[idx]),
             cv2.IMREAD_COLOR).transpose([2, 0, 1])
         v_image_real[idx] = cv2.imread(
-            '../../data/render_v5/data/rendered/0006/{}_{}-color.png'.format(img_idx[idx], sub_idx2[idx]),
+            '../../data/render_v5/data/rendered/0006/{}_{}-color.png'.format(
+                img_idx[idx], sub_idx2[idx]),
             cv2.IMREAD_COLOR).transpose([2, 0, 1])
         v_depth_real[idx, 0] = cv2.imread(
-            '../../data/render_v5/data/rendered/0006/{}_{}-depth.png'.format(img_idx[idx], sub_idx1[idx]),
-            cv2.IMREAD_UNCHANGED)/10000.
+            '../../data/render_v5/data/rendered/0006/{}_{}-depth.png'.format(
+                img_idx[idx], sub_idx1[idx]), cv2.IMREAD_UNCHANGED) / 10000.
         v_depth_rendered[idx, 0] = cv2.imread(
-            '../../data/render_v5/data/rendered/0006/{}_{}-depth.png'.format(img_idx[idx], sub_idx2[idx]),
-            cv2.IMREAD_UNCHANGED)/10000.
-        pose_real_path = '../../data/render_v5/data/rendered/0006/{}_{}-pose.txt'.format(img_idx[idx], sub_idx1[idx])
-        pose_est_path = '../../data/render_v5/data/rendered/0006/{}_{}-pose.txt'.format(img_idx[idx], sub_idx2[idx])
+            '../../data/render_v5/data/rendered/0006/{}_{}-depth.png'.format(
+                img_idx[idx], sub_idx2[idx]), cv2.IMREAD_UNCHANGED) / 10000.
+        pose_real_path = '../../data/render_v5/data/rendered/0006/{}_{}-pose.txt'.format(
+            img_idx[idx], sub_idx1[idx])
+        pose_est_path = '../../data/render_v5/data/rendered/0006/{}_{}-pose.txt'.format(
+            img_idx[idx], sub_idx2[idx])
         pose_real = np.loadtxt(pose_real_path, skiprows=1)
         pose_est = np.loadtxt(pose_est_path, skiprows=1)
 
-        flow, visible, _ = calc_flow(v_depth_rendered[idx, 0], pose_est, pose_real, K, v_depth_real[idx, 0], thresh=3E-3, standard_rep=False)
+        flow, visible, _ = calc_flow(
+            v_depth_rendered[idx, 0],
+            pose_est,
+            pose_real,
+            K,
+            v_depth_real[idx, 0],
+            thresh=3E-3,
+            standard_rep=False)
         v_zoom_factor[:, :2] = 1.5
         v_zoom_factor[:, 2:] = 0.2
         v_flow[idx] = flow.transpose((2, 0, 1))
         v_flow_weights[idx] = np.tile(visible, (2, 1, 1))
 
-
-    zoom_flow_mx = mx.sym.Custom(name='updater_in', op_type='ZoomFlow', height=height, width=width,
-                                     flow=flow_sym, flow_weights=flow_weights_sym, zoom_factor=zoom_factor,
-                                     b_inv_zoom=False)
-    exe0 = zoom_flow_mx.simple_bind(ctx=ctx, zoom_factor=v_zoom_factor.shape, flow=v_flow.shape,
-                                    flow_weights=v_flow_weights.shape)
+    zoom_flow_mx = mx.sym.Custom(
+        name='updater_in',
+        op_type='ZoomFlow',
+        height=height,
+        width=width,
+        flow=flow_sym,
+        flow_weights=flow_weights_sym,
+        zoom_factor=zoom_factor,
+        b_inv_zoom=False)
+    exe0 = zoom_flow_mx.simple_bind(
+        ctx=ctx,
+        zoom_factor=v_zoom_factor.shape,
+        flow=v_flow.shape,
+        flow_weights=v_flow_weights.shape)
     # forward
     exe0.arg_dict['zoom_factor'][:] = mx.ndarray.array(v_zoom_factor, ctx=ctx)
     exe0.arg_dict['flow'][:] = mx.ndarray.array(v_flow, ctx=ctx)
-    exe0.arg_dict['flow_weights'][:] = mx.ndarray.array(v_flow_weights, ctx=ctx)
-    exe0.forward(is_train=True) # forward
+    exe0.arg_dict['flow_weights'][:] = mx.ndarray.array(
+        v_flow_weights, ctx=ctx)
+    exe0.forward(is_train=True)  # forward
 
-    zoom_flow_mx, zoomf_flow_weights = mx.sym.Custom(name='updater_in', op_type='ZoomFlow', height=height, width=width,
-                                     flow=flow_sym, flow_weights=flow_weights_sym, zoom_factor=zoom_factor,
-                                     b_inv_zoom=False)
-    simple_zoom_flow = mx.sym.Custom(name='updater_out', op_type='ZoomFlow', height=height, width=width,
-                                     flow=zoom_flow_mx, zoom_factor=zoom_factor,
-                                     b_inv_zoom=True)
-    exe1 = simple_zoom_flow.simple_bind(ctx=ctx, zoom_factor=v_zoom_factor.shape, flow=v_flow.shape, flow_weights=v_flow_weights.shape)
+    zoom_flow_mx, zoomf_flow_weights = mx.sym.Custom(
+        name='updater_in',
+        op_type='ZoomFlow',
+        height=height,
+        width=width,
+        flow=flow_sym,
+        flow_weights=flow_weights_sym,
+        zoom_factor=zoom_factor,
+        b_inv_zoom=False)
+    simple_zoom_flow = mx.sym.Custom(
+        name='updater_out',
+        op_type='ZoomFlow',
+        height=height,
+        width=width,
+        flow=zoom_flow_mx,
+        zoom_factor=zoom_factor,
+        b_inv_zoom=True)
+    exe1 = simple_zoom_flow.simple_bind(
+        ctx=ctx,
+        zoom_factor=v_zoom_factor.shape,
+        flow=v_flow.shape,
+        flow_weights=v_flow_weights.shape)
 
     # forward
     exe1.arg_dict['zoom_factor'][:] = mx.ndarray.array(v_zoom_factor, ctx=ctx)
     exe1.arg_dict['flow'][:] = mx.ndarray.array(v_flow, ctx=ctx)
-    exe1.arg_dict['flow_weights'][:] = mx.ndarray.array(v_flow_weights, ctx=ctx)
+    exe1.arg_dict['flow_weights'][:] = mx.ndarray.array(
+        v_flow_weights, ctx=ctx)
     import time
     import matplotlib.pyplot as plt
     t = time.time()
-    exe1.forward(is_train=True) # forward
+    exe1.forward(is_train=True)  # forward
 
     zoom_flow = exe0.outputs[0].asnumpy()
     zoom_flow_weights = exe0.outputs[1].asnumpy()
     inv_zoom_flow = exe1.outputs[0].asnumpy()
 
-
     def sigmoid(x):
-        return 1 / (1 + np.exp(-x*20))
+        return 1 / (1 + np.exp(-x * 20))
 
     STANDARD_FLOW_REP = False
 
     for batch_idx in range(batch_size):
-        im_real = v_image_real[batch_idx].transpose([1,2,0]).astype(np.uint8)
-        im_rendered = v_image_rendered[batch_idx].transpose([1,2,0]).astype(np.uint8)
+        im_real = v_image_real[batch_idx].transpose([1, 2, 0]).astype(np.uint8)
+        im_rendered = v_image_rendered[batch_idx].transpose([1, 2, 0]).astype(
+            np.uint8)
 
-        flow = v_flow[batch_idx].transpose([1,2,0])
-        flow_weights = v_flow_weights[batch_idx] # (2,h,w)
-        flow_inv = inv_zoom_flow[batch_idx].transpose([1,2,0])
-        z_flow = zoom_flow[batch_idx].transpose([1,2,0])
+        flow = v_flow[batch_idx].transpose([1, 2, 0])
+        flow_weights = v_flow_weights[batch_idx]  # (2,h,w)
+        flow_inv = inv_zoom_flow[batch_idx].transpose([1, 2, 0])
+        z_flow = zoom_flow[batch_idx].transpose([1, 2, 0])
         z_flow_weights = zoom_flow_weights[batch_idx]
         visible = flow_weights[0, :, :]
         z_visible = z_flow_weights[0, :, :]
 
         fig = plt.figure()
-        tmp=fig.add_subplot(3, 4, 1)
+        tmp = fig.add_subplot(3, 4, 1)
         tmp.set_title('image_real')
         plt.axis('off')
         plt.imshow(im_real)
 
-        tmp =fig.add_subplot(3, 4, 2)
+        tmp = fig.add_subplot(3, 4, 2)
         tmp.set_title('image_imagine')
         plt.axis('off')
         plt.imshow(im_rendered)
@@ -228,26 +275,41 @@ if __name__ == '__main__':
                     cur_flow = flow[h, w, :].flatten()
                     if not STANDARD_FLOW_REP:
                         cur_flow = cur_flow[[1, 0]]
-                    point_color = [sigmoid(float(h) / height - 0.5) * 200 + 50,
-                                   sigmoid(0.5 - float(w) / width) * 200 + 50,
-                                   sigmoid(float(h) / height + float(w) / width - 1) * 200 + 50]
+                    point_color = [
+                        sigmoid(float(h) / height - 0.5) * 200 + 50,
+                        sigmoid(0.5 - float(w) / width) * 200 + 50,
+                        sigmoid(float(h) / height + float(w) / width - 1) * 200
+                        + 50
+                    ]
 
-                    mesh_src = cv2.circle(mesh_src, (np.round(w).astype(int), np.round(h).astype(int)),
-                                          1, point_color)
-                    mesh_tgt = cv2.circle(mesh_tgt, (np.round(w + cur_flow[0]).astype(int), np.round(h + cur_flow[1]).astype(int)),
-                                          1, point_color)
+                    mesh_src = cv2.circle(
+                        mesh_src,
+                        (np.round(w).astype(int), np.round(h).astype(int)), 1,
+                        point_color)
+                    mesh_tgt = cv2.circle(
+                        mesh_tgt, (np.round(w + cur_flow[0]).astype(int),
+                                   np.round(h + cur_flow[1]).astype(int)), 1,
+                        point_color)
 
                 cur_flow_inv = flow_inv[h, w, :].flatten()
                 if not STANDARD_FLOW_REP:
                     cur_flow_inv = cur_flow_inv[[1, 0]]
                 if cur_flow_inv[0] != 0 or cur_flow_inv[1] != 0:
-                    point_color = [sigmoid(float(h) / height - 0.5) * 200 + 50,
-                                   sigmoid(0.5 - float(w) / width) * 200 + 50,
-                                   sigmoid(float(h) / height + float(w) / width - 1) * 200 + 50]
-                    mesh_back_src = cv2.circle(mesh_back_src, (np.round(w).astype(int), np.round(h).astype(int)),
-                                               1, point_color)
-                    mesh_back_tgt = cv2.circle(mesh_back_tgt, (np.round(w + cur_flow_inv[0]).astype(int), np.round(h + cur_flow_inv[1]).astype(int)),
-                                          1, point_color)
+                    point_color = [
+                        sigmoid(float(h) / height - 0.5) * 200 + 50,
+                        sigmoid(0.5 - float(w) / width) * 200 + 50,
+                        sigmoid(float(h) / height + float(w) / width - 1) * 200
+                        + 50
+                    ]
+                    mesh_back_src = cv2.circle(
+                        mesh_back_src,
+                        (np.round(w).astype(int), np.round(h).astype(int)), 1,
+                        point_color)
+                    mesh_back_tgt = cv2.circle(
+                        mesh_back_tgt,
+                        (np.round(w + cur_flow_inv[0]).astype(int),
+                         np.round(h + cur_flow_inv[1]).astype(int)), 1,
+                        point_color)
         # zoom_flow
         z_mesh_tgt = np.zeros((height, width, 3), np.uint8)
         z_mesh_src = np.zeros((height, width, 3), np.uint8)
@@ -257,15 +319,21 @@ if __name__ == '__main__':
                     cur_flow = z_flow[h, w, :].flatten()
                     if not STANDARD_FLOW_REP:
                         cur_flow = cur_flow[[1, 0]]
-                    point_color = [sigmoid(float(h) / height - 0.5) * 200 + 50,
-                                   sigmoid(0.5 - float(w) / width) * 200 + 50,
-                                   sigmoid(float(h) / height + float(w) / width - 1) * 200 + 50]
+                    point_color = [
+                        sigmoid(float(h) / height - 0.5) * 200 + 50,
+                        sigmoid(0.5 - float(w) / width) * 200 + 50,
+                        sigmoid(float(h) / height + float(w) / width - 1) * 200
+                        + 50
+                    ]
 
-                    z_mesh_src = cv2.circle(z_mesh_src, (np.round(w).astype(int), np.round(h).astype(int)),
-                                          1, point_color)
-                    z_mesh_tgt = cv2.circle(z_mesh_tgt, (
-                    np.round(w + cur_flow[0]).astype(int), np.round(h + cur_flow[1]).astype(int)),
-                                          1, point_color)
+                    z_mesh_src = cv2.circle(
+                        z_mesh_src,
+                        (np.round(w).astype(int), np.round(h).astype(int)), 1,
+                        point_color)
+                    z_mesh_tgt = cv2.circle(
+                        z_mesh_tgt, (np.round(w + cur_flow[0]).astype(int),
+                                     np.round(h + cur_flow[1]).astype(int)), 1,
+                        point_color)
 
         # fig = plt.figure()
         tmp = fig.add_subplot(3, 4, 5)
@@ -304,4 +372,3 @@ if __name__ == '__main__':
         plt.imshow(z_visible)
 
         plt.show()
-

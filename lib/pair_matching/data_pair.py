@@ -4,12 +4,13 @@
 # Written by Yi Li, Gu Wang
 # --------------------------------------------------------
 from __future__ import print_function, division
-from six.moves import xrange
 import numpy as np
-from lib.utils.image import *
 import lib.utils.image as image
-from lib.pair_matching.RT_transform import calc_RT_delta, mat2euler, mat2quat
-from lib.utils.tictoc import tic, toc
+from lib.utils.image import (get_pair_depth, get_pair_image, get_pair_flow,
+                             get_point_cloud_model, get_point_cloud_observed,
+                             get_gt_observed_depth, get_pair_mask,
+                             my_tensor_vstack)
+from lib.pair_matching.RT_transform import calc_RT_delta
 
 
 def get_data_pair_test_batch(pairdb, config):
@@ -30,18 +31,18 @@ def get_data_pair_test_batch(pairdb, config):
 
     im_info = [
         np.array([pairdb[i]['height'], pairdb[i]['width']], dtype=np.float32)
-        for i in xrange(len(pairdb))
+        for i in range(len(pairdb))
     ]
 
     num_pair = len(pairdb)
     for i in range(num_pair):
-        class_index_tensor = [[] for i in xrange(num_pair)]
+        class_index_tensor = [[] for i in range(num_pair)]
         class_index_tensor[i] = np.array(
             config.dataset.class_name.index(pairdb[i]['gt_class'])).reshape(1)
         class_index_array = my_tensor_vstack(class_index_tensor)
 
     data = []
-    for i in xrange(len(pairdb)):
+    for i in range(len(pairdb)):
         cur_batch = {
             'image_observed': im_observed[i],
             'image_rendered': im_rendered[i],

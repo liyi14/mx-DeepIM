@@ -4,8 +4,8 @@
 # Written by Gu Wang
 # --------------------------------------------------------
 from __future__ import print_function, division
-import numpy as np
 import cv2
+
 
 def read_img(path, n_channel=3):
     if n_channel == 3:

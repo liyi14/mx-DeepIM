@@ -5,7 +5,7 @@
 # --------------------------------------------------------
 from __future__ import print_function, division
 import numpy as np
-from lib.dataset import *
+from lib.dataset import *  # noqa: F401, F403
 
 
 def load_gt_roidb(dataset_name,

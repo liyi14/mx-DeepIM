@@ -17,7 +17,9 @@ import warnings
 from mxnet import context as ctx
 from mxnet.initializer import Uniform, InitDesc
 from mxnet.module.base_module import BaseModule, _check_input_names, _parse_data_desc, _as_list
-from mxnet.model import _create_kvstore, _initialize_kvstore, _update_params, _update_params_on_kvstore, load_checkpoint, BatchEndParam
+from mxnet.model import (_create_kvstore, _initialize_kvstore, _update_params,
+                         _update_params_on_kvstore, load_checkpoint,
+                         BatchEndParam)
 from mxnet import metric
 
 from .DataParallelExecutorGroup import DataParallelExecutorGroup
@@ -292,7 +294,7 @@ class Module(BaseModule):
                 else:
                     if not allow_missing:
                         raise RuntimeError("%s is not presented" % name)
-                    if initializer != None:
+                    if initializer is not None:
                         initializer(name, arr)
             else:
                 initializer(name, arr)
@@ -524,8 +526,9 @@ class Module(BaseModule):
             self.logger.warning('optimizer already initialized, ignoring...')
             return
 
-        (kvstore, update_on_kvstore) = \
-                _create_kvstore(kvstore, len(self._context), self._arg_params)
+        (kvstore, update_on_kvstore) = _create_kvstore(kvstore,
+                                                       len(self._context),
+                                                       self._arg_params)
 
         batch_size = self._exec_group.batch_size
         if kvstore and 'dist' in kvstore.type and '_sync' in kvstore.type:

@@ -18,7 +18,7 @@ def save_checkpoint(prefix, epoch, arg_params, aux_params):
     :return: None
     prefix-epoch.params will be saved for parameters.
     """
-    save_dict = {('arg:%s' % k) : v for k, v in arg_params.items()}
-    save_dict.update({('aux:%s' % k) : v for k, v in aux_params.items()})
+    save_dict = {('arg:%s' % k): v for k, v in arg_params.items()}
+    save_dict.update({('aux:%s' % k): v for k, v in aux_params.items()})
     param_name = '%s-%04d.params' % (prefix, epoch)
     mx.nd.save(param_name, save_dict)

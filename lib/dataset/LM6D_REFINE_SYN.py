@@ -10,9 +10,9 @@ import cv2
 import os
 import numpy as np
 from .imdb import IMDB
-from lib.utils.projection import se3_inverse, se3_mul
+from lib.utils.projection import se3_mul
 from lib.utils.print_and_log import print_and_log
-from lib.utils.pose_error import *
+from lib.utils.pose_error import add, adi, re, arp_2d
 from lib.pair_matching.RT_transform import calc_rt_dist_m
 
 
@@ -113,7 +113,7 @@ class LM6D_REFINE_SYN(IMDB):
             for line in f:
                 line_list = line.strip().split()
                 cls_idx = int(line_list[0])
-                if not cls_idx in self.idx2class.keys():
+                if cls_idx not in self.idx2class.keys():
                     continue
                 diameter = float(line_list[2])
                 cls_name = self.idx2class[cls_idx]
@@ -472,8 +472,9 @@ class LM6D_REFINE_SYN(IMDB):
                         error = adi(RT[:3, :3], RT[:, 3], pose_gt[:3, :3],
                                     pose_gt[:, 3], self._points[cls_name])
                     else:
-                        error = add(RT[:3, :3], RT[:, 3], pose_gt[:3, :3],
-                                    pose_gt[:, 3], self._points[cls_name])
+                        error = add(
+                            RT[:3, :3], RT[:, 3], pose_gt[:3, :3],
+                            pose_gt[:, 3], self._points[cls_name])
 
                     if error < threshold_002[cls_idx, iter_i]:
                         count_correct['0.02'][cls_idx, iter_i] += 1

@@ -7,6 +7,7 @@ from __future__ import print_function, division
 import numpy as np
 import cv2
 
+
 def stat_depth(pairdb, config):
     '''
     stat max and min value of depth in a pairdb
@@ -22,8 +23,9 @@ def stat_depth(pairdb, config):
         depth_rendered = cv2.imread(f, cv2.IMREAD_UNCHANGED).astype(np.float32)
         x = np.max(depth_rendered)
         y = np.min(depth_rendered)
-        max_val = x if x>max_val else max_val
-        min_val = y if y<min_val else min_val
-    print('max of depth value is {}, min of depth value is {}'.format(max_val, min_val))
+        max_val = x if x > max_val else max_val
+        min_val = y if y < min_val else min_val
+    print('max of depth value is {}, min of depth value is {}'.format(
+        max_val, min_val))
 
     return max_val, min_val

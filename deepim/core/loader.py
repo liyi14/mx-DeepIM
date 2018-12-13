@@ -7,14 +7,12 @@ from __future__ import print_function, division
 import numpy as np
 import mxnet as mx
 import random
-from six.moves import xrange
-import math
 
 from mxnet.executor_manager import _split_input_slice
-from lib.utils.image import tensor_vstack, my_tensor_vstack
+from lib.utils.image import my_tensor_vstack
 from lib.pair_matching.data_pair import get_data_pair_train_batch, get_data_pair_test_batch
-from PIL import Image
 from multiprocessing import Pool
+
 
 class TestDataLoader(mx.io.DataIter):
     def __init__(self, pairdb, config, batch_size=1, shuffle=False):
@@ -31,14 +29,15 @@ class TestDataLoader(mx.io.DataIter):
         self.index = np.arange(self.size)
 
         # decide data and label names (only for training)
-        self.data_name = ['image_observed', 'image_rendered', 'src_pose', 'class_index']
+        self.data_name = [
+            'image_observed', 'image_rendered', 'src_pose', 'class_index'
+        ]
         if config.network.INPUT_DEPTH:
             self.data_name.append('depth_observed')
             self.data_name.append('depth_rendered')
         if config.network.INPUT_MASK:
             self.data_name.append('mask_observed')
             self.data_name.append('mask_rendered')
-
 
         self.label_name = None
 
@@ -54,11 +53,12 @@ class TestDataLoader(mx.io.DataIter):
 
     @property
     def provide_data(self):
-        return [[(k, v.shape) for k, v in zip(self.data_name, self.data[i])] for i in xrange(len(self.data))]
+        return [[(k, v.shape) for k, v in zip(self.data_name, self.data[i])]
+                for i in range(len(self.data))]
 
     @property
     def provide_label(self):
-        return [None for i in xrange(len(self.data))]
+        return [None for i in range(len(self.data))]
 
     @property
     def provide_data_single(self):
@@ -80,9 +80,13 @@ class TestDataLoader(mx.io.DataIter):
         if self.iter_next():
             self.get_batch()
             self.cur += self.batch_size
-            return mx.io.DataBatch(data=self.data, label=self.label,
-                                   pad=self.getpad(), index=self.getindex(),
-                                   provide_data=self.provide_data, provide_label=self.provide_label)
+            return mx.io.DataBatch(
+                data=self.data,
+                label=self.label,
+                pad=self.getpad(),
+                index=self.getindex(),
+                provide_data=self.provide_data,
+                provide_label=self.provide_label)
         else:
             raise StopIteration
 
@@ -102,11 +106,20 @@ class TestDataLoader(mx.io.DataIter):
 
         data, label, im_info = get_data_pair_test_batch(pairdb, self.config)
 
-        self.data = [[mx.nd.array(data[i][name]) for name in self.data_name] for i in xrange(len(data))]
+        self.data = [[mx.nd.array(data[i][name]) for name in self.data_name]
+                     for i in range(len(data))]
         self.im_info = im_info
 
+
 class TrainDataLoader(mx.io.DataIter):
-    def __init__(self, sym, pairdb, config, batch_size=1, shuffle=False, ctx=None, work_load_list=None):
+    def __init__(self,
+                 sym,
+                 pairdb,
+                 config,
+                 batch_size=1,
+                 shuffle=False,
+                 ctx=None,
+                 work_load_list=None):
         """
         This Iter will provide seg data to Deeplab network
         :param sym: to infer shape
@@ -140,7 +153,10 @@ class TrainDataLoader(mx.io.DataIter):
         self.index = np.arange(self.size)
 
         # decide data and label names
-        self.data_name = ['image_observed', 'image_rendered', 'depth_gt_observed', 'class_index', 'src_pose', 'tgt_pose']
+        self.data_name = [
+            'image_observed', 'image_rendered', 'depth_gt_observed',
+            'class_index', 'src_pose', 'tgt_pose'
+        ]
 
         if config.network.INPUT_DEPTH:
             self.data_name.append('depth_observed')
@@ -186,20 +202,24 @@ class TrainDataLoader(mx.io.DataIter):
 
     @property
     def provide_data(self):
-        return [[(k, v.shape) for k, v in zip(self.data_name, self.data[i])] for i in xrange(len(self.data))]
+        return [[(k, v.shape) for k, v in zip(self.data_name, self.data[i])]
+                for i in range(len(self.data))]
 
     @property
     def provide_label(self):
-        return [[(k, v.shape) for k, v in zip(self.label_name, self.label[i])] for i in xrange(len(self.label))]
+        return [[(k, v.shape) for k, v in zip(self.label_name, self.label[i])]
+                for i in range(len(self.label))]
 
     @property
     def provide_data_single(self):
-        print('data_single: ', [(k, v.shape) for k, v in zip(self.data_name, self.data[0])])
+        print('data_single: ',
+              [(k, v.shape) for k, v in zip(self.data_name, self.data[0])])
         return [(k, v.shape) for k, v in zip(self.data_name, self.data[0])]
 
     @property
     def provide_label_single(self):
-        print('label_single: ', [(k, v.shape) for k, v in zip(self.label_name, self.label[0])])
+        print('label_single: ',
+              [(k, v.shape) for k, v in zip(self.label_name, self.label[0])])
         return [(k, v.shape) for k, v in zip(self.label_name, self.label[0])]
 
     def reset(self):
@@ -219,9 +239,13 @@ class TrainDataLoader(mx.io.DataIter):
         if self.iter_next():
             self.get_batch_parallel()
             self.cur += self.batch_size
-            return mx.io.DataBatch(data=self.data, label=self.label,
-                                   pad=self.getpad(), index=self.getindex(),
-                                   provide_data=self.provide_data, provide_label=self.provide_label)
+            return mx.io.DataBatch(
+                data=self.data,
+                label=self.label,
+                pad=self.getpad(),
+                index=self.getindex(),
+                provide_data=self.provide_data,
+                provide_label=self.provide_label)
         else:
             raise StopIteration
 
@@ -268,12 +292,14 @@ class TrainDataLoader(mx.io.DataIter):
                 get_data_pair_train_batch, (ipairdb, self.config)))
             """
             for i in range(islice.start, islice.stop):
-                multiprocess_results.append(self.pool.apply_async(
-                    get_data_pair_train_batch, ([pairdb[i]], self.config)))
+                multiprocess_results.append(
+                    self.pool.apply_async(get_data_pair_train_batch,
+                                          ([pairdb[i]], self.config)))
 
         if False:
-            temp = get_data_pair_train_batch([pairdb[islice.start]], self.config) # for debug
-            print('**'*20)
+            temp = get_data_pair_train_batch([pairdb[islice.start]],
+                                             self.config)  # for debug
+            print('**' * 20)
             print(pairdb[0]['image_observed'])
             print('data:')
             for k in temp['data'].keys():
@@ -284,35 +310,44 @@ class TrainDataLoader(mx.io.DataIter):
             print(temp['label']['rot'])
             print(temp['label']['trans'])
             from lib.pair_matching.RT_transform import calc_rt_dist_m
-            r_dist, t_dist = calc_rt_dist_m(temp['data']['src_pose'][0], temp['data']['tgt_pose'][0])
-            print("{}: R_dist: {}, T_dist: {}".format(self.cur, r_dist, t_dist))
-            print('**'*20)
-            image_real = (temp['data']['image_observed'][0].transpose([1,2,0])+128).astype(np.uint8)
+            r_dist, t_dist = calc_rt_dist_m(temp['data']['src_pose'][0],
+                                            temp['data']['tgt_pose'][0])
+            print("{}: R_dist: {}, T_dist: {}".format(self.cur, r_dist,
+                                                      t_dist))
+            print('**' * 20)
+            image_real = (temp['data']['image_observed'][0].transpose(
+                [1, 2, 0]) + 128).astype(np.uint8)
             print(np.max(image_real))
             print(np.min(image_real))
-            image_rendered = (temp['data']['image_rendered'][0].transpose([1,2,0])+128).astype(np.uint8)
+            image_rendered = (temp['data']['image_rendered'][0].transpose(
+                [1, 2, 0]) + 128).astype(np.uint8)
             mask_real_gt = np.squeeze(temp['label']['mask_gt_observed'])
             mask_real_est = np.squeeze(temp['data']['mask_observed'])
             mask_rendered = np.squeeze(temp['data']['mask_rendered'])
             if 'flow' in temp['label']:
-                print('in loader, flow: ', temp['label']['flow'].shape, np.unique(temp['label']['flow']))
+                print('in loader, flow: ', temp['label']['flow'].shape,
+                      np.unique(temp['label']['flow']))
                 print('in loader, flow weights: ',
-                      temp['label']['flow_weights'].shape, np.unique(temp['label']['flow_weights']))
+                      temp['label']['flow_weights'].shape,
+                      np.unique(temp['label']['flow_weights']))
             import matplotlib.pyplot as plt
-            plt.subplot(2,3,1)
+            plt.subplot(2, 3, 1)
             plt.imshow(mask_real_est)
-            plt.subplot(2,3,2)
+            plt.subplot(2, 3, 2)
             plt.imshow(mask_real_gt)
-            plt.subplot(2,3,3)
+            plt.subplot(2, 3, 3)
             plt.imshow(mask_rendered)
-            plt.subplot(2,3,4)
+            plt.subplot(2, 3, 4)
             plt.imshow(image_real)
-            plt.subplot(2,3,5)
+            plt.subplot(2, 3, 5)
             plt.imshow(image_rendered)
             plt.show()
             # plt.savefig('image_real_rendered_{}'.format(self.cur), aspect='normal')
 
-        rst = [multiprocess_result.get() for multiprocess_result in multiprocess_results]
+        rst = [
+            multiprocess_result.get()
+            for multiprocess_result in multiprocess_results
+        ]
 
         batch_per_gpu = int(self.batch_size / len(ctx))
         data_list = []
@@ -330,11 +365,12 @@ class TrainDataLoader(mx.io.DataIter):
                     my_tensor_vstack([sample_label_list[j][key] for j in range(i*batch_per_gpu, (i+1)*batch_per_gpu)])
             data_list.append(batch_data)
             label_list.append(batch_label)
-
         """
         data_list = [_['data'] for _ in rst]
         label_list = [_['label'] for _ in rst]
         """
-        self.data = [[mx.nd.array(data_on_i[key]) for key in self.data_name] for data_on_i in data_list]
-        self.label = [[mx.nd.array(label_on_i[key]) for key in self.label_name] for label_on_i in label_list]
-
+        self.data = [[mx.nd.array(data_on_i[key]) for key in self.data_name]
+                     for data_on_i in data_list]
+        self.label = [[
+            mx.nd.array(label_on_i[key]) for key in self.label_name
+        ] for label_on_i in label_list]

@@ -6,7 +6,7 @@
 from __future__ import print_function, division
 import time
 import logging
-import mxnet as mx
+
 
 class Speedometer(object):
     def __init__(self, batch_size, frequent=50):
@@ -25,15 +25,18 @@ class Speedometer(object):
 
         if self.init:
             if count % self.frequent == 0:
-                speed = self.frequent * self.batch_size / (time.time() - self.tic)
+                speed = self.frequent * self.batch_size / (
+                    time.time() - self.tic)
                 s = ''
                 if param.eval_metric is not None:
                     name, value = param.eval_metric.get()
-                    s = "Epoch[%d] Batch [%d]\tSpeed: %.2f samples/sec\tTrain-" % (param.epoch, count, speed)
+                    s = "Epoch[%d] Batch [%d]\tSpeed: %.2f samples/sec\tTrain-" % (
+                        param.epoch, count, speed)
                     for n, v in zip(name, value):
                         s += "%s=%f,\t" % (n, v)
                 else:
-                    s = "Iter[%d] Batch [%d]\tSpeed: %.2f samples/sec" % (param.epoch, count, speed)
+                    s = "Iter[%d] Batch [%d]\tSpeed: %.2f samples/sec" % (
+                        param.epoch, count, speed)
 
                 logging.info(s)
                 print(s)

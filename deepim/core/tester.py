@@ -16,10 +16,7 @@ from six.moves import cPickle
 from .module import MutableModule
 from lib.utils.PrefetchingIter import PrefetchingIter
 
-from lib.pair_matching.flow import calc_flow
-from lib.utils.show_flows import sintel_compute_color
-
-from lib.pair_matching.RT_transform import *
+from lib.pair_matching.RT_transform import calc_rt_dist_m, RT_transform
 from lib.pair_matching.data_pair import update_data_batch
 
 from lib.utils.print_and_log import print_and_log
@@ -447,7 +444,7 @@ def pred_eval(config,
             rst_iter.append(cur_rst)
 
         post_time += time.time() - t
-        sample_ratio = 1  # 0.01
+        # sample_ratio = 1  # 0.01
         for batch_idx in range(0, test_data.batch_size):
             # if config.TEST.VISUALIZE and not (r_dist>15 and t_dist>0.05):
             #     continue # 3388, 5326
@@ -737,7 +734,7 @@ def calc_EPE_one_pair(flow_pred_list, flow_gt, flow_type):
     return all_diff
 
 
-def get_onclick(ax_real_list, ax_rendered_list, data, fig):
+def get_onclick(ax_real_list, ax_rendered_list, data, fig, config):
     def onclick(event):
         point_rendered = np.round([event.xdata, event.ydata]).astype(int)
         print('point_rendered: {}'.format(point_rendered))

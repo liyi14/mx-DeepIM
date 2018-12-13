@@ -4,12 +4,15 @@
 # Written by Yi Li
 # --------------------------------------------------------
 from __future__ import print_function, division
-import sys, os
+import sys
+import os
 cur_dir = os.path.abspath(os.path.dirname(__file__))
-sys.path.insert(0, os.path.join(cur_dir, '../../external/mxnet/mxnet_v00_0303'))
-import cv2
+sys.path.insert(0, os.path.join(cur_dir,
+                                '../../external/mxnet/mxnet_v00_0303'))
 import mxnet as mx
 import numpy as np
+
+
 class GroupPickerOperator(mx.operator.CustomOp):
     def __init__(self, group_num):
         super(GroupPickerOperator, self).__init__()
@@ -32,11 +35,11 @@ class GroupPickerOperator(mx.operator.CustomOp):
 
         for batch_idx in range(batch_size):
             g = int(np.squeeze(pick_idx_data[batch_idx]))
-            assert g<self.group_num and g>=0
-            top_data[batch_idx] = bottom_data[batch_idx][self.channels_in_group*g:self.channels_in_group*(g+1)]
+            assert g < self.group_num and g >= 0
+            top_data[batch_idx] = bottom_data[batch_idx][
+                self.channels_in_group * g:self.channels_in_group * (g + 1)]
 
         self.assign(out_data[0], req[0], mx.ndarray.array(top_data, ctx=ctx))
-
 
     def backward(self, req, out_grad, in_data, out_data, in_grad, aux):
         ctx = in_data[0].context
@@ -47,11 +50,14 @@ class GroupPickerOperator(mx.operator.CustomOp):
 
         for batch_idx in range(batch_size):
             g = int(np.squeeze(pick_idx_data[batch_idx]))
-            assert g<self.group_num and g>=0
-            bottom_grad[batch_idx][self.channels_in_group*g:self.channels_in_group*(g+1)] = top_grad[batch_idx]
+            assert g < self.group_num and g >= 0
+            bottom_grad[batch_idx][self.channels_in_group *
+                                   g:self.channels_in_group *
+                                   (g + 1)] = top_grad[batch_idx]
 
         self.assign(in_grad[0], req[0], mx.ndarray.array(bottom_grad, ctx=ctx))
         self.assign(in_grad[1], req[1], 0)
+
 
 @mx.operator.register('GroupPicker')
 class GroupPickerProp(mx.operator.CustomOpProp):
@@ -94,30 +100,38 @@ if __name__ == '__main__':
     # initialize layer
     rot_all_classes = mx.sym.Variable('rot_all_classes')
     class_index = mx.sym.Variable('class_index')
-    proj2d = mx.sym.Custom(input_data=rot_all_classes, group_idx=class_index,
-                           name='updater', op_type='GroupPicker', group_num=num_classes)
-    v_rot_all_classes = np.random.rand(batch_size, 4*num_classes)
+    proj2d = mx.sym.Custom(
+        input_data=rot_all_classes,
+        group_idx=class_index,
+        name='updater',
+        op_type='GroupPicker',
+        group_num=num_classes)
+    v_rot_all_classes = np.random.rand(batch_size, 4 * num_classes)
     v_class_index = np.random.randint(num_classes, size=[batch_size, 1])
 
-    exe1 = proj2d.simple_bind(ctx=ctx, rot_all_classes=v_rot_all_classes.shape, class_index=v_class_index.shape)
+    exe1 = proj2d.simple_bind(
+        ctx=ctx,
+        rot_all_classes=v_rot_all_classes.shape,
+        class_index=v_class_index.shape)
 
     # forward
-    exe1.arg_dict['rot_all_classes'][:] = mx.ndarray.array(v_rot_all_classes, ctx=ctx)
+    exe1.arg_dict['rot_all_classes'][:] = mx.ndarray.array(
+        v_rot_all_classes, ctx=ctx)
     exe1.arg_dict['class_index'][:] = mx.ndarray.array(v_class_index, ctx=ctx)
     import time
-    import matplotlib.pyplot as plt
+    import matplotlib.pyplot as plt  # noqa:F401
     t = time.time()
     exe1.forward(is_train=True)
     picked_data_mx = exe1.outputs[0].asnumpy()
     picked_data_py = np.zeros([batch_size, 4])
     for i in range(batch_size):
         g = int(v_class_index[i])
-        picked_data_py[i] = v_rot_all_classes[i, g*4:(g+1)*4]
+        picked_data_py[i] = v_rot_all_classes[i, g * 4:(g + 1) * 4]
 
     for batch_idx in range(batch_size):
         print('py: ', picked_data_mx[batch_idx])
         print('mx: ', picked_data_py[batch_idx])
-    print(picked_data_mx-picked_data_py)
+    print(picked_data_mx - picked_data_py)
 
     grad = mx.ndarray.ones_like(exe1.outputs[0])
     exe1.backward(grad)
@@ -125,4 +139,3 @@ if __name__ == '__main__':
     print(grad_est_all)
 
     print(np.squeeze(v_class_index))
-
