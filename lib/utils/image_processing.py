@@ -23,7 +23,9 @@ def resize(im, target_size, max_size):
     # prevent bigger axis from being more than max_size:
     if np.round(im_scale * im_size_max) > max_size:
         im_scale = float(max_size) / float(im_size_max)
-    im = cv2.resize(im, None, None, fx=im_scale, fy=im_scale, interpolation=cv2.INTER_LINEAR)
+    im = cv2.resize(
+        im, None, None, fx=im_scale, fy=im_scale, interpolation=cv2.INTER_LINEAR
+    )
     return im, im_scale
 
 
@@ -85,6 +87,8 @@ def tensor_vstack(tensor_list, pad=0):
         pad_shape = [(0, 0)]
         for dim in range(1, ndim):
             pad_shape.append((0, dimensions[dim] - tensor.shape[dim]))
-        tensor_list[ind] = np.lib.pad(tensor, pad_shape, 'constant', constant_values=pad)
+        tensor_list[ind] = np.lib.pad(
+            tensor, pad_shape, "constant", constant_values=pad
+        )
     all_tensor = np.vstack(tensor_list)
     return all_tensor

@@ -24,21 +24,14 @@ class WarmupMultiFactorScheduler(LRScheduler):
         the factor for reducing the learning rate
     """
 
-    def __init__(self,
-                 step,
-                 factor=1,
-                 warmup=False,
-                 warmup_lr=0,
-                 warmup_step=0):
+    def __init__(self, step, factor=1, warmup=False, warmup_lr=0, warmup_step=0):
         super(WarmupMultiFactorScheduler, self).__init__()
         assert isinstance(step, list) and len(step) >= 1
         for i, _step in enumerate(step):
             if i != 0 and step[i] <= step[i - 1]:
-                raise ValueError(
-                    "Schedule step must be an increasing integer list")
+                raise ValueError("Schedule step must be an increasing integer list")
             if _step < 1:
-                raise ValueError(
-                    "Schedule step must be greater or equal than 1 round")
+                raise ValueError("Schedule step must be greater or equal than 1 round")
         if factor > 1.0:
             raise ValueError("Factor must be no more than 1 to make lr reduce")
         self.step = step
@@ -67,8 +60,11 @@ class WarmupMultiFactorScheduler(LRScheduler):
                 self.count = self.step[self.cur_step_ind]
                 self.cur_step_ind += 1
                 self.base_lr *= self.factor
-                logging.info("Update[%d]: Change learning rate to %0.5e",
-                             num_update, self.base_lr)
+                logging.info(
+                    "Update[%d]: Change learning rate to %0.5e",
+                    num_update,
+                    self.base_lr,
+                )
             else:
                 return self.base_lr
         return self.base_lr

@@ -13,7 +13,7 @@ def estimate_visib_mask(d_test, d_model, delta):
     :param delta: Tolerance used in the visibility test.
     :return: Visibility mask.
     """
-    assert (d_test.shape == d_model.shape)
+    assert d_test.shape == d_model.shape
     mask_valid = np.logical_and(d_test > 0, d_model > 0)
 
     d_diff = d_model.astype(np.float32) - d_test.astype(np.float32)

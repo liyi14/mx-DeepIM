@@ -13,12 +13,9 @@ import numpy.linalg as LA
 from math import pi
 
 
-def calc_RT_delta(pose_src,
-                  pose_tgt,
-                  T_means,
-                  T_stds,
-                  rot_coord='MODEL',
-                  rot_type='MATRIX'):
+def calc_RT_delta(
+    pose_src, pose_tgt, T_means, T_stds, rot_coord="MODEL", rot_type="MATRIX"
+):
     """
     project the points in source corrd to target corrd
     :param pose_src: pose matrix of soucre, [R|T], 3x4
@@ -28,21 +25,21 @@ def calc_RT_delta(pose_src,
     :return: Rm_delta
     :return: T_delta
     """
-    if rot_coord.lower() == 'naive':
+    if rot_coord.lower() == "naive":
         se3_src2tgt = se3_mul(pose_tgt, se3_inverse(pose_src))
         Rm_delta = se3_src2tgt[:, :3]
         T_delta = se3_src2tgt[:, 3].reshape((3))
     else:
-        Rm_delta = R_inv_transform(pose_src[:3, :3], pose_tgt[:3, :3],
-                                   rot_coord)
-        T_delta = T_inv_transform(pose_src[:, 3], pose_tgt[:, 3], T_means,
-                                  T_stds, rot_coord)
+        Rm_delta = R_inv_transform(pose_src[:3, :3], pose_tgt[:3, :3], rot_coord)
+        T_delta = T_inv_transform(
+            pose_src[:, 3], pose_tgt[:, 3], T_means, T_stds, rot_coord
+        )
 
-    if rot_type.lower() == 'quat':
+    if rot_type.lower() == "quat":
         r = mat2quat(Rm_delta)
-    elif rot_type.lower() == 'euler':
+    elif rot_type.lower() == "euler":
         r = mat2euler(Rm_delta)
-    elif rot_type.lower() == 'matrix':
+    elif rot_type.lower() == "matrix":
         r = Rm_delta
     else:
         raise Exception("Unknown rot_type: {}".format(rot_type))
@@ -51,7 +48,7 @@ def calc_RT_delta(pose_src,
     return r, t
 
 
-def R_transform(R_src, R_delta, rot_coord='MODEL'):
+def R_transform(R_src, R_delta, rot_coord="MODEL"):
     """
     transform R_src use R_delta
     :param R_src: matrix
@@ -59,44 +56,45 @@ def R_transform(R_src, R_delta, rot_coord='MODEL'):
     :param rot_coord:
     :return:
     """
-    if rot_coord.lower() == 'model':
+    if rot_coord.lower() == "model":
         R_output = np.dot(R_src, R_delta)
-    elif rot_coord.lower() == 'camera' or rot_coord.lower(
-    ) == 'naive' or rot_coord.lower() == 'camera_new':
+    elif (
+        rot_coord.lower() == "camera"
+        or rot_coord.lower() == "naive"
+        or rot_coord.lower() == "camera_new"
+    ):
         R_output = np.dot(R_delta, R_src)
     else:
-        raise Exception(
-            "Unknown rot_coord in R_transform: {}".format(rot_coord))
+        raise Exception("Unknown rot_coord in R_transform: {}".format(rot_coord))
     return R_output
 
 
 def R_inv_transform(R_src, R_tgt, rot_coord):
-    if rot_coord.lower() == 'model':
+    if rot_coord.lower() == "model":
         R_delta = np.dot(R_src.transpose(), R_tgt)
-    elif rot_coord.lower() == 'camera' or rot_coord.lower() == 'camera_new':
+    elif rot_coord.lower() == "camera" or rot_coord.lower() == "camera_new":
         R_delta = np.dot(R_tgt, R_src.transpose())
     else:
-        raise Exception(
-            "Unknown rot_coord in R_inv_transform: {}".format(rot_coord))
+        raise Exception("Unknown rot_coord in R_inv_transform: {}".format(rot_coord))
     return R_delta
 
 
 def T_transform(T_src, T_delta, T_means, T_stds, rot_coord):
-    '''
+    """
     :param T_src: (x1, y1, z1)
     :param T_delta: (dx, dy, dz), normed
     :return: T_tgt: (x2, y2, z2)
-    '''
+    """
     # print("T_src: {}".format(T_src))
     assert T_src[2] != 0, "T_src: {}".format(T_src)
     T_delta_1 = T_delta * T_stds + T_means
-    T_tgt = np.zeros((3, ))
+    T_tgt = np.zeros((3,))
     z2 = T_src[2] / np.exp(T_delta_1[2])
     T_tgt[2] = z2
-    if rot_coord.lower() == 'camera' or rot_coord.lower() == 'model':
+    if rot_coord.lower() == "camera" or rot_coord.lower() == "model":
         T_tgt[0] = z2 * (T_delta_1[0] + T_src[0] / T_src[2])
         T_tgt[1] = z2 * (T_delta_1[1] + T_src[1] / T_src[2])
-    elif rot_coord.lower() == 'camera_new':
+    elif rot_coord.lower() == "camera_new":
         T_tgt[0] = T_src[2] * T_delta_1[0] + T_src[0]
         T_tgt[1] = T_src[2] * T_delta_1[1] + T_src[1]
     else:
@@ -109,22 +107,22 @@ def T_transform_naive(R_delta, T_src, T_delta):
     T_src = T_src.reshape((3, 1))
     T_delta = T_delta.reshape((3, 1))
     T_new = np.dot(R_delta, T_src) + T_delta
-    return T_new.reshape((3, ))
+    return T_new.reshape((3,))
 
 
 def T_inv_transform(T_src, T_tgt, T_means, T_stds, rot_coord):
-    '''
+    """
     :param T_src:
     :param T_tgt:
     :param T_means:
     :param T_stds:
     :return: T_delta: delta in pixel
-    '''
-    T_delta = np.zeros((3, ))
-    if rot_coord.lower() == 'camera_new':
+    """
+    T_delta = np.zeros((3,))
+    if rot_coord.lower() == "camera_new":
         T_delta[0] = (T_tgt[0] - T_src[0]) / T_src[2]
         T_delta[1] = (T_tgt[1] - T_src[1]) / T_src[2]
-    elif rot_coord.lower() == 'camera' or rot_coord.lower() == 'model':
+    elif rot_coord.lower() == "camera" or rot_coord.lower() == "model":
         T_delta[0] = T_tgt[0] / T_tgt[2] - T_src[0] / T_src[2]
         T_delta[1] = T_tgt[1] / T_tgt[2] - T_src[1] / T_src[2]
     else:
@@ -134,7 +132,7 @@ def T_inv_transform(T_src, T_tgt, T_means, T_stds, rot_coord):
     return T_delta_normed
 
 
-def RT_transform(pose_src, r, t, T_means, T_stds, rot_coord='MODEL'):
+def RT_transform(pose_src, r, t, T_means, T_stds, rot_coord="MODEL"):
     # r: 4(quat) or 3(euler) number
     # t: 3 number, (delta_x, delta_y, scale)
     r = np.squeeze(r)
@@ -148,7 +146,7 @@ def RT_transform(pose_src, r, t, T_means, T_stds, rot_coord='MODEL'):
         raise Exception("Unknown r shape: {}".format(r.shape))
     t_delta = np.squeeze(t)
 
-    if rot_coord.lower() == 'naive':
+    if rot_coord.lower() == "naive":
         se3_mx = np.zeros((3, 4))
         se3_mx[:, :3] = Rm_delta
         se3_mx[:, 3] = t
@@ -156,15 +154,16 @@ def RT_transform(pose_src, r, t, T_means, T_stds, rot_coord='MODEL'):
     else:
         pose_est = np.zeros((3, 4))
         pose_est[:3, :3] = R_transform(pose_src[:3, :3], Rm_delta, rot_coord)
-        pose_est[:3, 3] = T_transform(pose_src[:, 3], t_delta, T_means, T_stds,
-                                      rot_coord)
+        pose_est[:3, 3] = T_transform(
+            pose_src[:, 3], t_delta, T_means, T_stds, rot_coord
+        )
 
     return pose_est
 
 
 def calc_rt_dist_q(Rq_src, Rq_tgt, T_src, T_tgt):
 
-    rd_rad = np.arccos(np.inner(Rq_src, Rq_tgt)**2 * 2 - 1)
+    rd_rad = np.arccos(np.inner(Rq_src, Rq_tgt) ** 2 * 2 - 1)
     rd_deg = rd_rad / pi * 180
     td = LA.norm(T_tgt - T_src)
     return rd_deg, td
@@ -176,7 +175,7 @@ def calc_rt_dist_m(pose_src, pose_tgt):
     R_tgt = pose_tgt[:, :3]
     T_tgt = pose_tgt[:, 3]
     temp = logm(np.dot(np.transpose(R_src), R_tgt))
-    rd_rad = LA.norm(temp, 'fro') / np.sqrt(2)
+    rd_rad = LA.norm(temp, "fro") / np.sqrt(2)
     rd_deg = rd_rad / pi * 180
 
     td = LA.norm(T_tgt - T_src)
@@ -213,30 +212,30 @@ _NEXT_AXIS = [1, 2, 0, 1]
 
 # map axes strings to/from tuples of inner axis, parity, repetition, frame
 _AXES2TUPLE = {
-    'sxyz': (0, 0, 0, 0),
-    'sxyx': (0, 0, 1, 0),
-    'sxzy': (0, 1, 0, 0),
-    'sxzx': (0, 1, 1, 0),
-    'syzx': (1, 0, 0, 0),
-    'syzy': (1, 0, 1, 0),
-    'syxz': (1, 1, 0, 0),
-    'syxy': (1, 1, 1, 0),
-    'szxy': (2, 0, 0, 0),
-    'szxz': (2, 0, 1, 0),
-    'szyx': (2, 1, 0, 0),
-    'szyz': (2, 1, 1, 0),
-    'rzyx': (0, 0, 0, 1),
-    'rxyx': (0, 0, 1, 1),
-    'ryzx': (0, 1, 0, 1),
-    'rxzx': (0, 1, 1, 1),
-    'rxzy': (1, 0, 0, 1),
-    'ryzy': (1, 0, 1, 1),
-    'rzxy': (1, 1, 0, 1),
-    'ryxy': (1, 1, 1, 1),
-    'ryxz': (2, 0, 0, 1),
-    'rzxz': (2, 0, 1, 1),
-    'rxyz': (2, 1, 0, 1),
-    'rzyz': (2, 1, 1, 1)
+    "sxyz": (0, 0, 0, 0),
+    "sxyx": (0, 0, 1, 0),
+    "sxzy": (0, 1, 0, 0),
+    "sxzx": (0, 1, 1, 0),
+    "syzx": (1, 0, 0, 0),
+    "syzy": (1, 0, 1, 0),
+    "syxz": (1, 1, 0, 0),
+    "syxy": (1, 1, 1, 0),
+    "szxy": (2, 0, 0, 0),
+    "szxz": (2, 0, 1, 0),
+    "szyx": (2, 1, 0, 0),
+    "szyz": (2, 1, 1, 0),
+    "rzyx": (0, 0, 0, 1),
+    "rxyx": (0, 0, 1, 1),
+    "ryzx": (0, 1, 0, 1),
+    "rxzx": (0, 1, 1, 1),
+    "rxzy": (1, 0, 0, 1),
+    "ryzy": (1, 0, 1, 1),
+    "rzxy": (1, 1, 0, 1),
+    "ryxy": (1, 1, 1, 1),
+    "ryxz": (2, 0, 0, 1),
+    "rzxz": (2, 0, 1, 1),
+    "rxyz": (2, 1, 0, 1),
+    "rzyz": (2, 1, 1, 1),
 }
 
 _TUPLE2AXES = dict((v, k) for k, v in _AXES2TUPLE.items())
@@ -248,7 +247,7 @@ _MAX_FLOAT = np.maximum_sctype(np.float)
 _FLOAT_EPS = np.finfo(np.float).eps
 
 
-def euler2mat(ai, aj, ak, axes='sxyz'):
+def euler2mat(ai, aj, ak, axes="sxyz"):
     """Return rotation matrix from Euler angles and axis sequence.
     Parameters
     ----------
@@ -318,7 +317,7 @@ def euler2mat(ai, aj, ak, axes='sxyz'):
     return M
 
 
-def mat2euler(mat, axes='sxyz'):
+def mat2euler(mat, axes="sxyz"):
     """Return Euler angles from rotation matrix for specified axis sequence.
     Note that many Euler angle triplets can describe one matrix.
     Parameters
@@ -392,7 +391,7 @@ def quat_inverse(q):
 
 
 def quat2mat(q):
-    ''' Calculate rotation matrix corresponding to quaternion
+    """ Calculate rotation matrix corresponding to quaternion
     Parameters
     ----------
     q : 4 element array-like
@@ -417,7 +416,7 @@ def quat2mat(q):
     >>> M = quat2mat([0, 1, 0, 0]) # 180 degree rotn around axis 0
     >>> np.allclose(M, np.diag([1, -1, -1]))
     True
-    '''
+    """
     w, x, y, z = q
     Nq = w * w + x * x + y * y + z * z
     if Nq < _FLOAT_EPS:
@@ -435,13 +434,17 @@ def quat2mat(q):
     yY = y * Y
     yZ = y * Z
     zZ = z * Z
-    return np.array([[1.0 - (yY + zZ), xY - wZ, xZ + wY],
-                     [xY + wZ, 1.0 - (xX + zZ), yZ - wX],
-                     [xZ - wY, yZ + wX, 1.0 - (xX + yY)]])
+    return np.array(
+        [
+            [1.0 - (yY + zZ), xY - wZ, xZ + wY],
+            [xY + wZ, 1.0 - (xX + zZ), yZ - wX],
+            [xZ - wY, yZ + wX, 1.0 - (xX + yY)],
+        ]
+    )
 
 
 def mat2quat(M):
-    ''' Calculate quaternion corresponding to given rotation matrix
+    """ Calculate quaternion corresponding to given rotation matrix
 
     Parameters
     ----------
@@ -492,16 +495,23 @@ def mat2quat(M):
     Control and Dynamics 23(6):1085-1087 (Engineering Note), ISSN
     0731-5090
 
-    '''
+    """
     # Qyx refers to the contribution of the y input vector component to
     # the x output vector component.  Qyx is therefore the same as
     # M[0,1].  The notation is from the Wikipedia article.
     Qxx, Qyx, Qzx, Qxy, Qyy, Qzy, Qxz, Qyz, Qzz = M.flat
     # Fill only lower half of symmetric matrix
-    K = np.array([[Qxx - Qyy - Qzz, 0, 0, 0], [
-        Qyx + Qxy, Qyy - Qxx - Qzz, 0, 0
-    ], [Qzx + Qxz, Qzy + Qyz, Qzz - Qxx - Qyy, 0],
-                  [Qyz - Qzy, Qzx - Qxz, Qxy - Qyx, Qxx + Qyy + Qzz]]) / 3.0
+    K = (
+        np.array(
+            [
+                [Qxx - Qyy - Qzz, 0, 0, 0],
+                [Qyx + Qxy, Qyy - Qxx - Qzz, 0, 0],
+                [Qzx + Qxz, Qzy + Qyz, Qzz - Qxx - Qyy, 0],
+                [Qyz - Qzy, Qzx - Qxz, Qxy - Qyx, Qxx + Qyy + Qzz],
+            ]
+        )
+        / 3.0
+    )
     # Use Hermitian eigenvectors, values for speed
     vals, vecs = np.linalg.eigh(K)
     # Select largest eigenvector, reorder to w,x,y,z quaternion
@@ -513,7 +523,7 @@ def mat2quat(M):
     return q
 
 
-def euler2quat(ai, aj, ak, axes='sxyz'):
+def euler2quat(ai, aj, ak, axes="sxyz"):
     """Return `quaternion` from Euler angles and axis sequence `axes`
     Parameters
     ----------
@@ -565,7 +575,7 @@ def euler2quat(ai, aj, ak, axes='sxyz'):
     sc = si * ck
     ss = si * sk
 
-    q = np.empty((4, ))
+    q = np.empty((4,))
     if repetition:
         q[0] = cj * (cc - ss)
         q[i] = cj * (cs + sc)
@@ -584,7 +594,7 @@ def euler2quat(ai, aj, ak, axes='sxyz'):
     return q
 
 
-def quat2euler(quaternion, axes='sxyz'):
+def quat2euler(quaternion, axes="sxyz"):
     """Euler angles from `quaternion` for specified axis sequence `axes`
     Parameters
     ----------
@@ -611,7 +621,7 @@ def quat2euler(quaternion, axes='sxyz'):
 
 
 def qmult(q1, q2):
-    ''' Multiply two quaternions
+    """ Multiply two quaternions
     Parameters
     ----------
     q1 : 4 element sequence
@@ -622,7 +632,7 @@ def qmult(q1, q2):
     Notes
     -----
     See : http://en.wikipedia.org/wiki/Quaternions#Hamilton_product
-    '''
+    """
     w1, x1, y1, z1 = q1
     w2, x2, y2, z2 = q2
     w = w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2

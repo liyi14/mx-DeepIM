@@ -36,27 +36,33 @@ class Symbol:
 
     def infer_shape(self, data_shape_dict):
         # infer shape
-        arg_shape, out_shape, aux_shape = self.sym.infer_shape(
-            **data_shape_dict)
+        arg_shape, out_shape, aux_shape = self.sym.infer_shape(**data_shape_dict)
         self.arg_shape_dict = dict(zip(self.sym.list_arguments(), arg_shape))
         self.out_shape_dict = dict(zip(self.sym.list_outputs(), out_shape))
-        self.aux_shape_dict = dict(
-            zip(self.sym.list_auxiliary_states(), aux_shape))
+        self.aux_shape_dict = dict(zip(self.sym.list_auxiliary_states(), aux_shape))
 
-    def check_parameter_shapes(self,
-                               arg_params,
-                               aux_params,
-                               data_shape_dict,
-                               is_train=True):
+    def check_parameter_shapes(
+        self, arg_params, aux_params, data_shape_dict, is_train=True
+    ):
         for k in self.sym.list_arguments():
-            if k in data_shape_dict or (False if is_train else 'label' in k):
+            if k in data_shape_dict or (False if is_train else "label" in k):
                 continue
-            assert k in arg_params, k + ' not initialized'
-            assert arg_params[k].shape == self.arg_shape_dict[k], \
-                'shape inconsistent for ' + k + ' inferred ' + str(self.arg_shape_dict[k]) + ' provided ' + str(
-                    arg_params[k].shape)
+            assert k in arg_params, k + " not initialized"
+            assert arg_params[k].shape == self.arg_shape_dict[k], (
+                "shape inconsistent for "
+                + k
+                + " inferred "
+                + str(self.arg_shape_dict[k])
+                + " provided "
+                + str(arg_params[k].shape)
+            )
         for k in self.sym.list_auxiliary_states():
-            assert k in aux_params, k + ' not initialized'
-            assert aux_params[k].shape == self.aux_shape_dict[k], \
-                'shape inconsistent for ' + k + ' inferred ' + str(self.aux_shape_dict[k]) + ' provided ' + str(
-                    aux_params[k].shape)
+            assert k in aux_params, k + " not initialized"
+            assert aux_params[k].shape == self.aux_shape_dict[k], (
+                "shape inconsistent for "
+                + k
+                + " inferred "
+                + str(self.aux_shape_dict[k])
+                + " provided "
+                + str(aux_params[k].shape)
+            )

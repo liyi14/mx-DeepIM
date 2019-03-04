@@ -16,10 +16,20 @@ import warnings
 
 from mxnet import context as ctx
 from mxnet.initializer import Uniform, InitDesc
-from mxnet.module.base_module import BaseModule, _check_input_names, _parse_data_desc, _as_list
-from mxnet.model import (_create_kvstore, _initialize_kvstore, _update_params,
-                         _update_params_on_kvstore, load_checkpoint,
-                         BatchEndParam)
+from mxnet.module.base_module import (
+    BaseModule,
+    _check_input_names,
+    _parse_data_desc,
+    _as_list,
+)
+from mxnet.model import (
+    _create_kvstore,
+    _initialize_kvstore,
+    _update_params,
+    _update_params_on_kvstore,
+    load_checkpoint,
+    BatchEndParam,
+)
 from mxnet import metric
 
 from .DataParallelExecutorGroup import DataParallelExecutorGroup
@@ -53,16 +63,18 @@ class Module(BaseModule):
         Instead they are initialized to 0 and can be set by set_states()
     """
 
-    def __init__(self,
-                 symbol,
-                 data_names=('data', ),
-                 label_names=('softmax_label', ),
-                 logger=logging,
-                 context=ctx.cpu(),
-                 work_load_list=None,
-                 fixed_param_names=None,
-                 state_names=None,
-                 config=None):
+    def __init__(
+        self,
+        symbol,
+        data_names=("data",),
+        label_names=("softmax_label",),
+        logger=logging,
+        context=ctx.cpu(),
+        work_load_list=None,
+        fixed_param_names=None,
+        state_names=None,
+        config=None,
+    ):
         super(Module, self).__init__(logger=logger)
 
         self.config = config
@@ -79,8 +91,9 @@ class Module(BaseModule):
         data_names = list(data_names) if data_names is not None else []
         label_names = list(label_names) if label_names is not None else []
         state_names = list(state_names) if state_names is not None else []
-        fixed_param_names = list(
-            fixed_param_names) if fixed_param_names is not None else []
+        fixed_param_names = (
+            list(fixed_param_names) if fixed_param_names is not None else []
+        )
 
         _check_input_names(symbol, data_names, "data", True)
         _check_input_names(symbol, label_names, "label", False)
@@ -146,8 +159,8 @@ class Module(BaseModule):
         # if loading old trained model
         new_args = copy.deepcopy(args)
         for key in args.keys():
-            if 'i2r' in key:
-                new_key = key.replace('i2r_', '')
+            if "i2r" in key:
+                new_key = key.replace("i2r_", "")
                 print(key, new_key)
                 new_args.pop(key)
                 new_args[new_key] = args[key]
@@ -157,7 +170,7 @@ class Module(BaseModule):
         mod._aux_params = auxs
         mod.params_initialized = True
         if load_optimizer_states:
-            mod._preload_opt_states = '%s-%04d.states' % (prefix, epoch)
+            mod._preload_opt_states = "%s-%04d.states" % (prefix, epoch)
         return mod
 
     def save_checkpoint(self, prefix, epoch, save_optimizer_states=False):
@@ -173,14 +186,14 @@ class Module(BaseModule):
         save_optimizer_states : bool
             Whether to save optimizer states for continue training
         """
-        self._symbol.save('%s-symbol.json' % prefix)
-        param_name = '%s-%04d.params' % (prefix, epoch)
+        self._symbol.save("%s-symbol.json" % prefix)
+        param_name = "%s-%04d.params" % (prefix, epoch)
         self.save_params(param_name)
-        logging.info('Saved checkpoint to \"%s\"', param_name)
+        logging.info('Saved checkpoint to "%s"', param_name)
         if save_optimizer_states:
-            state_name = '%s-%04d.states' % (prefix, epoch)
+            state_name = "%s-%04d.states" % (prefix, epoch)
             self.save_optimizer_states(state_name)
-            logging.info('Saved optimizer state to \"%s\"', state_name)
+            logging.info('Saved optimizer state to "%s"', state_name)
 
     def _reset_bind(self):
         """Internal function to reset binded state."""
@@ -249,13 +262,15 @@ class Module(BaseModule):
             self._sync_params_from_devices()
         return (self._arg_params, self._aux_params)
 
-    def init_params(self,
-                    initializer=Uniform(0.01),
-                    arg_params=None,
-                    aux_params=None,
-                    allow_missing=False,
-                    force_init=False,
-                    allow_extra=False):
+    def init_params(
+        self,
+        initializer=Uniform(0.01),
+        arg_params=None,
+        aux_params=None,
+        allow_missing=False,
+        force_init=False,
+        allow_extra=False,
+    ):
         """Initialize the parameters and auxiliary states.
 
         Parameters
@@ -278,9 +293,10 @@ class Module(BaseModule):
             warnings.warn(
                 "Parameters already initialized and force_init=False. "
                 "init_params call ignored.",
-                stacklevel=2)
+                stacklevel=2,
+            )
             return
-        assert self.binded, 'call bind before initializing the parameters'
+        assert self.binded, "call bind before initializing the parameters"
 
         def _impl(name, arr, cache):
             """Internal helper for parameter initialization"""
@@ -314,12 +330,14 @@ class Module(BaseModule):
         # copy the initialized parameters to devices
         self._exec_group.set_params(self._arg_params, self._aux_params)
 
-    def set_params(self,
-                   arg_params,
-                   aux_params,
-                   allow_missing=False,
-                   force_init=True,
-                   allow_extra=False):
+    def set_params(
+        self,
+        arg_params,
+        aux_params,
+        allow_missing=False,
+        force_init=True,
+        allow_extra=False,
+    ):
         """Assign parameter and aux state values.
 
         Parameters
@@ -347,14 +365,16 @@ class Module(BaseModule):
                 arg_params=arg_params,
                 aux_params=aux_params,
                 allow_missing=allow_missing,
-                force_init=force_init)
+                force_init=force_init,
+            )
             return
 
         if self.params_initialized and not force_init:
             warnings.warn(
                 "Parameters already initialized and force_init=False. "
                 "set_params call ignored.",
-                stacklevel=2)
+                stacklevel=2,
+            )
             return
 
         self._exec_group.set_params(arg_params, aux_params)
@@ -363,14 +383,16 @@ class Module(BaseModule):
         self._params_dirty = True
         self.params_initialized = True
 
-    def bind(self,
-             data_shapes,
-             label_shapes=None,
-             for_training=True,
-             inputs_need_grad=False,
-             force_rebind=False,
-             shared_module=None,
-             grad_req='write'):
+    def bind(
+        self,
+        data_shapes,
+        label_shapes=None,
+        for_training=True,
+        inputs_need_grad=False,
+        force_rebind=False,
+        shared_module=None,
+        grad_req="write",
+    ):
         """Bind the symbols to construct executors. This is necessary before one
         can perform computation with the module.
 
@@ -400,7 +422,7 @@ class Module(BaseModule):
             self._reset_bind()
 
         if self.binded:
-            self.logger.warning('Already binded, ignoring bind()')
+            self.logger.warning("Already binded, ignoring bind()")
             return
 
         self.for_training = for_training
@@ -418,17 +440,23 @@ class Module(BaseModule):
 
         # self._data_shapes, self._label_shapes = _parse_data_desc(
         #     self.data_names, self.label_names, data_shapes, label_shapes)
-        self._data_shapes, self._label_shapes = zip(*[
-            _parse_data_desc(self.data_names, self.label_names, data_shape,
-                             label_shape)
-            for data_shape, label_shape in zip(data_shapes, label_shapes)
-        ])
+        self._data_shapes, self._label_shapes = zip(
+            *[
+                _parse_data_desc(
+                    self.data_names, self.label_names, data_shape, label_shape
+                )
+                for data_shape, label_shape in zip(data_shapes, label_shapes)
+            ]
+        )
         if self._label_shapes.count(None) == len(self._label_shapes):
             self._label_shapes = None
 
         if shared_module is not None:
-            assert isinstance(shared_module, Module) and \
-                    shared_module.binded and shared_module.params_initialized
+            assert (
+                isinstance(shared_module, Module)
+                and shared_module.binded
+                and shared_module.params_initialized
+            )
             shared_group = shared_module._exec_group
         else:
             shared_group = None
@@ -446,7 +474,8 @@ class Module(BaseModule):
             logger=self.logger,
             fixed_param_names=self._fixed_param_names,
             grad_req=grad_req,
-            state_names=self._state_names)
+            state_names=self._state_names,
+        )
         # self._total_exec_bytes = self._exec_group._total_exec_bytes
         if shared_module is not None:
             self.params_initialized = True
@@ -463,8 +492,7 @@ class Module(BaseModule):
                 for x in self._exec_group.param_arrays
             ]
             self._arg_params = {
-                name: arr
-                for name, arr in zip(self._param_names, param_arrays)
+                name: arr for name, arr in zip(self._param_names, param_arrays)
             }
 
             aux_arrays = [
@@ -472,8 +500,7 @@ class Module(BaseModule):
                 for x in self._exec_group.aux_arrays
             ]
             self._aux_params = {
-                name: arr
-                for name, arr in zip(self._aux_names, aux_arrays)
+                name: arr for name, arr in zip(self._aux_names, aux_arrays)
             }
 
         if shared_module is not None and shared_module.optimizer_initialized:
@@ -492,19 +519,24 @@ class Module(BaseModule):
         assert self.binded
         # self._data_shapes, self._label_shapes = _parse_data_desc(
         #     self.data_names, self.label_names, data_shapes, label_shapes)
-        self._data_shapes, self._label_shapes = zip(*[
-            _parse_data_desc(self.data_names, self.label_names, data_shape,
-                             label_shape)
-            for data_shape, label_shape in zip(data_shapes, label_shapes)
-        ])
+        self._data_shapes, self._label_shapes = zip(
+            *[
+                _parse_data_desc(
+                    self.data_names, self.label_names, data_shape, label_shape
+                )
+                for data_shape, label_shape in zip(data_shapes, label_shapes)
+            ]
+        )
 
         self._exec_group.reshape(self._data_shapes, self._label_shapes)
 
-    def init_optimizer(self,
-                       kvstore='local',
-                       optimizer='sgd',
-                       optimizer_params=(('learning_rate', 0.01), ),
-                       force_init=False):
+    def init_optimizer(
+        self,
+        kvstore="local",
+        optimizer="sgd",
+        optimizer_params=(("learning_rate", 0.01),),
+        force_init=False,
+    ):
         """Install and initialize optimizers.
 
         Parameters
@@ -523,15 +555,15 @@ class Module(BaseModule):
         assert self.binded and self.params_initialized
 
         if self.optimizer_initialized and not force_init:
-            self.logger.warning('optimizer already initialized, ignoring...')
+            self.logger.warning("optimizer already initialized, ignoring...")
             return
 
-        (kvstore, update_on_kvstore) = _create_kvstore(kvstore,
-                                                       len(self._context),
-                                                       self._arg_params)
+        (kvstore, update_on_kvstore) = _create_kvstore(
+            kvstore, len(self._context), self._arg_params
+        )
 
         batch_size = self._exec_group.batch_size
-        if kvstore and 'dist' in kvstore.type and '_sync' in kvstore.type:
+        if kvstore and "dist" in kvstore.type and "_sync" in kvstore.type:
             batch_size *= kvstore.num_workers
         rescale_grad = 1.0 / batch_size
 
@@ -541,29 +573,29 @@ class Module(BaseModule):
                 idx2name.update(enumerate(self._exec_group.param_names))
             else:
                 for k in range(len(self._context)):
-                    idx2name.update({
-                        i * len(self._context) + k: n
-                        for i, n in enumerate(self._exec_group.param_names)
-                    })
+                    idx2name.update(
+                        {
+                            i * len(self._context) + k: n
+                            for i, n in enumerate(self._exec_group.param_names)
+                        }
+                    )
             optimizer_params = dict(optimizer_params)
-            if 'rescale_grad' not in optimizer_params:
-                optimizer_params['rescale_grad'] = rescale_grad
+            if "rescale_grad" not in optimizer_params:
+                optimizer_params["rescale_grad"] = rescale_grad
             optimizer = opt.create(
-                optimizer,
-                sym=self.symbol,
-                param_idx2name=idx2name,
-                **optimizer_params)
+                optimizer, sym=self.symbol, param_idx2name=idx2name, **optimizer_params
+            )
         else:
             assert isinstance(optimizer, opt.Optimizer)
             if optimizer.rescale_grad != rescale_grad:
-                #pylint: disable=no-member
+                # pylint: disable=no-member
                 warnings.warn(
                     "Optimizer created manually outside Module but rescale_grad "
-                    +
-                    "is not normalized to 1.0/batch_size/num_workers (%s vs. %s). "
-                    % (optimizer.rescale_grad, rescale_grad) +
-                    "Is this intended?",
-                    stacklevel=2)
+                    + "is not normalized to 1.0/batch_size/num_workers (%s vs. %s). "
+                    % (optimizer.rescale_grad, rescale_grad)
+                    + "Is this intended?",
+                    stacklevel=2,
+                )
 
         self._optimizer = optimizer
         self._kvstore = kvstore
@@ -577,7 +609,8 @@ class Module(BaseModule):
                 param_arrays=self._exec_group.param_arrays,
                 arg_params=self._arg_params,
                 param_names=self._param_names,
-                update_on_kvstore=update_on_kvstore)
+                update_on_kvstore=update_on_kvstore,
+            )
         if update_on_kvstore:
             kvstore.set_optimizer(self._optimizer)
         else:
@@ -639,8 +672,11 @@ class Module(BaseModule):
         self._params_dirty = True
         if self._update_on_kvstore:
             _update_params_on_kvstore(
-                self._exec_group.param_arrays, self._exec_group.grad_arrays,
-                self._kvstore, self._exec_group.param_names)
+                self._exec_group.param_arrays,
+                self._exec_group.grad_arrays,
+                self._kvstore,
+                self._exec_group.param_names,
+            )
         else:
             _update_params(
                 self._exec_group.param_arrays,
@@ -648,7 +684,8 @@ class Module(BaseModule):
                 updater=self._updater,
                 num_device=len(self._context),
                 kvstore=self._kvstore,
-                param_names=self._exec_group.param_names)
+                param_names=self._exec_group.param_names,
+            )
 
     def get_outputs(self, merge_multi_context=True):
         """Get outputs of the previous forward computation.
@@ -668,8 +705,7 @@ class Module(BaseModule):
         elements are `NDArray`.
         """
         assert self.binded and self.params_initialized
-        return self._exec_group.get_outputs(
-            merge_multi_context=merge_multi_context)
+        return self._exec_group.get_outputs(merge_multi_context=merge_multi_context)
 
     def get_input_grads(self, merge_multi_context=True):
         """Get the gradients with respect to the inputs of the module.
@@ -689,8 +725,7 @@ class Module(BaseModule):
         elements are `NDArray`.
         """
         assert self.binded and self.params_initialized and self.inputs_need_grad
-        return self._exec_group.get_input_grads(
-            merge_multi_context=merge_multi_context)
+        return self._exec_group.get_input_grads(merge_multi_context=merge_multi_context)
 
     def get_states(self, merge_multi_context=True):
         """Get states from all devices
@@ -710,8 +745,7 @@ class Module(BaseModule):
         elements are `NDArray`.
         """
         assert self.binded and self.params_initialized
-        return self._exec_group.get_states(
-            merge_multi_context=merge_multi_context)
+        return self._exec_group.get_states(merge_multi_context=merge_multi_context)
 
     def set_states(self, states=None, value=None):
         """Set value for states. Only one of states & value can be specified.
@@ -759,7 +793,7 @@ class Module(BaseModule):
         if self._update_on_kvstore:
             self._kvstore.save_optimizer_states(fname)
         else:
-            with open(fname, 'wb') as fout:
+            with open(fname, "wb") as fout:
                 fout.write(self._updater.get_states())
 
     def load_optimizer_states(self, fname):
@@ -775,7 +809,7 @@ class Module(BaseModule):
         if self._update_on_kvstore:
             self._kvstore.load_optimizer_states(fname)
         else:
-            self._updater.set_states(open(fname, 'rb').read())
+            self._updater.set_states(open(fname, "rb").read())
 
     def install_monitor(self, mon):
         """ Install monitor on all executors """
@@ -799,17 +833,19 @@ class MutableModule(BaseModule):
     fixed_param_prefix : list of str, indicating fixed parameters
     """
 
-    def __init__(self,
-                 symbol,
-                 data_names,
-                 label_names,
-                 logger=logging,
-                 context=ctx.cpu(),
-                 work_load_list=None,
-                 max_data_shapes=None,
-                 max_label_shapes=None,
-                 fixed_param_prefix=None,
-                 config=None):
+    def __init__(
+        self,
+        symbol,
+        data_names,
+        label_names,
+        logger=logging,
+        context=ctx.cpu(),
+        work_load_list=None,
+        max_data_shapes=None,
+        max_label_shapes=None,
+        fixed_param_prefix=None,
+        config=None,
+    ):
         super(MutableModule, self).__init__(logger=logger)
         self.config = config
         self._symbol = symbol
@@ -863,32 +899,37 @@ class MutableModule(BaseModule):
         assert self.binded and self.params_initialized
         return self._curr_module.get_params()
 
-    def init_params(self,
-                    initializer=Uniform(0.01),
-                    arg_params=None,
-                    aux_params=None,
-                    allow_missing=False,
-                    force_init=False,
-                    allow_extra=False):
+    def init_params(
+        self,
+        initializer=Uniform(0.01),
+        arg_params=None,
+        aux_params=None,
+        allow_missing=False,
+        force_init=False,
+        allow_extra=False,
+    ):
         if self.params_initialized and not force_init:
             return
-        assert self.binded, 'call bind before initializing the parameters'
+        assert self.binded, "call bind before initializing the parameters"
         self._curr_module.init_params(
             initializer=initializer,
             arg_params=arg_params,
             aux_params=aux_params,
             allow_missing=allow_missing,
-            force_init=force_init)
+            force_init=force_init,
+        )
         self.params_initialized = True
 
-    def bind(self,
-             data_shapes,
-             label_shapes=None,
-             for_training=True,
-             inputs_need_grad=False,
-             force_rebind=False,
-             shared_module=None,
-             grad_req='write'):
+    def bind(
+        self,
+        data_shapes,
+        label_shapes=None,
+        for_training=True,
+        inputs_need_grad=False,
+        force_rebind=False,
+        shared_module=None,
+        grad_req="write",
+    ):
         # in case we already initialized params, keep it
         if self.params_initialized:
             arg_params, aux_params = self.get_params()
@@ -899,10 +940,10 @@ class MutableModule(BaseModule):
             self._reset_bind()
 
         if self.binded:
-            self.logger.warning('Already binded, ignoring bind()')
+            self.logger.warning("Already binded, ignoring bind()")
             return
 
-        assert shared_module is None, 'shared_module for MutableModule is not supported'
+        assert shared_module is None, "shared_module for MutableModule is not supported"
 
         self.for_training = for_training
         self.inputs_need_grad = inputs_need_grad
@@ -939,13 +980,16 @@ class MutableModule(BaseModule):
             logger=self.logger,
             context=self._context,
             work_load_list=self._work_load_list,
-            fixed_param_names=self._fixed_param_names)
-        module.bind([max_data_shapes for _ in range(len(self._context))],
-                    [max_label_shapes for _ in range(len(self._context))],
-                    for_training,
-                    inputs_need_grad,
-                    force_rebind=False,
-                    shared_module=None)
+            fixed_param_names=self._fixed_param_names,
+        )
+        module.bind(
+            [max_data_shapes for _ in range(len(self._context))],
+            [max_label_shapes for _ in range(len(self._context))],
+            for_training,
+            inputs_need_grad,
+            force_rebind=False,
+            shared_module=None,
+        )
         self._curr_module = module
 
         # copy back saved params, if already initialized
@@ -967,43 +1011,48 @@ class MutableModule(BaseModule):
         """
         self._curr_module.save_checkpoint(prefix, epoch, save_optimizer_states)
 
-    def init_optimizer(self,
-                       kvstore='local',
-                       optimizer='sgd',
-                       optimizer_params=(('learning_rate', 0.01), ),
-                       force_init=False):
+    def init_optimizer(
+        self,
+        kvstore="local",
+        optimizer="sgd",
+        optimizer_params=(("learning_rate", 0.01),),
+        force_init=False,
+    ):
         assert self.binded and self.params_initialized
         if self.optimizer_initialized and not force_init:
-            self.logger.warning('optimizer already initialized, ignoring.')
+            self.logger.warning("optimizer already initialized, ignoring.")
             return
 
         self._curr_module._preload_opt_states = self._preload_opt_states
         self._curr_module.init_optimizer(
-            kvstore, optimizer, optimizer_params, force_init=force_init)
+            kvstore, optimizer, optimizer_params, force_init=force_init
+        )
         self.optimizer_initialized = True
 
-    def fit(self,
-            train_data,
-            eval_data=None,
-            eval_metric='acc',
-            epoch_end_callback=None,
-            batch_end_callback=None,
-            kvstore='local',
-            optimizer='sgd',
-            optimizer_params=(('learning_rate', 0.01), ),
-            eval_end_callback=None,
-            eval_batch_end_callback=None,
-            initializer=Uniform(0.01),
-            arg_params=None,
-            aux_params=None,
-            allow_missing=False,
-            force_rebind=False,
-            force_init=False,
-            begin_epoch=0,
-            num_epoch=None,
-            validation_metric=None,
-            monitor=None,
-            prefix=None):
+    def fit(
+        self,
+        train_data,
+        eval_data=None,
+        eval_metric="acc",
+        epoch_end_callback=None,
+        batch_end_callback=None,
+        kvstore="local",
+        optimizer="sgd",
+        optimizer_params=(("learning_rate", 0.01),),
+        eval_end_callback=None,
+        eval_batch_end_callback=None,
+        initializer=Uniform(0.01),
+        arg_params=None,
+        aux_params=None,
+        allow_missing=False,
+        force_rebind=False,
+        force_init=False,
+        begin_epoch=0,
+        num_epoch=None,
+        validation_metric=None,
+        monitor=None,
+        prefix=None,
+    ):
         """Train the module parameters.
 
         Parameters
@@ -1066,13 +1115,14 @@ class MutableModule(BaseModule):
                         optimizer_params={'learning_rate':0.01, 'momentum': 0.9},
                         num_epoch=10)
         """
-        assert num_epoch is not None, 'please specify number of epochs'
+        assert num_epoch is not None, "please specify number of epochs"
 
         self.bind(
             data_shapes=train_data.provide_data,
             label_shapes=train_data.provide_label,
             for_training=True,
-            force_rebind=force_rebind)
+            force_rebind=force_rebind,
+        )
         if monitor is not None:
             self.install_monitor(monitor)
         self.init_params(
@@ -1080,11 +1130,11 @@ class MutableModule(BaseModule):
             arg_params=arg_params,
             aux_params=aux_params,
             allow_missing=allow_missing,
-            force_init=force_init)
+            force_init=force_init,
+        )
         self.init_optimizer(
-            kvstore=kvstore,
-            optimizer=optimizer,
-            optimizer_params=optimizer_params)
+            kvstore=kvstore, optimizer=optimizer, optimizer_params=optimizer_params
+        )
 
         if validation_metric is None:
             validation_metric = eval_metric
@@ -1102,12 +1152,15 @@ class MutableModule(BaseModule):
                 callback(-1, self.symbol, arg_params, aux_params)
 
         from lib.pair_matching.batch_updater_py_multi import batchUpdaterPyMulti
+
         config = self.config
         if config.TRAIN.TENSORBOARD_LOG:
             from mxboard import SummaryWriter
+
             tf_log_dir = os.path.join(
-                os.path.dirname(prefix), 'logs/{}'.format(
-                    time.strftime('%Y-%m-%d-%H-%M')))
+                os.path.dirname(prefix),
+                "logs/{}".format(time.strftime("%Y-%m-%d-%H-%M")),
+            )
             summ_writer = SummaryWriter(logdir=tf_log_dir)
 
         interBatchUpdater = batchUpdaterPyMulti(config, 480, 640)
@@ -1126,28 +1179,28 @@ class MutableModule(BaseModule):
                     all_param_names = all_params.keys()
                     all_param_names = sorted(all_param_names)
                     print_and_log(prefix, self.logger)
-                    weight_str = ''
+                    weight_str = ""
                     for view_name in all_param_names:
-                        weight_str += '{}: {} '.format(
-                            view_name,
-                            nd.norm(all_params[view_name]).asnumpy())
+                        weight_str += "{}: {} ".format(
+                            view_name, nd.norm(all_params[view_name]).asnumpy()
+                        )
                     print_and_log(weight_str, self.logger)
-                    print_and_log("batch {}: lr: {}".format(nbatch, cur_lr),
-                                  self.logger)
+                    print_and_log(
+                        "batch {}: lr: {}".format(nbatch, cur_lr), self.logger
+                    )
                     if config.TRAIN.TENSORBOARD_LOG:
                         summ_writer.add_scalar(
-                            tag='learning_rate',
-                            value=cur_lr,
-                            global_step=cur_step)
+                            tag="learning_rate", value=cur_lr, global_step=cur_step
+                        )
                 if cur_lr != last_lr:
-                    print_and_log("batch {}: lr: {}".format(nbatch, cur_lr),
-                                  self.logger)
+                    print_and_log(
+                        "batch {}: lr: {}".format(nbatch, cur_lr), self.logger
+                    )
                     last_lr = cur_lr
                     if config.TRAIN.TENSORBOARD_LOG:
                         summ_writer.add_scalar(
-                            tag='learning_rate',
-                            value=cur_lr,
-                            global_step=cur_step)
+                            tag="learning_rate", value=cur_lr, global_step=cur_step
+                        )
 
                 train_iter_size = config.network.TRAIN_ITER_SIZE
                 for iter_idx in range(train_iter_size):
@@ -1156,7 +1209,8 @@ class MutableModule(BaseModule):
                     self.update()
                     if iter_idx != train_iter_size - 1:
                         data_batch = interBatchUpdater.forward(
-                            data_batch, preds, config)
+                            data_batch, preds, config
+                        )
                 cur_step += 1
                 self.update_metric(eval_metric, data_batch.label)
 
@@ -1168,27 +1222,28 @@ class MutableModule(BaseModule):
                         epoch=epoch,
                         nbatch=nbatch,
                         eval_metric=eval_metric,
-                        locals=locals())
+                        locals=locals(),
+                    )
                     for callback in _as_list(batch_end_callback):
                         callback(batch_end_params)
                 if config.TRAIN.TENSORBOARD_LOG:
                     for name, val in eval_metric.get_name_value():
                         summ_writer.add_scalar(
-                            tag='BatchTrain-{}'.format(name),
+                            tag="BatchTrain-{}".format(name),
                             value=val,
-                            global_step=cur_step)
+                            global_step=cur_step,
+                        )
 
             # one epoch of training is finished
             for name, val in eval_metric.get_name_value():
-                self.logger.info('Epoch[%d] Train-%s=%f', epoch, name, val)
+                self.logger.info("Epoch[%d] Train-%s=%f", epoch, name, val)
                 if config.TRAIN.TENSORBOARD_LOG:
                     summ_writer.add_scalar(
-                        tag='EpochTrain-{}'.format(name),
-                        value=val,
-                        global_step=epoch)
+                        tag="EpochTrain-{}".format(name), value=val, global_step=epoch
+                    )
 
             toc = time.time()
-            self.logger.info('Epoch[%d] Time cost=%.3f', epoch, (toc - tic))
+            self.logger.info("Epoch[%d] Time cost=%.3f", epoch, (toc - tic))
 
             # sync aux params across devices
             arg_params, aux_params = self.get_params()
@@ -1198,7 +1253,7 @@ class MutableModule(BaseModule):
                 for callback in _as_list(epoch_end_callback):
                     callback(epoch, self.symbol, arg_params, aux_params)
 
-            #----------------------------------------
+            # ----------------------------------------
             # evaluation on validation set
             if eval_data:
                 res = self.score(
@@ -1206,11 +1261,11 @@ class MutableModule(BaseModule):
                     validation_metric,
                     score_end_callback=eval_end_callback,
                     batch_end_callback=eval_batch_end_callback,
-                    epoch=epoch)
-                #TODO: pull this into default
+                    epoch=epoch,
+                )
+                # TODO: pull this into default
                 for name, val in res:
-                    self.logger.info('Epoch[%d] Validation-%s=%f', epoch, name,
-                                     val)
+                    self.logger.info("Epoch[%d] Validation-%s=%f", epoch, name, val)
 
             # end of 1 epoch, reset the data-iter for another epoch
             train_data.reset()
@@ -1221,8 +1276,9 @@ class MutableModule(BaseModule):
         # get current_shapes
         if self._curr_module.label_shapes is not None:
             current_shapes = [
-                dict(self._curr_module.data_shapes[i] +
-                     self._curr_module.label_shapes[i])
+                dict(
+                    self._curr_module.data_shapes[i] + self._curr_module.label_shapes[i]
+                )
                 for i in range(len(self._context))
             ]
         else:
@@ -1257,19 +1313,18 @@ class MutableModule(BaseModule):
                 self._data_names,
                 self._label_names,
                 logger=self.logger,
-                context=[
-                    self._context[i]
-                    for i in range(len(data_batch.provide_data))
-                ],
+                context=[self._context[i] for i in range(len(data_batch.provide_data))],
                 work_load_list=self._work_load_list,
-                fixed_param_names=self._fixed_param_names)
+                fixed_param_names=self._fixed_param_names,
+            )
             module.bind(
                 data_batch.provide_data,
                 data_batch.provide_label,
                 self._curr_module.for_training,
                 self._curr_module.inputs_need_grad,
                 force_rebind=False,
-                shared_module=self._curr_module)
+                shared_module=self._curr_module,
+            )
             self._curr_module = module
 
         self._curr_module.forward(data_batch, is_train=is_train)
@@ -1284,13 +1339,13 @@ class MutableModule(BaseModule):
 
     def get_outputs(self, merge_multi_context=True):
         assert self.binded and self.params_initialized
-        return self._curr_module.get_outputs(
-            merge_multi_context=merge_multi_context)
+        return self._curr_module.get_outputs(merge_multi_context=merge_multi_context)
 
     def get_input_grads(self, merge_multi_context=True):
         assert self.binded and self.params_initialized and self.inputs_need_grad
         return self._curr_module.get_input_grads(
-            merge_multi_context=merge_multi_context)
+            merge_multi_context=merge_multi_context
+        )
 
     def update_metric(self, eval_metric, labels):
         assert self.binded and self.params_initialized

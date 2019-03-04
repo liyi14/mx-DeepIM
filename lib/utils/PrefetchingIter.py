@@ -40,8 +40,7 @@ class PrefetchingIter(mx.io.DataIter):
         self.iters = iters
         self.rename_data = rename_data
         self.rename_label = rename_label
-        self.batch_size = len(
-            self.provide_data) * self.provide_data[0][0][1][0]
+        self.batch_size = len(self.provide_data) * self.provide_data[0][0][1][0]
         self.data_ready = [threading.Event() for i in range(self.n_iter)]
         self.data_taken = [threading.Event() for i in range(self.n_iter)]
         for e in self.data_taken:
@@ -84,10 +83,18 @@ class PrefetchingIter(mx.io.DataIter):
         if self.rename_data is None:
             return sum([i.provide_data for i in self.iters], [])
         else:
-            return sum([[
-                DataDesc(r[x.name], x.shape, x.dtype) if isinstance(
-                    x, DataDesc) else DataDesc(*x) for x in i.provide_data
-            ] for r, i in zip(self.rename_data, self.iters)], [])
+            return sum(
+                [
+                    [
+                        DataDesc(r[x.name], x.shape, x.dtype)
+                        if isinstance(x, DataDesc)
+                        else DataDesc(*x)
+                        for x in i.provide_data
+                    ]
+                    for r, i in zip(self.rename_data, self.iters)
+                ],
+                [],
+            )
 
     @property
     def provide_label(self):
@@ -95,10 +102,18 @@ class PrefetchingIter(mx.io.DataIter):
         if self.rename_label is None:
             return sum([i.provide_label for i in self.iters], [])
         else:
-            return sum([[
-                DataDesc(r[x.name], x.shape, x.dtype) if isinstance(
-                    x, DataDesc) else DataDesc(*x) for x in i.provide_label
-            ] for r, i in zip(self.rename_label, self.iters)], [])
+            return sum(
+                [
+                    [
+                        DataDesc(r[x.name], x.shape, x.dtype)
+                        if isinstance(x, DataDesc)
+                        else DataDesc(*x)
+                        for x in i.provide_label
+                    ]
+                    for r, i in zip(self.rename_label, self.iters)
+                ],
+                [],
+            )
 
     def reset(self):
         for e in self.data_ready:

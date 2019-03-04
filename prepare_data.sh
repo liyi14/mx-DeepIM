@@ -1,3 +1,4 @@
+set -e
 echo "####### Prepare LM6d_refine #######"
 # training set
 python toolkit/LM6d_devkit/LM6d_2a_adapt_images.py

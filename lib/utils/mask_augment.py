@@ -23,10 +23,10 @@ def mask_augment(mask_origin, augment_type):
     nz_y = np.nonzero(y_max)[0]
     start_x = np.min(nz_x)
     end_x = np.max(nz_x)
-    obj_width = end_x - start_x + 1.
+    obj_width = end_x - start_x + 1.0
     start_y = np.min(nz_y)
     end_y = np.max(nz_y)
-    obj_height = end_y - start_y + 1.
+    obj_height = end_y - start_y + 1.0
     mask_expand = np.copy(mask_origin)
 
     augment_type = augment_type % 18
@@ -75,15 +75,15 @@ def mask_augment(mask_origin, augment_type):
         x_end_ind = 3
         y_start_ind = 2.3
         y_end_ind = 3
-    patch_start_x = np.round(start_x + obj_width * x_start_ind / 3.)
-    patch_end_x = np.round(start_x + obj_width * x_end_ind / 3.)
-    patch_start_y = np.round(start_y + obj_height * y_start_ind / 3.)
-    patch_end_y = np.round(start_y + obj_height * y_end_ind / 3.)
+    patch_start_x = np.round(start_x + obj_width * x_start_ind / 3.0)
+    patch_end_x = np.round(start_x + obj_width * x_end_ind / 3.0)
+    patch_start_y = np.round(start_y + obj_height * y_start_ind / 3.0)
+    patch_end_y = np.round(start_y + obj_height * y_end_ind / 3.0)
 
-    patch_start_x = min(max(patch_start_x, 0), width).astype('int')
-    patch_end_x = min(max(patch_end_x, 0), width).astype('int')
-    patch_start_y = min(max(patch_start_y, 0), height).astype('int')
-    patch_end_y = min(max(patch_end_y, 0), height).astype('int')
+    patch_start_x = min(max(patch_start_x, 0), width).astype("int")
+    patch_end_x = min(max(patch_end_x, 0), width).astype("int")
+    patch_start_y = min(max(patch_start_y, 0), height).astype("int")
+    patch_end_y = min(max(patch_end_y, 0), height).astype("int")
 
     mask_expand[patch_start_y:patch_end_y, patch_start_x:patch_end_x] = 0
 
@@ -95,10 +95,11 @@ def mask_augment(mask_origin, augment_type):
     return mask_expand, patch_xy
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     origin = np.zeros([20, 20])
     origin[6:15, 5:15] = 1
     import matplotlib.pyplot as plt
+
     for i in range(18):
         plt.subplot(3, 6, i + 1)
         mask_res, patch_xy = mask_augment(origin, i)

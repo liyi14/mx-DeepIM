@@ -1,0 +1,27 @@
+[flake8]
+max-line-length = 120
+# See https://pep8.readthedocs.io/en/latest/intro.html#error-codes
+ignore = E24,E121,E123,E126,E226,E265,E203,
+         E402,E704,E741,E742,E743,
+         W503,W504,W605
+exclude = .git,
+          __pycache__,
+          *.pyc
+          *.egg-info,
+          data,
+          output,
+          pretrained_models,
+          .eggs,
+          .idea,
+          .vscode,
+          __init__.py,
+          setup.py,
+          docs,
+          examples,
+          docs/conf.py
+          snippet,
+          examples-old,
+          _test.py,
+          toolkit
+max-complexity = 48
+select = B,C,E,F,W,T4,B9

@@ -48,7 +48,7 @@ def transform_pts_Rt(pts, R, t):
     :param t: 3x1 translation vector.
     :return: nx3 ndarray with transformed 3D points.
     """
-    assert (pts.shape[1] == 3)
+    assert pts.shape[1] == 3
     pts_t = R.dot(pts.T) + t.reshape((3, 1))
     return pts_t.T
 
@@ -82,6 +82,6 @@ def calc_pts_diameter2(pts):
     :param pts: nx3 ndarray with 3D points.
     :return: Diameter.
     """
-    dists = distance.cdist(pts, pts, 'euclidean')
+    dists = distance.cdist(pts, pts, "euclidean")
     diameter = np.max(dists)
     return diameter

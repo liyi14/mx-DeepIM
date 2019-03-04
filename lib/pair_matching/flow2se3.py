@@ -41,8 +41,9 @@ def flow2se3(depth_object, flow, mask_image, K):
     valid = np.where(np.logical_and(valid_in_object, valid_in_image))[0]
     objectPoints = all_op[:, valid].astype(np.float64).transpose()
     imagePoints = all_ip[:, valid].astype(np.float64).transpose()
-    convex, rvec, tvec, inliers = cv2.solvePnPRansac(objectPoints, imagePoints,
-                                                     K, np.zeros(4))
+    convex, rvec, tvec, inliers = cv2.solvePnPRansac(
+        objectPoints, imagePoints, K, np.zeros(4)
+    )
 
     se3_q = np.zeros(7)
     if convex:

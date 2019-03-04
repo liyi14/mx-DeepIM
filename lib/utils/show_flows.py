@@ -32,7 +32,7 @@ def makecolorwheel():
     ncols = RY + YG + GC + CB + BM + MR
     colorwheel = np.zeros([ncols, 3], dtype=np.float32)
     print("ncols = %d\n" % ncols)
-    if (ncols > MAXCOLS):
+    if ncols > MAXCOLS:
         raise EnvironmentError("something went wrong?")
     k = 0
     for i in range(RY):
@@ -64,8 +64,7 @@ def sintel_compute_color(data_interlaced):
     data_u_in = np.squeeze(data_u_in)
     data_v_in = np.squeeze(data_v_in)
     # pre-normalize
-    max_rad = np.max(
-        np.sqrt(np.power(data_u_in, 2) + np.power(data_v_in, 2))) + 1E-10
+    max_rad = np.max(np.sqrt(np.power(data_u_in, 2) + np.power(data_v_in, 2))) + 1e-10
     fx = data_u_in / max_rad
     fy = data_v_in / max_rad
 
@@ -82,6 +81,5 @@ def sintel_compute_color(data_interlaced):
     col = (1 - f[..., np.newaxis]) * col0 + f[..., np.newaxis] * col1
     # col = col0
 
-    col = 1 - rad[..., np.newaxis] * (1 - col
-                                      )  # increase saturation with radius
+    col = 1 - rad[..., np.newaxis] * (1 - col)  # increase saturation with radius
     return col

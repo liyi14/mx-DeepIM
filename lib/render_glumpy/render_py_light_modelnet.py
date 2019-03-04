@@ -73,20 +73,24 @@ def get_fragment(brightness_ratio=0.4):
         // Final color
         gl_FragColor = t_color * (({} + {}*brightness) * vec4(u_light_intensity, 1));
     }}
-    """.format(1 - brightness_ratio, brightness_ratio)
+    """.format(
+        1 - brightness_ratio, brightness_ratio
+    )
     return fragment
 
 
-class Render_Py_Light_ModelNet():
-    def __init__(self,
-                 model_path,
-                 texture_path,
-                 K,
-                 width=640,
-                 height=480,
-                 zNear=0.25,
-                 zFar=6.0,
-                 brightness_ratios=[0.7]):
+class Render_Py_Light_ModelNet:
+    def __init__(
+        self,
+        model_path,
+        texture_path,
+        K,
+        width=640,
+        height=480,
+        zNear=0.25,
+        zFar=6.0,
+        brightness_ratios=[0.7],
+    ):
         self.width = width
         self.height = height
         self.zNear = zNear
@@ -96,7 +100,7 @@ class Render_Py_Light_ModelNet():
 
         log.info("Loading mesh")
         vertices, indices = data.objload("{}".format(model_path), rescale=True)
-        vertices['position'] = vertices['position'] / 10.
+        vertices["position"] = vertices["position"] / 10.0
 
         self.render_kernels = []
         for brightness_ratio in brightness_ratios:
@@ -105,15 +109,15 @@ class Render_Py_Light_ModelNet():
             render_kernel.bind(vertices)
 
             log.info("Loading texture")
-            render_kernel['u_texture'] = np.copy(
-                data.load("{}".format(texture_path))[::-1, :, :])
+            render_kernel["u_texture"] = np.copy(
+                data.load("{}".format(texture_path))[::-1, :, :]
+            )
 
-            render_kernel['u_model'] = np.eye(4, dtype=np.float32)
-            u_projection = self.my_compute_calib_proj(K, width, height, zNear,
-                                                      zFar)
-            render_kernel['u_projection'] = np.copy(u_projection)
+            render_kernel["u_model"] = np.eye(4, dtype=np.float32)
+            u_projection = self.my_compute_calib_proj(K, width, height, zNear, zFar)
+            render_kernel["u_projection"] = np.copy(u_projection)
 
-            render_kernel['u_light_intensity'] = 1, 1, 1
+            render_kernel["u_light_intensity"] = 1, 1, 1
             self.render_kernels.append(render_kernel)
         self.brightness_k = 0  # init
 
@@ -131,14 +135,10 @@ class Render_Py_Light_ModelNet():
         def on_init():
             gl.glEnable(gl.GL_DEPTH_TEST)
 
-    def render(self,
-               r,
-               t,
-               light_position,
-               light_intensity,
-               brightness_k=0,
-               r_type='quat'):
-        '''
+    def render(
+        self, r, t, light_position, light_intensity, brightness_k=0, r_type="quat"
+    ):
+        """
         :param r:
         :param t:
         :param light_position:
@@ -146,45 +146,58 @@ class Render_Py_Light_ModelNet():
         :param brightness_k: choose which brightness in __init__
         :param r_type:
         :return:
-        '''
-        if r_type == 'quat':
+        """
+        if r_type == "quat":
             R = quat2mat(r)
-        elif r_type == 'mat':
+        elif r_type == "mat":
             R = r
         self.brightness_k = brightness_k
-        self.render_kernels[brightness_k]['u_view'] = self._get_view_mtx(R, t)
-        self.render_kernels[brightness_k]['u_light_position'] = light_position
-        self.render_kernels[brightness_k]['u_normal'] = np.array(
+        self.render_kernels[brightness_k]["u_view"] = self._get_view_mtx(R, t)
+        self.render_kernels[brightness_k]["u_light_position"] = light_position
+        self.render_kernels[brightness_k]["u_normal"] = np.array(
             np.matrix(
                 np.dot(
-                    self.render_kernels[brightness_k]['u_view'].reshape(4, 4),
-                    self.render_kernels[brightness_k]['u_model'].reshape(
-                        4, 4))).I.T)
-        self.render_kernels[brightness_k][
-            'u_light_intensity'] = light_intensity
+                    self.render_kernels[brightness_k]["u_view"].reshape(4, 4),
+                    self.render_kernels[brightness_k]["u_model"].reshape(4, 4),
+                )
+            ).I.T
+        )
+        self.render_kernels[brightness_k]["u_light_intensity"] = light_intensity
 
         app.run(framecount=0)
         rgb_buffer = np.zeros((self.height, self.width, 4), dtype=np.float32)
-        gl.glReadPixels(0, 0, self.width, self.height, gl.GL_RGBA, gl.GL_FLOAT,
-                        rgb_buffer)
+        gl.glReadPixels(
+            0, 0, self.width, self.height, gl.GL_RGBA, gl.GL_FLOAT, rgb_buffer
+        )
 
         rgb_gl = np.copy(rgb_buffer)
         rgb_gl.shape = 480, 640, 4
         rgb_gl = rgb_gl[::-1, :]
         rgb_gl = np.round(rgb_gl[:, :, :3] * 255).astype(
-            np.uint8)  # Convert to [0, 255]
+            np.uint8
+        )  # Convert to [0, 255]
         bgr_gl = rgb_gl[:, :, [2, 1, 0]]
 
         depth_buffer = np.zeros((self.height, self.width), dtype=np.float32)
-        gl.glReadPixels(0, 0, self.width, self.height, gl.GL_DEPTH_COMPONENT,
-                        gl.GL_FLOAT, depth_buffer)
+        gl.glReadPixels(
+            0,
+            0,
+            self.width,
+            self.height,
+            gl.GL_DEPTH_COMPONENT,
+            gl.GL_FLOAT,
+            depth_buffer,
+        )
         depth_gl = np.copy(depth_buffer)
         depth_gl.shape = 480, 640
         depth_gl = depth_gl[::-1, :]
         depth_bg = depth_gl == 1
-        depth_gl = 2 * self.zFar * self.zNear / (self.zFar + self.zNear -
-                                                 (self.zFar - self.zNear) *
-                                                 (2 * depth_gl - 1))
+        depth_gl = (
+            2
+            * self.zFar
+            * self.zNear
+            / (self.zFar + self.zNear - (self.zFar - self.zNear) * (2 * depth_gl - 1))
+        )
         depth_gl[depth_bg] = 0
         return bgr_gl, depth_gl
 

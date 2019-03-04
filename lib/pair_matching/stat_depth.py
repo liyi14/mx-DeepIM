@@ -9,13 +9,13 @@ import cv2
 
 
 def stat_depth(pairdb, config):
-    '''
+    """
     stat max and min value of depth in a pairdb
     :param pairdb:
     :param config:
     :return:
-    '''
-    all_depth = [x['depth_rendered'] for x in pairdb]
+    """
+    all_depth = [x["depth_rendered"] for x in pairdb]
     all_depth = list(set(all_depth))
     max_val = -1
     min_val = 9999999999
@@ -25,7 +25,6 @@ def stat_depth(pairdb, config):
         y = np.min(depth_rendered)
         max_val = x if x > max_val else max_val
         min_val = y if y < min_val else min_val
-    print('max of depth value is {}, min of depth value is {}'.format(
-        max_val, min_val))
+    print("max of depth value is {}, min of depth value is {}".format(max_val, min_val))
 
     return max_val, min_val

@@ -12,7 +12,7 @@ log.setLevel(logging.ERROR)  # ERROR, WARNING, DEBUG, INFO
 from lib.pair_matching.RT_transform import quat2mat
 
 
-class Render_Py():
+class Render_Py:
     vertex = """
     uniform mat4   u_model;         // Model matrix
     uniform mat4   u_view;          // View matrix
@@ -45,13 +45,7 @@ class Render_Py():
     }
     """
 
-    def __init__(self,
-                 model_folder,
-                 K,
-                 width=640,
-                 height=480,
-                 zNear=0.25,
-                 zFar=6.0):
+    def __init__(self, model_folder, K, width=640, height=480, zNear=0.25, zFar=6.0):
         self.width = width
         self.height = height
         self.zNear = zNear
@@ -59,24 +53,23 @@ class Render_Py():
         self.K = K
         self.model_folder = model_folder
 
-        self.rgb_buffer = np.zeros((self.height, self.width, 4),
-                                   dtype=np.float32)
-        self.depth_buffer = np.zeros((self.height, self.width),
-                                     dtype=np.float32)
+        self.rgb_buffer = np.zeros((self.height, self.width, 4), dtype=np.float32)
+        self.depth_buffer = np.zeros((self.height, self.width), dtype=np.float32)
 
         log.info("Loading mesh")
         vertices, indices = data.objload(
-            "{}/textured.obj".format(model_folder), rescale=False)
+            "{}/textured.obj".format(model_folder), rescale=False
+        )
         self.render_kernel = gloo.Program(self.vertex, self.fragment)
         self.render_kernel.bind(vertices)
         log.info("Loading texture")
-        self.render_kernel['u_texture'] = np.copy(
-            data.load("{}/texture_map.png".format(model_folder))[::-1, :, :])
+        self.render_kernel["u_texture"] = np.copy(
+            data.load("{}/texture_map.png".format(model_folder))[::-1, :, :]
+        )
 
-        self.render_kernel['u_model'] = np.eye(4, dtype=np.float32)
-        u_projection = self.my_compute_calib_proj(K, width, height, zNear,
-                                                  zFar)
-        self.render_kernel['u_projection'] = np.copy(u_projection)
+        self.render_kernel["u_model"] = np.eye(4, dtype=np.float32)
+        u_projection = self.my_compute_calib_proj(K, width, height, zNear, zFar)
+        self.render_kernel["u_projection"] = np.copy(u_projection)
 
         self.window = app.Window(width=width, height=height, visible=False)
         print("self.window: ", self.window)
@@ -88,26 +81,34 @@ class Render_Py():
             gl.glDisable(gl.GL_BLEND)
             gl.glEnable(gl.GL_DEPTH_TEST)
             self.render_kernel.draw(gl.GL_TRIANGLES)
-            gl.glReadPixels(0, 0, self.width, self.height, gl.GL_RGBA,
-                            gl.GL_FLOAT, self.rgb_buffer)
-            gl.glReadPixels(0, 0, self.width, self.height,
-                            gl.GL_DEPTH_COMPONENT, gl.GL_FLOAT,
-                            self.depth_buffer)
+            gl.glReadPixels(
+                0, 0, self.width, self.height, gl.GL_RGBA, gl.GL_FLOAT, self.rgb_buffer
+            )
+            gl.glReadPixels(
+                0,
+                0,
+                self.width,
+                self.height,
+                gl.GL_DEPTH_COMPONENT,
+                gl.GL_FLOAT,
+                self.depth_buffer,
+            )
 
         @self.window.event
         def on_init():
             gl.glEnable(gl.GL_DEPTH_TEST)
 
-    def render(self, r, t, r_type='quat', K=None):
-        if r_type == 'quat':
+    def render(self, r, t, r_type="quat", K=None):
+        if r_type == "quat":
             R = quat2mat(r)
-        elif r_type == 'mat':
+        elif r_type == "mat":
             R = r
-        self.render_kernel['u_view'] = self._get_view_mtx(R, t)
+        self.render_kernel["u_view"] = self._get_view_mtx(R, t)
         if K is not None:
             u_projection = self.my_compute_calib_proj(
-                K, self.width, self.height, self.zNear, self.zFar)
-            self.render_kernel['u_projection'] = np.copy(u_projection)
+                K, self.width, self.height, self.zNear, self.zFar
+            )
+            self.render_kernel["u_projection"] = np.copy(u_projection)
         app.run(framecount=0, framerate=0)
 
         rgb_gl = np.flipud(self.rgb_buffer)
@@ -117,9 +118,12 @@ class Render_Py():
         bgr_gl *= 255
 
         depth_bg = depth_gl == 1
-        depth_gl = 2 * self.zFar * self.zNear / (self.zFar + self.zNear -
-                                                 (self.zFar - self.zNear) *
-                                                 (2 * depth_gl - 1))
+        depth_gl = (
+            2
+            * self.zFar
+            * self.zNear
+            / (self.zFar + self.zNear - (self.zFar - self.zNear) * (2 * depth_gl - 1))
+        )
         depth_gl[depth_bg] = 0
         return bgr_gl, depth_gl
 

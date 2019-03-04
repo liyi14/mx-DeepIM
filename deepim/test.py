@@ -13,44 +13,41 @@ from config.config import config, update_config
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Test a DeepIM Network')
+    parser = argparse.ArgumentParser(description="Test a DeepIM Network")
     # general
     parser.add_argument(
-        '--cfg',
-        help='experiment configure file name',
-        required=True,
-        type=str)
+        "--cfg", help="experiment configure file name", required=True, type=str
+    )
 
     args, rest = parser.parse_known_args()
     update_config(args.cfg)
 
     # testing
+    parser.add_argument("--vis", help="turn on visualization", action="store_true")
     parser.add_argument(
-        '--vis', help='turn on visualization', action='store_true')
+        "--vis_video", help="turn on video visualization", action="store_true"
+    )
     parser.add_argument(
-        '--vis_video', help='turn on video visualization', action='store_true')
+        "--vis_video_zoom", help="turn on zoom video visualization", action="store_true"
+    )
     parser.add_argument(
-        '--vis_video_zoom',
-        help='turn on zoom video visualization',
-        action='store_true')
+        "--ignore_cache",
+        help="ignore cached pose prediction results",
+        action="store_true",
+    )
     parser.add_argument(
-        '--ignore_cache',
-        help='ignore cached pose prediction results',
-        action='store_true')
+        "--gpus", help="specify the gpu to be use", required=True, type=str
+    )
     parser.add_argument(
-        '--gpus', help='specify the gpu to be use', required=True, type=str)
-    parser.add_argument(
-        '--skip_flow',
-        help='whether skip flow during test',
-        action='store_true')
+        "--skip_flow", help="whether skip flow during test", action="store_true"
+    )
     args = parser.parse_args()
     return args
 
 
 args = parse_args()
 curr_path = os.path.abspath(os.path.dirname(__file__))
-sys.path.insert(
-    0, os.path.join(curr_path, '../external/mxnet', config.MXNET_VERSION))
+sys.path.insert(0, os.path.join(curr_path, "../external/mxnet", config.MXNET_VERSION))
 
 if args.vis_video:
     config.TEST.VIS_VIDEO = True
@@ -77,46 +74,51 @@ def test_deepim():
         config.TEST.VISUALIZE = True
         config.TEST.FAST_TEST = False
     epoch = config.TEST.test_epoch
-    ctx = [mx.gpu(int(i)) for i in args.gpus.split(',')]
+    ctx = [mx.gpu(int(i)) for i in args.gpus.split(",")]
 
     image_set = config.dataset.test_image_set
     root_path = config.dataset.root_path
-    dataset = config.dataset.dataset.split('+')[0]
+    dataset = config.dataset.dataset.split("+")[0]
     dataset_path = config.dataset.dataset_path
 
     new_args_name = args.cfg
-    logger, final_output_path = create_logger(config.output_path,
-                                              new_args_name, image_set)
+    logger, final_output_path = create_logger(
+        config.output_path, new_args_name, image_set
+    )
     prefix = os.path.join(
-        final_output_path, '..',
-        '_'.join([iset for iset in config.dataset.image_set.split('+')]),
-        config.TRAIN.model_prefix)
+        final_output_path,
+        "..",
+        "_".join([iset for iset in config.dataset.image_set.split("+")]),
+        config.TRAIN.model_prefix,
+    )
 
     pprint.pprint(config)
-    logger.info('testing config:{}\n'.format(pprint.pformat(config)))
+    logger.info("testing config:{}\n".format(pprint.pformat(config)))
 
     # load symbol and testing data
-    sym_instance = eval(config.symbol + '.' + config.symbol)()
+    sym_instance = eval(config.symbol + "." + config.symbol)()
     sym = sym_instance.get_symbol(config, is_train=False)
 
-    if config.dataset.dataset.startswith('ModelNet'):
+    if config.dataset.dataset.startswith("ModelNet"):
         imdb_test = eval(dataset)(
             config,
-            image_set + config.dataset.class_name[0].split('/')[-1],
+            image_set + config.dataset.class_name[0].split("/")[-1],
             root_path,
             dataset_path,
             class_name=config.dataset.class_name[0],
-            result_path=final_output_path)
+            result_path=final_output_path,
+        )
         print(imdb_test)
         pairdbs = [
             load_gt_pairdb(
                 config,
                 dataset,
-                image_set + class_name.split('/')[-1],
+                image_set + class_name.split("/")[-1],
                 config.dataset.root_path,
                 config.dataset.dataset_path,
                 class_name=class_name,
-                result_path=final_output_path)
+                result_path=final_output_path,
+            )
             for class_name in config.dataset.class_name
         ]
         pairdb = merge_pairdb(pairdbs)
@@ -127,7 +129,8 @@ def test_deepim():
             root_path,
             dataset_path,
             class_name=config.dataset.class_name[0],
-            result_path=final_output_path)
+            result_path=final_output_path,
+        )
         print(imdb_test)
         pairdbs = [
             load_gt_pairdb(
@@ -137,7 +140,8 @@ def test_deepim():
                 config.dataset.root_path,
                 config.dataset.dataset_path,
                 class_name=class_name,
-                result_path=final_output_path)
+                result_path=final_output_path,
+            )
             for class_name in config.dataset.class_name
         ]
         pairdb = merge_pairdb(pairdbs)
@@ -153,13 +157,25 @@ def test_deepim():
     arg_params, aux_params = load_param(prefix, epoch, process=True)
 
     sym_instance.check_parameter_shapes(
-        arg_params, aux_params, data_shape_dict, is_train=False)
+        arg_params, aux_params, data_shape_dict, is_train=False
+    )
 
     # decide maximum shape
     data_names = [k[0] for k in test_data.provide_data_single]
     label_names = None
-    max_data_shape = [[('data', (1, 3, max([v[0] for v in config.SCALES]),
-                                 max([v[1] for v in config.SCALES])))]]
+    max_data_shape = [
+        [
+            (
+                "data",
+                (
+                    1,
+                    3,
+                    max([v[0] for v in config.SCALES]),
+                    max([v[1] for v in config.SCALES]),
+                ),
+            )
+        ]
+    ]
 
     # create predictor
     predictor = Predictor(
@@ -172,7 +188,8 @@ def test_deepim():
         provide_data=test_data.provide_data,
         provide_label=test_data.provide_label,
         arg_params=arg_params,
-        aux_params=aux_params)
+        aux_params=aux_params,
+    )
 
     # start detection
     pred_eval(
@@ -183,7 +200,8 @@ def test_deepim():
         vis=args.vis,
         ignore_cache=args.ignore_cache,
         logger=logger,
-        pairdb=pairdb)
+        pairdb=pairdb,
+    )
     print(args.cfg, config.TEST.test_epoch)
 
 
@@ -192,5 +210,5 @@ def main():
     test_deepim()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
