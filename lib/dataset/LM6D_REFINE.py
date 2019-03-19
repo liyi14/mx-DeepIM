@@ -6,7 +6,7 @@
 from __future__ import print_function, division, absolute_import
 import six
 from six.moves import cPickle, xrange
-import cv2
+# import cv2
 import os
 import numpy as np
 from .imdb import IMDB
@@ -14,6 +14,7 @@ from lib.utils.projection import se3_mul
 from lib.utils.print_and_log import print_and_log
 from lib.utils.pose_error import add, adi, re, arp_2d
 from lib.pair_matching.RT_transform import calc_rt_dist_m
+from lib.utils.utils import get_image_size
 
 
 class LM6D_REFINE(IMDB):
@@ -272,8 +273,11 @@ class LM6D_REFINE(IMDB):
         pair_rec["image_rendered"] = self.image_path_from_index(
             pair_index[1], "rendered"
         )
-        size_real = cv2.imread(pair_rec["image_observed"]).shape
-        size_rendered = cv2.imread(pair_rec["image_rendered"]).shape
+        # NOTE: speed up but can not get channel info
+        # size_real = cv2.imread(pair_rec["image_observed"]).shape
+        # size_rendered = cv2.imread(pair_rec["image_rendered"]).shape
+        size_real = get_image_size(pair_rec['image_observed'])
+        size_rendered = get_image_size(pair_rec['image_rendered'])
         assert size_real == size_rendered
         pair_rec["height"] = size_real[0]
         pair_rec["width"] = size_real[1]
