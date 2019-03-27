@@ -5,7 +5,7 @@
 # --------------------------------------------------------
 from __future__ import print_function, division, absolute_import
 import six
-from six.moves import cPickle, xrange
+from six.moves import cPickle
 import cv2
 import os
 import numpy as np
@@ -14,6 +14,8 @@ from lib.utils.projection import se3_mul
 from lib.utils.print_and_log import print_and_log
 from lib.utils.pose_error import add, adi, re, arp_2d
 from lib.pair_matching.RT_transform import calc_rt_dist_m
+from tqdm import tqdm
+from lib.utils.utils import get_image_size
 
 
 class LM6D_REFINE(IMDB):
@@ -226,8 +228,8 @@ class LM6D_REFINE(IMDB):
     def gt_pairdb(self):
         """
         return ground truth match pair dataset
-        :return: imdb[pair_index]['image_real', 'image_rendered', 'height', 'width',
-                                  'pose_real', 'pose_est', 'flipped']
+        :return: imdb[pair_index]['image_observed', 'image_rendered', 'height', 'width',
+                                  'pose_observed', 'pose_est', 'flipped']
         """
         cache_file = os.path.join(self.cache_path, self.name + "_gt_pairdb.pkl")
         if os.path.exists(cache_file):
@@ -240,7 +242,7 @@ class LM6D_REFINE(IMDB):
             return pairdb
         gt_pairdb = [
             self.load_render_annotation(pair_index)
-            for pair_index in self.image_set_index
+            for pair_index in tqdm(self.image_set_index)
         ]
         with open(cache_file, "wb") as fid:
             cPickle.dump(gt_pairdb, fid, 2)
@@ -272,11 +274,14 @@ class LM6D_REFINE(IMDB):
         pair_rec["image_rendered"] = self.image_path_from_index(
             pair_index[1], "rendered"
         )
-        size_real = cv2.imread(pair_rec["image_observed"]).shape
-        size_rendered = cv2.imread(pair_rec["image_rendered"]).shape
-        assert size_real == size_rendered
-        pair_rec["height"] = size_real[0]
-        pair_rec["width"] = size_real[1]
+        # size_observed = cv2.imread(pair_rec["image_observed"]).shape
+        # size_rendered = cv2.imread(pair_rec["image_rendered"]).shape
+        # NOTE: speed up but can not get channel info
+        size_observed = get_image_size(pair_rec["image_observed"])
+        size_rendered = get_image_size(pair_rec["image_rendered"])
+        assert size_observed == size_rendered
+        pair_rec["height"] = size_observed[0]
+        pair_rec["width"] = size_observed[1]
         pair_rec["depth_observed"] = self.depth_path_from_index(
             pair_index[0], "observed"
         )
@@ -503,17 +508,12 @@ class LM6D_REFINE(IMDB):
                 num = len(curr_poses_gt)
                 curr_poses_est = all_poses_est[cls_idx][iter_i]
 
-                for j in xrange(num):
+                for j in range(num):
                     if iter_i == 0:
                         count_all[cls_idx] += 1
                     RT = curr_poses_est[j]  # est pose
                     pose_gt = curr_poses_gt[j]  # gt pose
-                    if (
-                        cls_name == "eggbox"
-                        or cls_name == "glue"
-                        or cls_name == "bowl"
-                        or cls_name == "cup"
-                    ):
+                    if cls_name in ["eggbox", "glue", "bowl", "cup"]:
                         eval_method = "adi"
                         error = adi(
                             RT[:3, :3],
@@ -537,7 +537,7 @@ class LM6D_REFINE(IMDB):
                         count_correct["0.05"][cls_idx, iter_i] += 1
                     if error < threshold_010[cls_idx, iter_i]:
                         count_correct["0.10"][cls_idx, iter_i] += 1
-                    for thresh_i in xrange(num_thresh):
+                    for thresh_i in range(num_thresh):
                         if error < threshold_mean[cls_idx, iter_i, thresh_i]:
                             count_correct["mean"][cls_idx, iter_i, thresh_i] += 1
 
@@ -715,7 +715,7 @@ class LM6D_REFINE(IMDB):
             (self.num_classes, num_iter, num_thresh), dtype=np.float32
         )
 
-        for i in xrange(self.num_classes):
+        for i in range(self.num_classes):
             threshold_2[i, :] = 2
             threshold_5[i, :] = 5
             threshold_10[i, :] = 10
@@ -731,7 +731,7 @@ class LM6D_REFINE(IMDB):
                 num = len(curr_poses_gt)
                 curr_poses_est = all_poses_est[cls_idx][iter_i]
 
-                for j in xrange(num):
+                for j in range(num):
                     if iter_i == 0:
                         count_all[cls_idx] += 1
                     RT = curr_poses_est[j]  # est pose
@@ -767,7 +767,7 @@ class LM6D_REFINE(IMDB):
                         count_correct["10"][cls_idx, iter_i] += 1
                     if error < threshold_20[cls_idx, iter_i]:
                         count_correct["20"][cls_idx, iter_i] += 1
-                    for thresh_i in xrange(num_thresh):
+                    for thresh_i in range(num_thresh):
                         if error < threshold_mean[cls_idx, iter_i, thresh_i]:
                             count_correct["mean"][cls_idx, iter_i, thresh_i] += 1
         import matplotlib

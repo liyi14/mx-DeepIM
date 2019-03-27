@@ -248,9 +248,7 @@ def pred_eval(
                 rgb_gl = rgb_gl.astype("uint8")
             return rgb_gl, depth_gl
 
-        print(
-            "***************setup render_glumpy environment succeed ******************"
-        )
+        print("***************setup render_glumpy environment succeed ******************")
 
     if config.TEST.PRECOMPUTED_ICP:
         print("precomputed_ICP")
@@ -278,10 +276,10 @@ def pred_eval(
         for idx in range(len(pairdb)):
             pose_path = pairdb[idx]["depth_rendered"][:-10] + "-pose_icp.txt"
             pose_rendered_update = np.loadtxt(pose_path, skiprows=1)
-            pose_real = pairdb[idx]["pose_observed"]
-            r_dist_est, t_dist_est = calc_rt_dist_m(pose_rendered_update, pose_real)
-            xy_dist = np.linalg.norm(pose_rendered_update[:2, -1] - pose_real[:2, -1])
-            z_dist = np.linalg.norm(pose_rendered_update[-1, -1] - pose_real[-1, -1])
+            pose_observed = pairdb[idx]["pose_observed"]
+            r_dist_est, t_dist_est = calc_rt_dist_m(pose_rendered_update, pose_observed)
+            xy_dist = np.linalg.norm(pose_rendered_update[:2, -1] - pose_observed[:2, -1])
+            z_dist = np.linalg.norm(pose_rendered_update[-1, -1] - pose_observed[-1, -1])
             print(
                 "{}: r_dist_est: {}, t_dist_est: {}, xy_dist: {}, z_dist: {}".format(
                     idx, r_dist_est, t_dist_est, xy_dist, z_dist
@@ -377,10 +375,10 @@ def pred_eval(
         for idx in range(len(pairdb)):
             pose_path = pairdb[idx]["depth_rendered"][:-10] + "-pose.txt"
             pose_rendered_update = np.loadtxt(pose_path, skiprows=1)
-            pose_real = pairdb[idx]["pose_observed"]
-            r_dist_est, t_dist_est = calc_rt_dist_m(pose_rendered_update, pose_real)
-            xy_dist = np.linalg.norm(pose_rendered_update[:2, -1] - pose_real[:2, -1])
-            z_dist = np.linalg.norm(pose_rendered_update[-1, -1] - pose_real[-1, -1])
+            pose_observed = pairdb[idx]["pose_observed"]
+            r_dist_est, t_dist_est = calc_rt_dist_m(pose_rendered_update, pose_observed)
+            xy_dist = np.linalg.norm(pose_rendered_update[:2, -1] - pose_observed[:2, -1])
+            z_dist = np.linalg.norm(pose_rendered_update[-1, -1] - pose_observed[-1, -1])
             class_id = imdb_test.classes.index(pairdb[idx]["gt_class"])
             # store poses estimation and gt
             all_poses_est[class_id][0].append(pose_rendered_update)
@@ -422,12 +420,8 @@ def pred_eval(
             print(idx)
             class_id = imdb_test.classes.index(pairdb[idx]["gt_class"])
             for pose_iter_idx in range(config.TEST.test_iter):
-                all_poses_est[class_id][pose_iter_idx].append(
-                    pairdb[idx]["pose_rendered"]
-                )
-                all_poses_gt[class_id][pose_iter_idx].append(
-                    pairdb[idx]["pose_observed"]
-                )
+                all_poses_est[class_id][pose_iter_idx].append(pairdb[idx]["pose_rendered"])
+                all_poses_gt[class_id][pose_iter_idx].append(pairdb[idx]["pose_observed"])
 
                 r_dist = 1000
                 t_dist = 1000
@@ -441,13 +435,13 @@ def pred_eval(
                     "testing {}/{} data {:.4f}s net {:.4f}s calc_gt {:.4f}s".format(
                         (idx + 1),
                         num_pairs,
-                        data_time / (idx + 1) * test_data.batch_size,
-                        net_time / (idx + 1) * test_data.batch_size,
-                        post_time / (idx + 1) * test_data.batch_size,
+                        data_time / ((idx + 1) * test_data.batch_size),
+                        net_time / ((idx + 1) * test_data.batch_size),
+                        post_time / ((idx + 1) * test_data.batch_size),
                     ),
                     logger,
                 )
-            print("NO POINT_VALID IN rendered")
+            print("in test: NO POINT_VALID IN rendered")
             continue
         data_time += time.time() - t
 
@@ -461,9 +455,7 @@ def pred_eval(
             num_inst[-1] += 1
             for pose_iter_idx in range(config.TEST.test_iter):
                 all_poses_est[class_id][pose_iter_idx].append(pose_rendered)
-                all_poses_gt[class_id][pose_iter_idx].append(
-                    pairdb[idx]["pose_observed"]
-                )
+                all_poses_gt[class_id][pose_iter_idx].append(pairdb[idx]["pose_observed"])
 
             # post process
             if idx % 50 == 0:
@@ -471,9 +463,9 @@ def pred_eval(
                     "testing {}/{} data {:.4f}s net {:.4f}s calc_gt {:.4f}s".format(
                         (idx + 1),
                         num_pairs,
-                        data_time / (idx + 1) * test_data.batch_size,
-                        net_time / (idx + 1) * test_data.batch_size,
-                        post_time / (idx + 1) * test_data.batch_size,
+                        data_time / ((idx + 1) * test_data.batch_size),
+                        net_time / ((idx + 1) * test_data.batch_size),
+                        post_time / ((idx + 1) * test_data.batch_size),
                     ),
                     logger,
                 )
@@ -488,23 +480,14 @@ def pred_eval(
         rst_iter = []
         for output in output_all:
             cur_rst = {}
-            cur_rst["se3"] = np.squeeze(output["se3_output"].asnumpy()).astype(
-                "float32"
-            )
+            cur_rst["se3"] = np.squeeze(output["se3_output"].asnumpy()).astype("float32")
 
             if not config.TEST.FAST_TEST and config.network.PRED_FLOW:
-                cur_rst["flow"] = np.squeeze(
-                    output["flow_est_crop_output"].asnumpy().transpose((2, 3, 1, 0))
-                ).astype("float16")
+                cur_rst["flow"] = np.squeeze(output["flow_est_crop_output"].asnumpy().transpose((2, 3, 1, 0))).astype("float16")
             else:
                 cur_rst["flow"] = None
-            if config.network.PRED_MASK and config.TEST.UPDATE_MASK not in [
-                "init",
-                "box_rendered",
-            ]:
-                mask_pred = np.squeeze(
-                    output["mask_observed_pred_output"].asnumpy()
-                ).astype("float32")
+            if config.network.PRED_MASK and config.TEST.UPDATE_MASK not in ["init", "box_rendered"]:
+                mask_pred = np.squeeze(output["mask_observed_pred_output"].asnumpy()).astype("float32")
                 cur_rst["mask_pred"] = mask_pred
 
             rst_iter.append(cur_rst)
@@ -555,9 +538,7 @@ def pred_eval(
 
                 # store poses estimation and gt
                 all_poses_est[class_id][pose_iter_idx].append(pose_rendered_update)
-                all_poses_gt[class_id][pose_iter_idx].append(
-                    pairdb[idx]["pose_observed"]
-                )
+                all_poses_gt[class_id][pose_iter_idx].append(pairdb[idx]["pose_observed"])
 
                 all_rot_err[class_id][pose_iter_idx].append(r_dist)
                 all_trans_err[class_id][pose_iter_idx].append(t_dist)
@@ -588,12 +569,7 @@ def pred_eval(
                     image_refined = image_refined[:, :, :3]
 
                     # update minibatch
-                    update_package = [
-                        {
-                            "image_rendered": image_refined,
-                            "src_pose": pose_rendered_update,
-                        }
-                    ]
+                    update_package = [{"image_rendered": image_refined, "src_pose": pose_rendered_update}]
                     if config.network.INPUT_DEPTH:
                         update_package[0]["depth_rendered"] = depth_refined
                     if config.network.INPUT_MASK:
@@ -601,25 +577,14 @@ def pred_eval(
                         mask_rendered_refined[depth_refined > 0.2] = 1
                         update_package[0]["mask_rendered"] = mask_rendered_refined
                         if config.network.PRED_MASK:
-                            # init, box_rendered, mask_rendered, box_real, mask_observed
+                            # init, box_rendered, mask_rendered, box_observed, mask_observed
                             if config.TEST.UPDATE_MASK == "box_rendered":
-                                input_names = [
-                                    blob_name[0]
-                                    for blob_name in data_batch.provide_data[0]
-                                ]
-                                update_package[0]["mask_observed"] = np.squeeze(
-                                    data_batch.data[0][
-                                        input_names.index("mask_rendered")
-                                    ].asnumpy()[batch_idx]
-                                )
+                                input_names = [blob_name[0] for blob_name in data_batch.provide_data[0]]
+                                update_package[0]["mask_observed"] = np.squeeze(data_batch.data[0][input_names.index("mask_rendered")].asnumpy()[batch_idx])
                             elif config.TEST.UPDATE_MASK == "init":
                                 pass
                             else:
-                                raise Exception(
-                                    "Unknown UPDATE_MASK type: {}".format(
-                                        config.network.UPDATE_MASK
-                                    )
-                                )
+                                raise Exception("Unknown UPDATE_MASK type: {}".format(config.network.UPDATE_MASK))
 
                     pose_rendered = pose_rendered_update
                     data_batch = update_data_batch(config, data_batch, update_package)
@@ -669,9 +634,9 @@ def pred_eval(
                 "testing {}/{} data {:.4f}s net {:.4f}s calc_gt {:.4f}s".format(
                     (idx + 1),
                     num_pairs,
-                    data_time / (idx + 1) * test_data.batch_size,
-                    net_time / (idx + 1) * test_data.batch_size,
-                    post_time / (idx + 1) * test_data.batch_size,
+                    data_time / ((idx + 1) * test_data.batch_size),
+                    net_time / ((idx + 1) * test_data.batch_size),
+                    post_time / ((idx + 1) * test_data.batch_size),
                 ),
                 logger,
             )
@@ -685,45 +650,24 @@ def pred_eval(
     if not config.TEST.VISUALIZE:
         with open(pose_err_file, "wb") as f:
             print("saving result cache to {}".format(pose_err_file))
-            cPickle.dump(
-                [all_rot_err, all_trans_err, all_poses_est, all_poses_gt], f, protocol=2
-            )
+            cPickle.dump([all_rot_err, all_trans_err, all_poses_est, all_poses_gt], f, protocol=2)
             print("done")
 
     if config.network.PRED_FLOW:
         print_and_log("evaluate flow:", logger)
-        print_and_log(
-            "EPE all: {}".format(sum_EPE_all / max(num_inst_all, 1.0)), logger
-        )
-        print_and_log(
-            "EPE ignore unvisible: {}".format(sum_EPE_vizbg / max(num_inst_vizbg, 1.0)),
-            logger,
-        )
-        print_and_log(
-            "EPE visible: {}".format(sum_EPE_viz / max(num_inst_viz, 1.0)), logger
-        )
+        print_and_log("EPE all: {}".format(sum_EPE_all / max(num_inst_all, 1.0)), logger)
+        print_and_log("EPE ignore unvisible: {}".format(sum_EPE_vizbg / max(num_inst_vizbg, 1.0)), logger)
+        print_and_log("EPE visible: {}".format(sum_EPE_viz / max(num_inst_viz, 1.0)), logger)
 
     print_and_log("evaluate pose:", logger)
     imdb_test.evaluate_pose(config, all_poses_est, all_poses_gt, logger)
     # evaluate pose add
     pose_add_plots_dir = os.path.join(imdb_test.result_path, "add_plots")
     mkdir_if_missing(pose_add_plots_dir)
-    imdb_test.evaluate_pose_add(
-        config,
-        all_poses_est,
-        all_poses_gt,
-        output_dir=pose_add_plots_dir,
-        logger=logger,
-    )
+    imdb_test.evaluate_pose_add(config, all_poses_est, all_poses_gt, output_dir=pose_add_plots_dir, logger=logger)
     pose_arp2d_plots_dir = os.path.join(imdb_test.result_path, "arp_2d_plots")
     mkdir_if_missing(pose_arp2d_plots_dir)
-    imdb_test.evaluate_pose_arp_2d(
-        config,
-        all_poses_est,
-        all_poses_gt,
-        output_dir=pose_arp2d_plots_dir,
-        logger=logger,
-    )
+    imdb_test.evaluate_pose_arp_2d(config, all_poses_est, all_poses_gt, output_dir=pose_arp2d_plots_dir, logger=logger)
 
     print_and_log("using {} seconds in total".format(time.time() - t_start), logger)
 
@@ -734,76 +678,42 @@ def par_generate_gt(config, pair_rec, flow_depth_rendered=None):
     target_size, max_size = config.SCALES[0][0], config.SCALES[0][1]
 
     if flow_depth_rendered is None:
-        flow_depth_rendered = cv2.imread(
-            pair_rec["depth_rendered"], cv2.IMREAD_UNCHANGED
-        ).astype(np.float32)
+        flow_depth_rendered = cv2.imread(pair_rec["depth_rendered"], cv2.IMREAD_UNCHANGED).astype(np.float32)
         flow_depth_rendered /= config.dataset.DEPTH_FACTOR
 
         flow_depth_rendered, _ = resize(flow_depth_rendered, target_size, max_size)
 
-    if "depth_render_real" in pair_rec:
-        flow_depth_real = cv2.imread(
-            pair_rec["depth_render_real"], cv2.IMREAD_UNCHANGED
-        ).astype(np.float32)
-        flow_depth_real /= config.dataset.DEPTH_FACTOR
+    if "depth_gt_observed" in pair_rec:
+        flow_depth_observed = cv2.imread(pair_rec["depth_gt_observed"], cv2.IMREAD_UNCHANGED).astype(np.float32)
+        flow_depth_observed /= config.dataset.DEPTH_FACTOR
     else:
-        print("not using render_real depth in par_generate_gt")
-        flow_depth_real = cv2.imread(
-            pair_rec["depth_real"], cv2.IMREAD_UNCHANGED
-        ).astype(np.float32)
-        flow_depth_real /= config.dataset.DEPTH_FACTOR
+        print("not using gt_observed depth in par_generate_gt")
+        flow_depth_observed = cv2.imread(pair_rec["depth_observed"], cv2.IMREAD_UNCHANGED).astype(np.float32)
+        flow_depth_observed /= config.dataset.DEPTH_FACTOR
 
-    flow_depth_real, _ = resize(flow_depth_real, target_size, max_size)
+    flow_depth_observed, _ = resize(flow_depth_observed, target_size, max_size)
 
     if "mask_gt_observed" or "mask_observed" in pair_rec:
         mask_observed_path = pair_rec["mask_gt_observed"]
-        assert os.path.exists(mask_observed_path), "%s does not exist".format(
-            pair_rec["mask_gt_observed"]
-        )
+        assert os.path.exists(mask_observed_path), "%s does not exist".format(pair_rec["mask_gt_observed"])
         mask_observed = cv2.imread(mask_observed_path, cv2.IMREAD_UNCHANGED)
         mask_observed, _ = resize(mask_observed, target_size, max_size)
-        flow_depth_real[mask_observed != pair_rec["mask_idx"]] = 0
+        flow_depth_observed[mask_observed != pair_rec["mask_idx"]] = 0
 
-    if config.network.FLOW_I2R:
-        if config.FLOW_CLASS_AGNOSTIC:
-            flow_i2r, visible, _ = calc_flow(
-                flow_depth_rendered,
-                pair_rec["pose_rendered"],
-                pair_rec["pose_observed"],
-                config.dataset.INTRINSIC_MATRIX,
-                flow_depth_real,
-                standard_rep=config.network.STANDARD_FLOW_REP,
-            )
-            flow_i2r_list = [
-                flow_i2r,
-                visible,
-                np.logical_and(visible == 0, flow_depth_rendered == 0),
-            ]
-        else:
-            raise Exception("NOT_IMPLEMENTED")
-    else:
-        flow_i2r_list = None
+    if config.network.PRED_FLOW:
+        flow_i2r, visible, _ = calc_flow(
+            flow_depth_rendered,
+            pair_rec["pose_rendered"],
+            pair_rec["pose_observed"],
+            config.dataset.INTRINSIC_MATRIX,
+            flow_depth_observed,
+            standard_rep=config.network.STANDARD_FLOW_REP)
+        flow_i2r_list = [
+            flow_i2r,
+            visible,
+            np.logical_and(visible == 0, flow_depth_rendered == 0)]
 
-    if config.network.FLOW_R2I:
-        if config.FLOW_CLASS_AGNOSTIC:
-            flow_r2i, visible, _ = calc_flow(
-                flow_depth_real,
-                pair_rec["pose_observed"],
-                pair_rec["pose_rendered"],
-                config.dataset.INTRINSIC_MATRIX,
-                flow_depth_rendered,
-                standard_rep=config.network.STANDARD_FLOW_REP,
-            )
-            flow_r2i_list = [
-                flow_r2i,
-                visible,
-                np.logical_and(visible == 0, flow_depth_real == 0),
-            ]
-        else:
-            raise Exception("NOT_IMPLEMENTED")
-    else:
-        flow_r2i_list = None
-    return {"flow_i2r": flow_i2r_list, "flow_r2i": flow_r2i_list}
+    return {"flow": flow_i2r_list}
 
 
 def calc_EPE_one_pair(flow_pred_list, flow_gt, flow_type):
@@ -824,45 +734,3 @@ def calc_EPE_one_pair(flow_pred_list, flow_gt, flow_type):
         "num_vizbg": np.logical_or(visible, bg).sum(),
     }
     return all_diff
-
-
-def get_onclick(ax_real_list, ax_rendered_list, data, fig, config):
-    def onclick(event):
-        point_rendered = np.round([event.xdata, event.ydata]).astype(int)
-        print("point_rendered: {}".format(point_rendered))
-        color_list = ["b", "c", "y", "m", "r"]
-        color = color_list[np.random.randint(len(color_list))]
-        flow_i2r = data["flow_i2r"]
-        flow_i2r_est = data["flow_i2r_est"]
-        for sub_ax_rendered in ax_rendered_list:
-            ax_rendered_list[sub_ax_rendered].scatter(
-                point_rendered[0], point_rendered[1], c=color, s=7, marker="."
-            )
-        cur_flow_gt = flow_i2r[point_rendered[1], point_rendered[0], :].flatten()
-        if not config.network.STANDARD_FLOW_REP:
-            cur_flow_gt = cur_flow_gt[[1, 0]]
-        point_real = [
-            point_rendered[0] + cur_flow_gt[0],
-            point_rendered[1] + cur_flow_gt[1],
-        ]
-        print("point_real: {}".format(point_real))
-
-        for sub_ax_real in ax_real_list:
-            ax_real_list[sub_ax_real].scatter(
-                point_real[0], point_real[1], c=color, s=7, marker="."
-            )
-        cur_flow_est = flow_i2r_est[point_rendered[1], point_rendered[0], :].flatten()
-        if not config.network.STANDARD_FLOW_REP:
-            cur_flow_est = cur_flow_est[[1, 0]]
-        point_real_est = [
-            point_rendered[0] + cur_flow_est[0],
-            point_rendered[1] + cur_flow_est[1],
-        ]
-        print("point_real_est: {}".format(point_real_est))
-        for sub_ax_real in ax_real_list:
-            ax_real_list[sub_ax_real].scatter(
-                point_real_est[0], point_real_est[1], c=color, s=7, marker="x"
-            )
-        fig.canvas.draw()
-
-    return onclick

@@ -1,5 +1,5 @@
 [flake8]
-max-line-length = 120
+max-line-length = 150
 # See https://pep8.readthedocs.io/en/latest/intro.html#error-codes
 ignore = E24,E121,E123,E126,E226,E265,E203,
          E402,E704,E741,E742,E743,
