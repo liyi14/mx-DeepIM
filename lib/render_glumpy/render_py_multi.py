@@ -8,6 +8,10 @@ import numpy as np
 from glumpy import app, gl, gloo, data, log
 import logging
 import os
+import os.path as osp
+import sys
+cur_dir = os.path.abspath(os.path.dirname(__file__))
+sys.path.insert(1, osp.join(cur_dir, '../..'))
 
 log.setLevel(logging.ERROR)  # ERROR, WARNING, DEBUG, INFO
 from lib.pair_matching.RT_transform import quat2mat
@@ -207,8 +211,6 @@ if __name__ == "__main__":
             q *= -1
         return q
 
-    cur_dir = os.path.abspath(os.path.dirname(__file__))
-
     classes = ["driller"]  # '002_master_chef_can'
     model_dir = os.path.join(
         cur_dir, "../../data/LINEMOD_6D/LM6d_converted/LM6d_refine/models/"
@@ -243,8 +245,8 @@ if __name__ == "__main__":
         )
         bgr_gl = bgr_gl.astype(np.uint8)
         fig = plt.figure()
-        plt.axis("off")
         fig.add_subplot(2, 3, 1)
+        plt.axis('off')
         plt.imshow(bgr_gl[:, :, [2, 1, 0]])
         plt.show()
 
@@ -273,17 +275,28 @@ if __name__ == "__main__":
         )
 
         fig = plt.figure()
-        plt.axis("off")
         fig.add_subplot(2, 3, 1)
         plt.imshow(bgr_gl[:, :, [2, 1, 0]])
+        plt.axis('off')
+
         fig.add_subplot(2, 3, 2)
         plt.imshow(bgr_pa[:, :, [2, 1, 0]])
+        plt.axis('off')
+
         fig.add_subplot(2, 3, 3)
         plt.imshow(bgr_gl - bgr_pa)
+        plt.axis('off')
+
         fig.add_subplot(2, 3, 4)
         plt.imshow(depth_gl)
+        plt.axis('off')
+
         fig.add_subplot(2, 3, 5)
         plt.imshow(depth_pa)
+        plt.axis('off')
+
         fig.add_subplot(2, 3, 6)
         plt.imshow(depth_gl - depth_pa)
+        plt.axis('off')
+
         plt.show()

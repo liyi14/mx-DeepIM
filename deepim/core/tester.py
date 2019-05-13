@@ -580,7 +580,7 @@ def pred_eval(
                             # init, box_rendered, mask_rendered, box_observed, mask_observed
                             if config.TEST.UPDATE_MASK == "box_rendered":
                                 input_names = [blob_name[0] for blob_name in data_batch.provide_data[0]]
-                                update_package[0]["mask_observed"] = np.squeeze(data_batch.data[0][input_names.index("mask_rendered")].asnumpy()[batch_idx])
+                                update_package[0]["mask_observed"] = np.squeeze(data_batch.data[0][input_names.index("mask_rendered")].asnumpy()[batch_idx])  # noqa
                             elif config.TEST.UPDATE_MASK == "init":
                                 pass
                             else:
