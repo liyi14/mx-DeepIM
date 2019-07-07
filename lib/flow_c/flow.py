@@ -12,7 +12,7 @@ sys.path.insert(1, os.path.join(cur_dir, '../..'))
 
 import numpy as np
 
-from gpu_flow import gpu_flow
+from .gpu_flow import gpu_flow
 
 
 def gpu_flow_wrapper(device_id):
