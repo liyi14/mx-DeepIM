@@ -31,7 +31,7 @@ class deepIM_flownet(Symbol):
 
     def get_convs(self, data_iter, big_cfg, small_cfg, iter_idx):
         if "depth_observed" in data_iter.keys():
-            if big_cfg.network.INPUT_MASK and big_cfg.network.PRED_MASK:
+            if big_cfg.network.INPUT_MASK:
                 data = mx.symbol.Concat(
                     data_iter["image_observed"] / 255.0,
                     data_iter["image_rendered"] / 255.0,
@@ -50,7 +50,7 @@ class deepIM_flownet(Symbol):
                     dim=1,
                 )
         else:
-            if big_cfg.network.INPUT_MASK and big_cfg.network.PRED_MASK:
+            if big_cfg.network.INPUT_MASK:
                 data = mx.symbol.Concat(
                     data_iter["image_observed"] / 255.0,
                     data_iter["image_rendered"] / 255.0,
@@ -1008,9 +1008,8 @@ class deepIM_flownet(Symbol):
         else:
             num_extra_in_channel = 0
             if cfg.network.INPUT_DEPTH:
-                num_extra_in_channel += (
-                    2
-                )  # corresponding to the observed and rendered images respectively
+                # corresponding to the observed and rendered images respectively
+                num_extra_in_channel += 2
             if cfg.network.INPUT_MASK:
                 num_extra_in_channel += 2
             if num_extra_in_channel > 0:

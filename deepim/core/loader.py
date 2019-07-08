@@ -180,7 +180,7 @@ class TrainDataLoader(mx.io.DataIter):
 
         self.label_name = ["rot", "trans"]
 
-        if config.network.PRED_MASK:
+        if config.network.INPUT_MASK or config.network.PRED_MASK:
             self.label_name.append("mask_gt_observed")
 
         if config.network.PRED_FLOW:

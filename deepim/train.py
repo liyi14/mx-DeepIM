@@ -206,7 +206,7 @@ def train_net(
                 (config.TRAIN.BATCH_PAIRS, 3, config.train_iter.NUM_3D_SAMPLE),
             )
         )
-    if config.network.PRED_MASK:
+    if config.network.INPUT_MASK or config.network.PRED_MASK:
         max_label_shape.append(
             (
                 "mask_gt_observed",

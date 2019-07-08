@@ -250,7 +250,7 @@ def get_data_pair_train_batch(pairdb, config):
 
     label = {"rot": rot_i2r_array, "trans": trans_i2r_array}
 
-    if config.network.PRED_MASK:
+    if config.network.INPUT_MASK or config.network.PRED_MASK:
         label["mask_gt_observed"] = mask_gt_observed_array
 
     if config.network.PRED_FLOW:

@@ -311,7 +311,7 @@ class batchUpdaterPyMulti:
                 se3_m[:, 3] = se3_t
                 KT_array[batch_idx] = np.dot(self.K, se3_m)
 
-            if self.big_cfg.network.PRED_MASK:
+            if self.big_cfg.network.INPUT_MASK:
                 t = time.time()
                 refined_mask_rendered_array = np.zeros(refined_depth_array.shape)
                 refined_mask_rendered_array[
