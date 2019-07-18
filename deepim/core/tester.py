@@ -70,7 +70,7 @@ def pred_eval(config, predictor, test_data, imdb_test, vis=False, ignore_cache=N
                 [all_rot_err, all_trans_err, all_poses_est, all_poses_gt] = cPickle.load(fid, encoding="latin1")
             else:
                 [all_rot_err, all_trans_err, all_poses_est, all_poses_gt] = cPickle.load(fid)
-        imdb_test.evaluate_pose(config, all_poses_est, all_poses_gt, logger)
+        imdb_test.evaluate_pose(config, all_poses_est, all_poses_gt)
         pose_add_plots_dir = os.path.join(imdb_test.result_path, "add_plots")
         mkdir_p(pose_add_plots_dir)
         imdb_test.evaluate_pose_add(config, all_poses_est, all_poses_gt, output_dir=pose_add_plots_dir)
@@ -232,7 +232,7 @@ def pred_eval(config, predictor, test_data, imdb_test, vis=False, ignore_cache=N
         num_list = z_trans_err[class_id][0]
         print("z: {:.2f} +/- {:.2f}".format(np.mean(num_list) * 100, np.std(num_list) * 100))
 
-        imdb_test.evaluate_pose(config, all_poses_est, all_poses_gt, logger)
+        imdb_test.evaluate_pose(config, all_poses_est, all_poses_gt)
         pose_add_plots_dir = os.path.join(imdb_test.result_path, "add_plots_precomputed_ICP")
         mkdir_p(pose_add_plots_dir)
         imdb_test.evaluate_pose_add(config, all_poses_est, all_poses_gt, output_dir=pose_add_plots_dir)
@@ -269,7 +269,7 @@ def pred_eval(config, predictor, test_data, imdb_test, vis=False, ignore_cache=N
             z_trans_err[class_id][0].append(z_dist)
 
         all_trans_err = np.array(all_trans_err)
-        imdb_test.evaluate_pose(config, all_poses_est, all_poses_gt, logger)
+        imdb_test.evaluate_pose(config, all_poses_est, all_poses_gt)
         pose_add_plots_dir = os.path.join(imdb_test.result_path, "add_plots_before_ICP")
         mkdir_p(pose_add_plots_dir)
         imdb_test.evaluate_pose_add(config, all_poses_est, all_poses_gt, output_dir=pose_add_plots_dir)
@@ -519,12 +519,12 @@ def pred_eval(config, predictor, test_data, imdb_test, vis=False, ignore_cache=N
     # evaluate pose add
     pose_add_plots_dir = os.path.join(imdb_test.result_path, "add_plots")
     mkdir_p(pose_add_plots_dir)
-    imdb_test.evaluate_pose_add(config, all_poses_est, all_poses_gt, output_dir=pose_add_plots_dir, logger=logger)
+    imdb_test.evaluate_pose_add(config, all_poses_est, all_poses_gt, output_dir=pose_add_plots_dir)
     pose_arp2d_plots_dir = os.path.join(imdb_test.result_path, "arp_2d_plots")
     mkdir_p(pose_arp2d_plots_dir)
-    imdb_test.evaluate_pose_arp_2d(config, all_poses_est, all_poses_gt, output_dir=pose_arp2d_plots_dir, logger=logger)
+    imdb_test.evaluate_pose_arp_2d(config, all_poses_est, all_poses_gt, output_dir=pose_arp2d_plots_dir)
 
-    logger.info("using {} seconds in total".format(time.time() - t_start), logger)
+    logger.info("using {} seconds in total".format(time.time() - t_start))
 
 
 def par_generate_gt(config, pair_rec, flow_depth_rendered=None):
