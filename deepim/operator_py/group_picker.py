@@ -36,9 +36,7 @@ class GroupPickerOperator(mx.operator.CustomOp):
         for batch_idx in range(batch_size):
             g = int(np.squeeze(pick_idx_data[batch_idx]))
             assert g < self.group_num and g >= 0
-            top_data[batch_idx] = bottom_data[batch_idx][
-                self.channels_in_group * g : self.channels_in_group * (g + 1)
-            ]
+            top_data[batch_idx] = bottom_data[batch_idx][self.channels_in_group * g : self.channels_in_group * (g + 1)]
 
         self.assign(out_data[0], req[0], mx.ndarray.array(top_data, ctx=ctx))
 
@@ -52,9 +50,7 @@ class GroupPickerOperator(mx.operator.CustomOp):
         for batch_idx in range(batch_size):
             g = int(np.squeeze(pick_idx_data[batch_idx]))
             assert g < self.group_num and g >= 0
-            bottom_grad[batch_idx][
-                self.channels_in_group * g : self.channels_in_group * (g + 1)
-            ] = top_grad[batch_idx]
+            bottom_grad[batch_idx][self.channels_in_group * g : self.channels_in_group * (g + 1)] = top_grad[batch_idx]
 
         self.assign(in_grad[0], req[0], mx.ndarray.array(bottom_grad, ctx=ctx))
         self.assign(in_grad[1], req[1], 0)
@@ -102,20 +98,12 @@ if __name__ == "__main__":
     rot_all_classes = mx.sym.Variable("rot_all_classes")
     class_index = mx.sym.Variable("class_index")
     proj2d = mx.sym.Custom(
-        input_data=rot_all_classes,
-        group_idx=class_index,
-        name="updater",
-        op_type="GroupPicker",
-        group_num=num_classes,
+        input_data=rot_all_classes, group_idx=class_index, name="updater", op_type="GroupPicker", group_num=num_classes
     )
     v_rot_all_classes = np.random.rand(batch_size, 4 * num_classes)
     v_class_index = np.random.randint(num_classes, size=[batch_size, 1])
 
-    exe1 = proj2d.simple_bind(
-        ctx=ctx,
-        rot_all_classes=v_rot_all_classes.shape,
-        class_index=v_class_index.shape,
-    )
+    exe1 = proj2d.simple_bind(ctx=ctx, rot_all_classes=v_rot_all_classes.shape, class_index=v_class_index.shape)
 
     # forward
     exe1.arg_dict["rot_all_classes"][:] = mx.ndarray.array(v_rot_all_classes, ctx=ctx)

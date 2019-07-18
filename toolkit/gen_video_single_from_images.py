@@ -46,9 +46,7 @@ if __name__ == "__main__":
     images_dict = {k: [] for k in ["ours"]}
     print("loading images...")
     for i in tqdm(range(N)):
-        images_dict["ours"].append(
-            cv2.imread(os.path.join(ours_dir, ours_list[i]), cv2.IMREAD_COLOR)
-        )
+        images_dict["ours"].append(cv2.imread(os.path.join(ours_dir, ours_list[i]), cv2.IMREAD_COLOR))
 
     height, width, channel = images_dict["ours"][0].shape
     print(height, width)
@@ -56,29 +54,19 @@ if __name__ == "__main__":
     height = 600
 
     fourcc = cv2.VideoWriter_fourcc(*"MJPG")
-    video = cv2.VideoWriter(
-        os.path.join(exp_dir, "../single_video.avi"), fourcc, 5.0, (width, height)
-    )
+    video = cv2.VideoWriter(os.path.join(exp_dir, "../single_video.avi"), fourcc, 5.0, (width, height))
 
     print("writing video...")
     for i in tqdm(range(N)):
         res_img = images_dict["ours"][i]
         if res_img.shape[0] == 480:
             im_scale = 600.0 / 480.0
-            res_img = cv2.resize(
-                res_img,
-                None,
-                None,
-                fx=im_scale,
-                fy=im_scale,
-                interpolation=cv2.INTER_CUBIC,
-            )
+            res_img = cv2.resize(res_img, None, None, fx=im_scale, fy=im_scale, interpolation=cv2.INTER_CUBIC)
         video.write(res_img)
 
     video.release()
     os.popen(
         "ffmpeg -i {} -vcodec mpeg4 -acodec copy -preset placebo -crf 1 -b:v 1550k {}".format(
-            os.path.join(exp_dir, "../single_video.avi"),
-            os.path.join(exp_dir, "../single_video_compressed.avi"),
+            os.path.join(exp_dir, "../single_video.avi"), os.path.join(exp_dir, "../single_video_compressed.avi")
         )
     )

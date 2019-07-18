@@ -41,22 +41,14 @@ def locate_cuda():
         nvcc = find_in_path("nvcc", os.environ["PATH"] + os.pathsep + default_path)
         if nvcc is None:
             raise EnvironmentError(
-                "The nvcc binary could not be "
-                "located in your $PATH. Either add it to your path, or set $CUDAHOME"
+                "The nvcc binary could not be " "located in your $PATH. Either add it to your path, or set $CUDAHOME"
             )
         home = os.path.dirname(os.path.dirname(nvcc))
 
-    cudaconfig = {
-        "home": home,
-        "nvcc": nvcc,
-        "include": pjoin(home, "include"),
-        "lib64": pjoin(home, "lib64"),
-    }
+    cudaconfig = {"home": home, "nvcc": nvcc, "include": pjoin(home, "include"), "lib64": pjoin(home, "lib64")}
     for k, v in cudaconfig.items():
         if not os.path.exists(v):
-            raise EnvironmentError(
-                "The CUDA %s path could not be located in %s" % (k, v)
-            )
+            raise EnvironmentError("The CUDA %s path could not be located in %s" % (k, v))
 
     return cudaconfig
 
@@ -133,13 +125,7 @@ ext_modules = [
         # gcc the implementation of this trick is in customize_compiler() below
         extra_compile_args={
             "gcc": ["-Wno-unused-function"],
-            "nvcc": [
-                "-arch=sm_35",
-                "--ptxas-options=-v",
-                "-c",
-                "--compiler-options",
-                "'-fPIC'",
-            ],
+            "nvcc": ["-arch=sm_35", "--ptxas-options=-v", "-c", "--compiler-options", "'-fPIC'"],
         },
         include_dirs=[numpy_include, CUDA["include"]],
     )

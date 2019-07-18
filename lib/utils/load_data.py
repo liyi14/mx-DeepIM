@@ -8,9 +8,7 @@ import numpy as np
 from lib.dataset import *  # noqa: F401, F403
 
 
-def load_gt_roidb(
-    dataset_name, image_set_name, root_path, dataset_path, result_path=None, flip=False
-):
+def load_gt_roidb(dataset_name, image_set_name, root_path, dataset_path, result_path=None, flip=False):
     """ load ground truth roidb """
     imdb = eval(dataset_name)(image_set_name, root_path, dataset_path, result_path)
     roidb = imdb.gt_roidb()
@@ -20,14 +18,7 @@ def load_gt_roidb(
 
 
 def load_proposal_roidb(
-    dataset_name,
-    image_set_name,
-    root_path,
-    dataset_path,
-    result_path=None,
-    proposal="rpn",
-    append_gt=True,
-    flip=False,
+    dataset_name, image_set_name, root_path, dataset_path, result_path=None, proposal="rpn", append_gt=True, flip=False
 ):
     """ load proposal roidb (append_gt when training) """
     imdb = eval(dataset_name)(image_set_name, root_path, dataset_path, result_path)
@@ -40,23 +31,11 @@ def load_proposal_roidb(
 
 
 def load_gt_sdsdb(
-    dataset_name,
-    image_set_name,
-    root_path,
-    dataset_path,
-    result_path=None,
-    flip=False,
-    mask_size=21,
-    binary_thresh=0.4,
+    dataset_name, image_set_name, root_path, dataset_path, result_path=None, flip=False, mask_size=21, binary_thresh=0.4
 ):
     """ load ground truth sdsdb """
     imdb = eval(dataset_name)(
-        image_set_name,
-        root_path,
-        dataset_path,
-        result_path,
-        mask_size=mask_size,
-        binary_thresh=binary_thresh,
+        image_set_name, root_path, dataset_path, result_path, mask_size=mask_size, binary_thresh=binary_thresh
     )
     sdsdb = imdb.gt_sdsdb()
     if flip:
@@ -79,10 +58,7 @@ def filter_roidb(roidb, config):
         """ valid images have at least 1 fg or bg roi """
         overlaps = entry["max_overlaps"]
         fg_inds = np.where(overlaps >= config.TRAIN.FG_THRESH)[0]
-        bg_inds = np.where(
-            (overlaps < config.TRAIN.BG_THRESH_HI)
-            & (overlaps >= config.TRAIN.BG_THRESH_LO)
-        )[0]
+        bg_inds = np.where((overlaps < config.TRAIN.BG_THRESH_HI) & (overlaps >= config.TRAIN.BG_THRESH_LO))[0]
         valid = len(fg_inds) > 0 or len(bg_inds) > 0
         return valid
 
@@ -94,9 +70,7 @@ def filter_roidb(roidb, config):
     return filtered_roidb
 
 
-def load_gt_segdb(
-    dataset_name, image_set_name, root_path, dataset_path, result_path=None, flip=False
-):
+def load_gt_segdb(dataset_name, image_set_name, root_path, dataset_path, result_path=None, flip=False):
     """ load ground truth segdb """
     imdb = eval(dataset_name)(image_set_name, root_path, dataset_path, result_path)
     segdb = imdb.gt_segdb()
@@ -126,12 +100,7 @@ def load_gt_pairdb(
 ):
     print(image_set_name, root_path, dataset_path, result_path)
     imdb = eval(dataset_name)(
-        cfg,
-        image_set_name,
-        root_path,
-        dataset_path,
-        class_name=class_name,
-        result_path=result_path,
+        cfg, image_set_name, root_path, dataset_path, class_name=class_name, result_path=result_path
     )
     pairdb = imdb.gt_pairdb()
     if pair_flip:

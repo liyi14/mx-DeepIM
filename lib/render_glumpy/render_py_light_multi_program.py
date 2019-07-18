@@ -107,9 +107,7 @@ class Render_Py_Light_MultiProgram:
                 continue
             model_folder = model_folder_dict[cls_name]
             log.info("Loading mesh")
-            vertices, indices = data.objload(
-                "{}/textured.obj".format(model_folder), rescale=False
-            )
+            vertices, indices = data.objload("{}/textured.obj".format(model_folder), rescale=False)
             if cls_name not in self.render_kernels.keys():
                 self.render_kernels[cls_name] = []
             for brightness_ratio in brightness_ratios:
@@ -123,9 +121,7 @@ class Render_Py_Light_MultiProgram:
                 render_kernel.bind(vertices)
 
                 log.info("Loading texture")
-                render_kernel["u_texture"] = np.copy(
-                    data.load("{}/texture_map.png".format(model_folder))[::-1, :, :]
-                )
+                render_kernel["u_texture"] = np.copy(data.load("{}/texture_map.png".format(model_folder))[::-1, :, :])
 
                 render_kernel["u_model"] = np.eye(4, dtype=np.float32)
                 u_projection = self.my_compute_calib_proj(K, width, height, zNear, zFar)
@@ -145,24 +141,13 @@ class Render_Py_Light_MultiProgram:
             gl.glDisable(gl.GL_BLEND)
             gl.glEnable(gl.GL_DEPTH_TEST)
             # print('brightness_k', self.brightness_k) # this function runs when running app.run()
-            self.render_kernels[self.class_name][self.brightness_k].draw(
-                gl.GL_TRIANGLES
-            )
+            self.render_kernels[self.class_name][self.brightness_k].draw(gl.GL_TRIANGLES)
 
         @self.window.event
         def on_init():
             gl.glEnable(gl.GL_DEPTH_TEST)
 
-    def render(
-        self,
-        r,
-        t,
-        light_position,
-        light_intensity,
-        class_name,
-        brightness_k=0,
-        r_type="quat",
-    ):
+    def render(self, r, t, light_position, light_intensity, class_name, brightness_k=0, r_type="quat"):
         """
         :param r:
         :param t:
@@ -178,62 +163,35 @@ class Render_Py_Light_MultiProgram:
             R = r
         self.class_name = class_name
         self.brightness_k = brightness_k
-        self.render_kernels[self.class_name][brightness_k][
-            "u_view"
-        ] = self._get_view_mtx(R, t)
-        self.render_kernels[self.class_name][brightness_k][
-            "u_light_position"
-        ] = light_position
+        self.render_kernels[self.class_name][brightness_k]["u_view"] = self._get_view_mtx(R, t)
+        self.render_kernels[self.class_name][brightness_k]["u_light_position"] = light_position
         self.render_kernels[self.class_name][brightness_k]["u_normal"] = np.array(
             np.matrix(
                 np.dot(
-                    self.render_kernels[self.class_name][brightness_k][
-                        "u_view"
-                    ].reshape(4, 4),
-                    self.render_kernels[self.class_name][brightness_k][
-                        "u_model"
-                    ].reshape(4, 4),
+                    self.render_kernels[self.class_name][brightness_k]["u_view"].reshape(4, 4),
+                    self.render_kernels[self.class_name][brightness_k]["u_model"].reshape(4, 4),
                 )
             ).I.T
         )
-        self.render_kernels[self.class_name][brightness_k][
-            "u_light_intensity"
-        ] = light_intensity
+        self.render_kernels[self.class_name][brightness_k]["u_light_intensity"] = light_intensity
 
         app.run(framecount=0, framerate=0)
         rgb_buffer = np.zeros((self.height, self.width, 4), dtype=np.float32)
-        gl.glReadPixels(
-            0, 0, self.width, self.height, gl.GL_RGBA, gl.GL_FLOAT, rgb_buffer
-        )
+        gl.glReadPixels(0, 0, self.width, self.height, gl.GL_RGBA, gl.GL_FLOAT, rgb_buffer)
 
         rgb_gl = np.copy(rgb_buffer)
         rgb_gl.shape = 480, 640, 4
         rgb_gl = rgb_gl[::-1, :]
-        rgb_gl = np.round(rgb_gl[:, :, :3] * 255).astype(
-            np.uint8
-        )  # Convert to [0, 255]
+        rgb_gl = np.round(rgb_gl[:, :, :3] * 255).astype(np.uint8)  # Convert to [0, 255]
         bgr_gl = rgb_gl[:, :, [2, 1, 0]]
 
         depth_buffer = np.zeros((self.height, self.width), dtype=np.float32)
-        gl.glReadPixels(
-            0,
-            0,
-            self.width,
-            self.height,
-            gl.GL_DEPTH_COMPONENT,
-            gl.GL_FLOAT,
-            depth_buffer,
-        )
+        gl.glReadPixels(0, 0, self.width, self.height, gl.GL_DEPTH_COMPONENT, gl.GL_FLOAT, depth_buffer)
         depth_gl = np.copy(depth_buffer)
         depth_gl.shape = 480, 640
         depth_gl = depth_gl[::-1, :]
         depth_bg = depth_gl == 1
-        depth_gl = (
-            2
-            * self.zFar
-            * self.zNear
-            / (self.zFar + self.zNear - (self.zFar - self.zNear) * (2 * depth_gl - 1))
-        )
+        depth_gl = 2 * self.zFar * self.zNear / (self.zFar + self.zNear - (self.zFar - self.zNear) * (2 * depth_gl - 1))
         depth_gl[depth_bg] = 0
         return bgr_gl, depth_gl
 
@@ -346,43 +304,26 @@ if __name__ == "__main__":
     for class_name in class_name_list:
         if class_name == "__background__":
             continue
-        model_folder_dict[class_name] = os.path.join(
-            cur_path, "../../data/LOV/models/{}".format(class_name)
-        )
+        model_folder_dict[class_name] = os.path.join(cur_path, "../../data/LOV/models/{}".format(class_name))
 
     model_dir = os.path.join(cur_path, "../../data/LOV/models/{}".format(class_name))
 
     LOV_data_syn_root_dir = os.path.join(cur_path, "../..", "data", "LOV", "data_syn")
     LOV_data_syn_meta_path = "%s/{}-meta.mat" % (LOV_data_syn_root_dir)
     # get all real files
-    real_prefix_list = [
-        fn.split("-")[0]
-        for fn in os.listdir(LOV_data_syn_root_dir)
-        if "-color.png" in fn
-    ]
+    real_prefix_list = [fn.split("-")[0] for fn in os.listdir(LOV_data_syn_root_dir) if "-color.png" in fn]
     real_prefix_list = sorted(real_prefix_list)
 
     brightness_ratios = [0.2, 0.25, 0.3, 0.35, 0.4]
-    model_dir = os.path.join(
-        cur_path, "../../data/LOV/models/{}".format("002_master_chef_can")
-    )
+    model_dir = os.path.join(cur_path, "../../data/LOV/models/{}".format("002_master_chef_can"))
     model_folder_dict = {}
     for class_name in class_name_list:
         if class_name == "__background__":
             continue
-        model_folder_dict[class_name] = os.path.join(
-            cur_path, "../../data/LOV/models/{}".format(class_name)
-        )
+        model_folder_dict[class_name] = os.path.join(cur_path, "../../data/LOV/models/{}".format(class_name))
 
     render_machine = Render_Py_Light_MultiProgram(
-        class_name_list,
-        model_folder_dict,
-        K,
-        width,
-        height,
-        ZNEAR,
-        ZFAR,
-        brightness_ratios,
+        class_name_list, model_folder_dict, K, width, height, ZNEAR, ZFAR, brightness_ratios
     )
     for idx, real_index in enumerate(tqdm(real_prefix_list[10000:10003])):
         prefix = real_index  # real_prefix_list[idx]
@@ -414,17 +355,7 @@ if __name__ == "__main__":
             raise Exception("???")
 
         # randomly adjust color and intensity for light_intensity
-        colors = np.array(
-            [
-                [0, 0, 1],
-                [0, 1, 0],
-                [0, 1, 1],
-                [1, 0, 0],
-                [1, 0, 1],
-                [1, 1, 0],
-                [1, 1, 1],
-            ]
-        )
+        colors = np.array([[0, 0, 1], [0, 1, 0], [0, 1, 1], [1, 0, 0], [1, 0, 1], [1, 1, 0], [1, 1, 1]])
         intensity = np.random.uniform(0.9, 1.1, size=(3,))
         colors_randk = random.randint(0, colors.shape[0] - 1)
         light_intensity = colors[colors_randk] * intensity

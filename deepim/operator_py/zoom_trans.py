@@ -43,9 +43,7 @@ class ZoomTransOperator(mx.operator.CustomOp):
             zoom_trans_delta_array[batch_idx, 0] = zoom_delta_x
             zoom_trans_delta_array[batch_idx, 1] = zoom_delta_y
             zoom_trans_delta_array[batch_idx, 2] = zoom_delta_z
-        self.assign(
-            out_data[0], req[0], mx.ndarray.array(zoom_trans_delta_array, ctx=ctx)
-        )
+        self.assign(out_data[0], req[0], mx.ndarray.array(zoom_trans_delta_array, ctx=ctx))
 
     def backward(self, req, out_grad, in_data, out_data, in_grad, aux):
         ctx = in_data[0].context
@@ -117,19 +115,13 @@ if __name__ == "__main__":
     trans_delta = mx.sym.Variable("trans_delta")
     se3_trans = mx.sym.Variable("se3_trans")
     proj2d = mx.sym.Custom(
-        zoom_factor=zoom_factor,
-        trans_delta=trans_delta,
-        name="updater",
-        op_type="ZoomTrans",
-        b_inv_zoom=False,
+        zoom_factor=zoom_factor, trans_delta=trans_delta, name="updater", op_type="ZoomTrans", b_inv_zoom=False
     )
     v_zoom_factor = np.random.rand(batch_size, 4) * 2
     v_zoom_factor[:, 1] = v_zoom_factor[:, 0]
     v_trans_delta = np.random.rand(batch_size, 3) * 2
 
-    exe1 = proj2d.simple_bind(
-        ctx=ctx, zoom_factor=v_zoom_factor.shape, trans_delta=v_trans_delta.shape
-    )
+    exe1 = proj2d.simple_bind(ctx=ctx, zoom_factor=v_zoom_factor.shape, trans_delta=v_trans_delta.shape)
 
     # forward
     exe1.arg_dict["zoom_factor"][:] = mx.ndarray.array(v_zoom_factor, ctx=ctx)
@@ -148,15 +140,9 @@ if __name__ == "__main__":
     print(zoom_trans_delta_py - zoom_trans_delta_mx)
 
     proj2d = mx.sym.Custom(
-        zoom_factor=zoom_factor,
-        trans_delta=trans_delta,
-        name="updater",
-        op_type="ZoomTrans",
-        b_inv_zoom=True,
+        zoom_factor=zoom_factor, trans_delta=trans_delta, name="updater", op_type="ZoomTrans", b_inv_zoom=True
     )
-    exe2 = proj2d.simple_bind(
-        ctx=ctx, zoom_factor=v_zoom_factor.shape, trans_delta=v_trans_delta.shape
-    )
+    exe2 = proj2d.simple_bind(ctx=ctx, zoom_factor=v_zoom_factor.shape, trans_delta=v_trans_delta.shape)
     exe2.arg_dict["zoom_factor"][:] = mx.ndarray.array(v_zoom_factor, ctx=ctx)
     exe2.arg_dict["trans_delta"][:] = mx.ndarray.array(zoom_trans_delta_mx, ctx=ctx)
     exe2.forward(is_train=True)

@@ -59,18 +59,10 @@ if __name__ == "__main__":
     depth_factor = 1000
 
     # output_path
-    LINEMOD_root = os.path.join(
-        cur_path, "../data/LINEMOD_6D/LM6d_converted/LM6d_refine"
-    )
-    LINEMOD_syn_root = os.path.join(
-        cur_path, "../data/LINEMOD_6D/LM6d_converted/LM6d_refine_syn"
-    )
-    rendered_pose_path = "%s/LM6d_ds_rendered_pose_{}.txt" % (
-        os.path.join(LINEMOD_syn_root, "poses", "rendered_poses")
-    )
-    observed_list_path = "%s/LM6d_data_syn_{}_observed_{}.txt" % (
-        os.path.join(LINEMOD_syn_root, "image_set/observed")
-    )
+    LINEMOD_root = os.path.join(cur_path, "../data/LINEMOD_6D/LM6d_converted/LM6d_refine")
+    LINEMOD_syn_root = os.path.join(cur_path, "../data/LINEMOD_6D/LM6d_converted/LM6d_refine_syn")
+    rendered_pose_path = "%s/LM6d_ds_rendered_pose_{}.txt" % (os.path.join(LINEMOD_syn_root, "poses", "rendered_poses"))
+    observed_list_path = "%s/LM6d_data_syn_{}_observed_{}.txt" % (os.path.join(LINEMOD_syn_root, "image_set/observed"))
 
     # output_path
     rendered_root_dir = os.path.join(LINEMOD_syn_root, "data", "rendered")
@@ -99,9 +91,7 @@ if __name__ == "__main__":
                 real_list = [x.strip() for x in f.readlines()]
             with open(rendered_pose_path.format(class_name)) as f:
                 str_rendered_pose_list = [x.strip().split(" ") for x in f.readlines()]
-            rendered_pose_list = np.array(
-                [[float(x) for x in each_pose] for each_pose in str_rendered_pose_list]
-            )
+            rendered_pose_list = np.array([[float(x) for x in each_pose] for each_pose in str_rendered_pose_list])
             rendered_per_real = 1
             assert len(rendered_pose_list) == 1 * len(real_list), "{} vs {}".format(
                 len(rendered_pose_list), len(real_list)
@@ -113,25 +103,17 @@ if __name__ == "__main__":
                 for inner_idx in range(rendered_per_real):
                     if gen_images:
                         image_file = os.path.join(
-                            rendered_dir,
-                            "{}_{}_{}-color.png".format(
-                                class_name, real_prefix, inner_idx
-                            ),
+                            rendered_dir, "{}_{}_{}-color.png".format(class_name, real_prefix, inner_idx)
                         )
                         depth_file = os.path.join(
-                            rendered_dir,
-                            "{}_{}_{}-depth.png".format(
-                                class_name, real_prefix, inner_idx
-                            ),
+                            rendered_dir, "{}_{}_{}-depth.png".format(class_name, real_prefix, inner_idx)
                         )
                         # if os.path.exists(image_file) and os.path.exists(depth_file):
                         #     continue
                         rendered_idx = idx * rendered_per_real + inner_idx
                         pose_rendered_q = rendered_pose_list[rendered_idx]
 
-                        rgb_gl, depth_gl = render_machine.render(
-                            pose_rendered_q[:4], pose_rendered_q[4:]
-                        )
+                        rgb_gl, depth_gl = render_machine.render(pose_rendered_q[:4], pose_rendered_q[4:])
                         rgb_gl = rgb_gl.astype("uint8")
 
                         depth_gl = (depth_gl * depth_factor).astype(np.uint16)
@@ -140,10 +122,7 @@ if __name__ == "__main__":
                         cv2.imwrite(depth_file, depth_gl)
 
                         pose_file = os.path.join(
-                            rendered_dir,
-                            "{}_{}_{}-pose.txt".format(
-                                class_name, real_prefix, inner_idx
-                            ),
+                            rendered_dir, "{}_{}_{}-pose.txt".format(class_name, real_prefix, inner_idx)
                         )
                         text_file = open(pose_file, "w")
                         text_file.write("{}\n".format(class_idx))
@@ -168,14 +147,10 @@ if __name__ == "__main__":
                         text_file.write(pose_str)
 
                     train_pair.append(
-                        "{} {}/{}_{}_{}".format(
-                            real_index, video_name, class_name, real_prefix, inner_idx
-                        )
+                        "{} {}/{}_{}_{}".format(real_index, video_name, class_name, real_prefix, inner_idx)
                     )
 
-            pair_set_file = os.path.join(
-                pair_set_dir, "train_{}.txt".format(class_name)
-            )
+            pair_set_file = os.path.join(pair_set_dir, "train_{}.txt".format(class_name))
             train_pair = sorted(train_pair)
             with open(pair_set_file, "w") as text_file:
                 for x in train_pair:

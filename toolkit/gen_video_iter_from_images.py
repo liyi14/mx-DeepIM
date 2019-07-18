@@ -47,9 +47,7 @@ if __name__ == "__main__":
 
     flow_path_list = []
     for flow_dir in flow_dirs:
-        files = [
-            os.path.join(flow_dir, fn) for fn in os.listdir(flow_dir) if ".png" in fn
-        ]
+        files = [os.path.join(flow_dir, fn) for fn in os.listdir(flow_dir) if ".png" in fn]
         files.sort(cmp=my_cmp)
         for i in range(len(files)):
             if i == 0 or i == len(files) - 2:
@@ -62,9 +60,7 @@ if __name__ == "__main__":
 
     pose_path_list = []
     for pose_dir in pose_dirs:
-        files = [
-            os.path.join(pose_dir, fn) for fn in os.listdir(pose_dir) if ".png" in fn
-        ]
+        files = [os.path.join(pose_dir, fn) for fn in os.listdir(pose_dir) if ".png" in fn]
         files.sort(cmp=my_cmp)
         for i in range(len(files)):
             if i == 0 or i == len(files) - 2:
@@ -77,9 +73,7 @@ if __name__ == "__main__":
 
     mask_path_list = []
     for mask_dir in mask_dirs:
-        files = [
-            os.path.join(mask_dir, fn) for fn in os.listdir(mask_dir) if ".png" in fn
-        ]
+        files = [os.path.join(mask_dir, fn) for fn in os.listdir(mask_dir) if ".png" in fn]
         files.sort(cmp=my_cmp)
         for i in range(len(files)):
             mask_path_list.append(files[i])
@@ -105,57 +99,26 @@ if __name__ == "__main__":
 
     fourcc = cv2.VideoWriter_fourcc(*"MJPG")
     if len(mask_path_list) != 0:
-        video_mask = cv2.VideoWriter(
-            os.path.join(exp_dir, "../video_full/mask.avi"),
-            fourcc,
-            5.0,
-            (width, height),
-        )
+        video_mask = cv2.VideoWriter(os.path.join(exp_dir, "../video_full/mask.avi"), fourcc, 5.0, (width, height))
 
     if len(flow_path_list) != 0:
-        video_flow = cv2.VideoWriter(
-            os.path.join(exp_dir, "../video_full/flow.avi"),
-            fourcc,
-            5.0,
-            (width, height),
-        )
-        video = cv2.VideoWriter(
-            os.path.join(exp_dir, "../video_full/pose_flow.avi"),
-            fourcc,
-            5.0,
-            (width * 2, height),
-        )
-    video_pose = cv2.VideoWriter(
-        os.path.join(exp_dir, "../video_full/pose.avi"), fourcc, 10.0, (width, height)
-    )
+        video_flow = cv2.VideoWriter(os.path.join(exp_dir, "../video_full/flow.avi"), fourcc, 5.0, (width, height))
+        video = cv2.VideoWriter(os.path.join(exp_dir, "../video_full/pose_flow.avi"), fourcc, 5.0, (width * 2, height))
+    video_pose = cv2.VideoWriter(os.path.join(exp_dir, "../video_full/pose.avi"), fourcc, 10.0, (width, height))
 
     print("writing video...")
     for i in tqdm(range(N)):
         res_img_1 = images_dict["pose"][i]
         if res_img_1.shape[0] == 480:
             im_scale = 600.0 / 480.0
-            res_img_1 = cv2.resize(
-                res_img_1,
-                None,
-                None,
-                fx=im_scale,
-                fy=im_scale,
-                interpolation=cv2.INTER_CUBIC,
-            )
+            res_img_1 = cv2.resize(res_img_1, None, None, fx=im_scale, fy=im_scale, interpolation=cv2.INTER_CUBIC)
         video_pose.write(res_img_1)
 
         if len(flow_path_list) != 0:
             res_img_2 = images_dict["flow"][i]
             if res_img_2.shape[0] == 480:
                 im_scale = 600.0 / 480.0
-                res_img_2 = cv2.resize(
-                    res_img_2,
-                    None,
-                    None,
-                    fx=im_scale,
-                    fy=im_scale,
-                    interpolation=cv2.INTER_CUBIC,
-                )
+                res_img_2 = cv2.resize(res_img_2, None, None, fx=im_scale, fy=im_scale, interpolation=cv2.INTER_CUBIC)
 
             res_img = np.hstack((res_img_1, res_img_2))
 
@@ -166,14 +129,7 @@ if __name__ == "__main__":
         res_img = images_dict["mask"][i]
         if res_img.shape[0] == 480:
             im_scale = 600.0 / 480.0
-            res_img = cv2.resize(
-                res_img,
-                None,
-                None,
-                fx=im_scale,
-                fy=im_scale,
-                interpolation=cv2.INTER_CUBIC,
-            )
+            res_img = cv2.resize(res_img, None, None, fx=im_scale, fy=im_scale, interpolation=cv2.INTER_CUBIC)
         video_mask.write(res_img)
 
     video_pose.release()
@@ -186,8 +142,7 @@ if __name__ == "__main__":
 
     os.popen(
         "ffmpeg -i {} -vcodec mpeg4 -acodec copy -preset placebo -crf 1 -b:v 1550k {}".format(
-            os.path.join(exp_dir, "../video_full/pose.avi"),
-            os.path.join(exp_dir, "../video_full/pose_compressed.avi"),
+            os.path.join(exp_dir, "../video_full/pose.avi"), os.path.join(exp_dir, "../video_full/pose_compressed.avi")
         )
     )
 

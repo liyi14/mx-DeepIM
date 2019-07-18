@@ -24,12 +24,8 @@ import scipy.io as sio
 LM6d_origin_root = os.path.join(cur_dir, "../../data/LINEMOD_6D/LM6d_origin/test")
 # following previous works, part of the observed images are used for training and only images.
 
-LM6d_new_root = os.path.join(
-    cur_dir, "../../data/LINEMOD_6D/LM6d_converted/LM6d_refine/data/observed"
-)
-model_dir = os.path.join(
-    cur_dir, "../../data/LINEMOD_6D/LM6d_converted/LM6d_refine/models"
-)
+LM6d_new_root = os.path.join(cur_dir, "../../data/LINEMOD_6D/LM6d_converted/LM6d_refine/data/observed")
+model_dir = os.path.join(cur_dir, "../../data/LINEMOD_6D/LM6d_converted/LM6d_refine/models")
 mkdir_if_missing(LM6d_new_root)
 print("target path: {}".format(LM6d_new_root))
 
@@ -121,18 +117,12 @@ def main():
         observed_indices = []
         images = [
             fn
-            for fn in os.listdir(
-                os.path.join(
-                    LM6d_origin_root, "{:02d}".format(class2idx(cls_name)), "rgb"
-                )
-            )
+            for fn in os.listdir(os.path.join(LM6d_origin_root, "{:02d}".format(class2idx(cls_name)), "rgb"))
             if ".png" in fn
         ]
         images = sorted(images)
 
-        gt_path = os.path.join(
-            LM6d_origin_root, "{:02d}".format(class2idx(cls_name)), "gt.yml"
-        )
+        gt_path = os.path.join(LM6d_origin_root, "{:02d}".format(class2idx(cls_name)), "gt.yml")
         gt_dict = load_gt(gt_path)
 
         # info_path = os.path.join(LM6d_origin_root, '{:02d}'.format(
@@ -141,15 +131,11 @@ def main():
 
         for observed_img in tqdm(images):
             old_color_path = os.path.join(
-                LM6d_origin_root,
-                "{:02d}".format(class2idx(cls_name)),
-                "rgb/{}".format(observed_img),
+                LM6d_origin_root, "{:02d}".format(class2idx(cls_name)), "rgb/{}".format(observed_img)
             )
             assert os.path.exists(old_color_path), old_color_path
             old_depth_path = os.path.join(
-                LM6d_origin_root,
-                "{:02d}".format(class2idx(cls_name)),
-                "depth/{}".format(observed_img),
+                LM6d_origin_root, "{:02d}".format(class2idx(cls_name)), "depth/{}".format(observed_img)
             )
             assert os.path.exists(old_depth_path), old_depth_path
             img_id = int(observed_img.replace(".png", ""))
@@ -166,14 +152,10 @@ def main():
             # print(color_img.shape)
 
             new_color_path = os.path.join(
-                LM6d_new_root,
-                "{:02d}".format(class2idx(cls_name)),
-                "{:06d}-color.png".format(new_img_id),
+                LM6d_new_root, "{:02d}".format(class2idx(cls_name)), "{:06d}-color.png".format(new_img_id)
             )
             new_depth_path = os.path.join(
-                LM6d_new_root,
-                "{:02d}".format(class2idx(cls_name)),
-                "{:06d}-depth.png".format(new_img_id),
+                LM6d_new_root, "{:02d}".format(class2idx(cls_name)), "{:06d}-depth.png".format(new_img_id)
             )
             mkdir_if_missing(os.path.dirname(new_color_path))
 
@@ -202,23 +184,17 @@ def main():
                 pose[:3, 3] = t
                 distances.append(t[2])
                 meta_dict["poses"][:, :, ins_id] = pose
-                image_gl, depth_gl = render_machine.render(
-                    obj_id - 1, pose[:3, :3], pose[:3, 3], r_type="mat"
-                )
+                image_gl, depth_gl = render_machine.render(obj_id - 1, pose[:3, :3], pose[:3, 3], r_type="mat")
                 image_gl = image_gl.astype("uint8")
                 label = np.zeros(depth_gl.shape)
                 label[depth_gl != 0] = 1
                 label_dict[obj_id] = label
             meta_path = os.path.join(
-                LM6d_new_root,
-                "{:02d}".format(class2idx(cls_name)),
-                "{:06d}-meta.mat".format(new_img_id),
+                LM6d_new_root, "{:02d}".format(class2idx(cls_name)), "{:06d}-meta.mat".format(new_img_id)
             )
             sio.savemat(meta_path, meta_dict)
 
-            dis_inds = sorted(
-                range(len(distances)), key=lambda k: -distances[k]
-            )  # put deeper objects first
+            dis_inds = sorted(range(len(distances)), key=lambda k: -distances[k])  # put deeper objects first
             # label
             res_label = np.zeros((480, 640))
             for dis_id in dis_inds:
@@ -228,16 +204,12 @@ def main():
                 res_label[tmp_label == 1] = cls_id
 
             label_path = os.path.join(
-                LM6d_new_root,
-                "{:02d}".format(class2idx(cls_name)),
-                "{:06d}-label.png".format(new_img_id),
+                LM6d_new_root, "{:02d}".format(class2idx(cls_name)), "{:06d}-label.png".format(new_img_id)
             )
             cv2.imwrite(label_path, res_label)
 
             # observed idx
-            observed_indices.append(
-                "{:02d}/{:06d}".format(class2idx(cls_name), new_img_id)
-            )
+            observed_indices.append("{:02d}/{:06d}".format(class2idx(cls_name), new_img_id))
 
 
 if __name__ == "__main__":

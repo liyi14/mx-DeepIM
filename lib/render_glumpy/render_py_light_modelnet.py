@@ -81,15 +81,7 @@ def get_fragment(brightness_ratio=0.4):
 
 class Render_Py_Light_ModelNet:
     def __init__(
-        self,
-        model_path,
-        texture_path,
-        K,
-        width=640,
-        height=480,
-        zNear=0.25,
-        zFar=6.0,
-        brightness_ratios=[0.7],
+        self, model_path, texture_path, K, width=640, height=480, zNear=0.25, zFar=6.0, brightness_ratios=[0.7]
     ):
         self.width = width
         self.height = height
@@ -109,9 +101,7 @@ class Render_Py_Light_ModelNet:
             render_kernel.bind(vertices)
 
             log.info("Loading texture")
-            render_kernel["u_texture"] = np.copy(
-                data.load("{}".format(texture_path))[::-1, :, :]
-            )
+            render_kernel["u_texture"] = np.copy(data.load("{}".format(texture_path))[::-1, :, :])
 
             render_kernel["u_model"] = np.eye(4, dtype=np.float32)
             u_projection = self.my_compute_calib_proj(K, width, height, zNear, zFar)
@@ -135,9 +125,7 @@ class Render_Py_Light_ModelNet:
         def on_init():
             gl.glEnable(gl.GL_DEPTH_TEST)
 
-    def render(
-        self, r, t, light_position, light_intensity, brightness_k=0, r_type="quat"
-    ):
+    def render(self, r, t, light_position, light_intensity, brightness_k=0, r_type="quat"):
         """
         :param r:
         :param t:
@@ -166,38 +154,21 @@ class Render_Py_Light_ModelNet:
 
         app.run(framecount=0)
         rgb_buffer = np.zeros((self.height, self.width, 4), dtype=np.float32)
-        gl.glReadPixels(
-            0, 0, self.width, self.height, gl.GL_RGBA, gl.GL_FLOAT, rgb_buffer
-        )
+        gl.glReadPixels(0, 0, self.width, self.height, gl.GL_RGBA, gl.GL_FLOAT, rgb_buffer)
 
         rgb_gl = np.copy(rgb_buffer)
         rgb_gl.shape = 480, 640, 4
         rgb_gl = rgb_gl[::-1, :]
-        rgb_gl = np.round(rgb_gl[:, :, :3] * 255).astype(
-            np.uint8
-        )  # Convert to [0, 255]
+        rgb_gl = np.round(rgb_gl[:, :, :3] * 255).astype(np.uint8)  # Convert to [0, 255]
         bgr_gl = rgb_gl[:, :, [2, 1, 0]]
 
         depth_buffer = np.zeros((self.height, self.width), dtype=np.float32)
-        gl.glReadPixels(
-            0,
-            0,
-            self.width,
-            self.height,
-            gl.GL_DEPTH_COMPONENT,
-            gl.GL_FLOAT,
-            depth_buffer,
-        )
+        gl.glReadPixels(0, 0, self.width, self.height, gl.GL_DEPTH_COMPONENT, gl.GL_FLOAT, depth_buffer)
         depth_gl = np.copy(depth_buffer)
         depth_gl.shape = 480, 640
         depth_gl = depth_gl[::-1, :]
         depth_bg = depth_gl == 1
-        depth_gl = (
-            2
-            * self.zFar
-            * self.zNear
-            / (self.zFar + self.zNear - (self.zFar - self.zNear) * (2 * depth_gl - 1))
-        )
+        depth_gl = 2 * self.zFar * self.zNear / (self.zFar + self.zNear - (self.zFar - self.zNear) * (2 * depth_gl - 1))
         depth_gl[depth_bg] = 0
         return bgr_gl, depth_gl
 

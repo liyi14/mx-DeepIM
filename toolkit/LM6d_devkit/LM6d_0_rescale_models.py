@@ -26,9 +26,7 @@ from lib.utils.mkdir_if_missing import mkdir_if_missing
 
 LM6d_origin_root = os.path.join(cur_dir, "../../data/LINEMOD_6D/LM6d_origin")
 version = "v1"
-LM6d_new_root = os.path.join(
-    cur_dir, "../../data/LINEMOD_6D/LM6d_converted/LM6d_render_{}/".format(version)
-)
+LM6d_new_root = os.path.join(cur_dir, "../../data/LINEMOD_6D/LM6d_converted/LM6d_render_{}/".format(version))
 src_model_root = os.path.join(LM6d_origin_root, "models")
 dst_model_root = os.path.join(LM6d_new_root, "models")
 mkdir_if_missing(dst_model_root)

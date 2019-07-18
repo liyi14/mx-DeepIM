@@ -15,10 +15,7 @@ cur_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(1, os.path.join(cur_dir, "../.."))
 
 version = "v1"
-model_root = os.path.join(
-    cur_dir,
-    "../../data/LINEMOD_6D/LM6d_converted/models/LM6d_render_{}/models".format(version),
-)
+model_root = os.path.join(cur_dir, "../../data/LINEMOD_6D/LM6d_converted/models/LM6d_render_{}/models".format(version))
 print("target path: {}".format(model_root))
 
 idx2class = {

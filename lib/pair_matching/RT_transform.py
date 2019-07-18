@@ -13,9 +13,7 @@ import numpy.linalg as LA
 from math import pi
 
 
-def calc_RT_delta(
-    pose_src, pose_tgt, T_means, T_stds, rot_coord="MODEL", rot_type="MATRIX"
-):
+def calc_RT_delta(pose_src, pose_tgt, T_means, T_stds, rot_coord="MODEL", rot_type="MATRIX"):
     """
     project the points in source corrd to target corrd
     :param pose_src: pose matrix of soucre, [R|T], 3x4
@@ -31,9 +29,7 @@ def calc_RT_delta(
         T_delta = se3_src2tgt[:, 3].reshape((3))
     else:
         Rm_delta = R_inv_transform(pose_src[:3, :3], pose_tgt[:3, :3], rot_coord)
-        T_delta = T_inv_transform(
-            pose_src[:, 3], pose_tgt[:, 3], T_means, T_stds, rot_coord
-        )
+        T_delta = T_inv_transform(pose_src[:, 3], pose_tgt[:, 3], T_means, T_stds, rot_coord)
 
     if rot_type.lower() == "quat":
         r = mat2quat(Rm_delta)
@@ -58,11 +54,7 @@ def R_transform(R_src, R_delta, rot_coord="MODEL"):
     """
     if rot_coord.lower() == "model":
         R_output = np.dot(R_src, R_delta)
-    elif (
-        rot_coord.lower() == "camera"
-        or rot_coord.lower() == "naive"
-        or rot_coord.lower() == "camera_new"
-    ):
+    elif rot_coord.lower() == "camera" or rot_coord.lower() == "naive" or rot_coord.lower() == "camera_new":
         R_output = np.dot(R_delta, R_src)
     else:
         raise Exception("Unknown rot_coord in R_transform: {}".format(rot_coord))
@@ -154,9 +146,7 @@ def RT_transform(pose_src, r, t, T_means, T_stds, rot_coord="MODEL"):
     else:
         pose_est = np.zeros((3, 4))
         pose_est[:3, :3] = R_transform(pose_src[:3, :3], Rm_delta, rot_coord)
-        pose_est[:3, 3] = T_transform(
-            pose_src[:, 3], t_delta, T_means, T_stds, rot_coord
-        )
+        pose_est[:3, 3] = T_transform(pose_src[:, 3], t_delta, T_means, T_stds, rot_coord)
 
     return pose_est
 
@@ -435,11 +425,7 @@ def quat2mat(q):
     yZ = y * Z
     zZ = z * Z
     return np.array(
-        [
-            [1.0 - (yY + zZ), xY - wZ, xZ + wY],
-            [xY + wZ, 1.0 - (xX + zZ), yZ - wX],
-            [xZ - wY, yZ + wX, 1.0 - (xX + yY)],
-        ]
+        [[1.0 - (yY + zZ), xY - wZ, xZ + wY], [xY + wZ, 1.0 - (xX + zZ), yZ - wX], [xZ - wY, yZ + wX, 1.0 - (xX + yY)]]
     )
 
 

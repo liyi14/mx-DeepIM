@@ -63,9 +63,7 @@ gt_observed_dir = os.path.join(LINEMOD_root, "data/gt_observed")
 observed_set_dir = os.path.join(LINEMOD_root, "image_set/observed")
 
 # output path
-LINEMOD_syn_root = os.path.join(
-    cur_path, "../data/LINEMOD_6D/LM6d_converted/LM6d_refine_syn"
-)
+LINEMOD_syn_root = os.path.join(cur_path, "../data/LINEMOD_6D/LM6d_converted/LM6d_refine_syn")
 pose_dir = os.path.join(LINEMOD_syn_root, "poses")  # single object in each image
 mkdir_if_missing(pose_dir)
 print("target path: {}".format(pose_dir))
@@ -101,9 +99,7 @@ def stat_poses():
         quat_stat[cls_name] = {}
         for observed_i, observed_idx in enumerate(tqdm(observed_indices)):
             prefix = observed_idx.split("/")[1]
-            pose_path = os.path.join(
-                gt_observed_dir, cls_name, "{}-pose.txt".format(prefix)
-            )
+            pose_path = os.path.join(gt_observed_dir, cls_name, "{}-pose.txt".format(prefix))
             assert os.path.exists(pose_path), "path {} not exists".format(pose_path)
             pose = np.loadtxt(pose_path, skiprows=1)
             rot = pose[:3, :3]
@@ -129,13 +125,7 @@ def stat_poses():
         quat_stat[cls_name]["quat_mean"] = quat_mean
         quat_stat[cls_name]["quat_std"] = quat_std
 
-        print(
-            "new z: ",
-            "mean: ",
-            new_points[cls_name]["pz_mean"],
-            "std: ",
-            new_points[cls_name]["pz_std"],
-        )
+        print("new z: ", "mean: ", new_points[cls_name]["pz_mean"], "std: ", new_points[cls_name]["pz_std"])
 
         new_points[cls_name]["angle"] = []  # angle between mean vector and points
         pz_mean = new_points[cls_name]["pz_mean"]
@@ -195,9 +185,7 @@ def gen_poses():
     pose_dict, quat_stat, trans_stat, new_points = stat_poses()
     observed_prefix_list = ["{:06d}".format(i + 1) for i in range(NUM_IMAGES)]
     sel_classes = classes
-    observed_pose_dict = {
-        cls_name: np.zeros((NUM_IMAGES, 7)) for cls_name in sel_classes
-    }
+    observed_pose_dict = {cls_name: np.zeros((NUM_IMAGES, 7)) for cls_name in sel_classes}
 
     for cls_i, cls_name in enumerate(sel_classes):
         # uncomment here to only generate data for ape
@@ -229,9 +217,7 @@ def gen_poses():
             center_x = float(transform[0] / transform[2])
             center_y = float(transform[1] / transform[2])
             count = 0
-            while deg > deg_max or not (
-                48 < center_x < (640 - 48) and 48 < center_y < (480 - 48)
-            ):
+            while deg > deg_max or not (48 < center_x < (640 - 48) and 48 < center_y < (480 - 48)):
                 # randomly generate a pose
                 tgt_quat = np.random.normal(0, 1, 4)
                 tgt_quat = tgt_quat / np.linalg.norm(tgt_quat)
@@ -254,10 +240,7 @@ def gen_poses():
                         cls_name,
                         count,
                         "deg < deg_max={}: {}, 48 < center_x < (640-48): {}, 48 < center_y < (480-48): {}".format(
-                            deg_max,
-                            deg <= deg_max,
-                            48 < center_x < (640 - 48),
-                            48 < center_y < (480 - 48),
+                            deg_max, deg <= deg_max, 48 < center_x < (640 - 48), 48 < center_y < (480 - 48)
                         ),
                     )
 

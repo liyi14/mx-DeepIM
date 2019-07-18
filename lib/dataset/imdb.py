@@ -82,13 +82,9 @@ class IMDB(object):
 
     def load_rpn_data(self, full=False):
         if full:
-            rpn_file = os.path.join(
-                self.result_path, "rpn_data", self.name + "_full_rpn.pkl"
-            )
+            rpn_file = os.path.join(self.result_path, "rpn_data", self.name + "_full_rpn.pkl")
         else:
-            rpn_file = os.path.join(
-                self.result_path, "rpn_data", self.name + "_rpn.pkl"
-            )
+            rpn_file = os.path.join(self.result_path, "rpn_data", self.name + "_rpn.pkl")
         print("loading {}".format(rpn_file))
         assert os.path.exists(rpn_file), "rpn data not found at {}".format(rpn_file)
         with open(rpn_file, "rb") as f:
@@ -226,9 +222,7 @@ class IMDB(object):
         :return: pairdb: [pair_index]['*_real', '*_rendered', 'pair_flipped', 'img_flipped']
         """
         print("append flipped images to pairdb...")
-        assert self.num_pairs == len(pairdb), "{} vs {}".format(
-            self.num_pairs, len(pairdb)
-        )
+        assert self.num_pairs == len(pairdb), "{} vs {}".format(self.num_pairs, len(pairdb))
         pair_flip = []
         for i in range(self.num_pairs):
             pair_rec = pairdb[i]
@@ -252,7 +246,5 @@ class IMDB(object):
             a[i]["gt_classes"] = np.hstack((a[i]["gt_classes"], b[i]["gt_classes"]))
             a[i]["gt_overlaps"] = np.vstack((a[i]["gt_overlaps"], b[i]["gt_overlaps"]))
             a[i]["max_classes"] = np.hstack((a[i]["max_classes"], b[i]["max_classes"]))
-            a[i]["max_overlaps"] = np.hstack(
-                (a[i]["max_overlaps"], b[i]["max_overlaps"])
-            )
+            a[i]["max_overlaps"] = np.hstack((a[i]["max_overlaps"], b[i]["max_overlaps"]))
         return a

@@ -28,25 +28,16 @@ def get_data_pair_test_batch(pairdb, config):
     """
     im_observed, im_rendered, scale_ind_list = get_pair_image(pairdb, config, "test")
     if config.network.INPUT_DEPTH:
-        depth_observed, depth_rendered = get_pair_depth(
-            pairdb, config, scale_ind_list, "test"
-        )
+        depth_observed, depth_rendered = get_pair_depth(pairdb, config, scale_ind_list, "test")
     if config.network.INPUT_MASK:
-        mask_observed, _, mask_rendered = get_pair_mask(
-            pairdb, config, scale_ind_list, "test"
-        )
+        mask_observed, _, mask_rendered = get_pair_mask(pairdb, config, scale_ind_list, "test")
 
-    im_info = [
-        np.array([pairdb[i]["height"], pairdb[i]["width"]], dtype=np.float32)
-        for i in range(len(pairdb))
-    ]
+    im_info = [np.array([pairdb[i]["height"], pairdb[i]["width"]], dtype=np.float32) for i in range(len(pairdb))]
 
     num_pair = len(pairdb)
     for i in range(num_pair):
         class_index_tensor = [[] for i in range(num_pair)]
-        class_index_tensor[i] = np.array(
-            config.dataset.class_name.index(pairdb[i]["gt_class"])
-        ).reshape(1)
+        class_index_tensor[i] = np.array(config.dataset.class_name.index(pairdb[i]["gt_class"])).reshape(1)
         class_index_array = my_tensor_vstack(class_index_tensor)
 
     data = []
@@ -153,12 +144,8 @@ def get_data_pair_train_batch(pairdb, config):
     """
     num_pair = len(pairdb)
     random_k = np.random.randint(18)
-    im_observed, im_rendered, scale_ind_list = get_pair_image(
-        pairdb, config, phase="train", random_k=random_k
-    )
-    depth_gt_observed = get_gt_observed_depth(
-        pairdb, config, scale_ind_list, random_k=random_k
-    )
+    im_observed, im_rendered, scale_ind_list = get_pair_image(pairdb, config, phase="train", random_k=random_k)
+    depth_gt_observed = get_gt_observed_depth(pairdb, config, scale_ind_list, random_k=random_k)
     if config.network.INPUT_DEPTH:
         depth_observed, depth_rendered = get_pair_depth(
             pairdb, config, scale_ind_list, phase="train", random_k=random_k
@@ -213,9 +200,7 @@ def get_data_pair_train_batch(pairdb, config):
         tgt_pose_tensor[i] = np.array(pairdb[i]["pose_observed"]).reshape((1, 3, 4))
         if config.train_iter.SE3_PM_LOSS:
             tgt_points = get_point_cloud_observed(
-                config,
-                X_obj_array[i],
-                pose_observed=np.array(pairdb[i]["pose_observed"]),
+                config, X_obj_array[i], pose_observed=np.array(pairdb[i]["pose_observed"])
             )
             tgt_points_tensor[i] = np.expand_dims(tgt_points, axis=0)  # (1, 3, 3000)
 
@@ -227,9 +212,7 @@ def get_data_pair_train_batch(pairdb, config):
 
     for i in range(num_pair):
         class_index_tensor = [[] for i in range(num_pair)]
-        class_index_tensor[i] = np.array(
-            config.dataset.class_name.index(pairdb[i]["gt_class"])
-        ).reshape(num_pair)
+        class_index_tensor[i] = np.array(config.dataset.class_name.index(pairdb[i]["gt_class"])).reshape(num_pair)
         class_index_array = my_tensor_vstack(class_index_tensor)
     data = {
         "image_observed": im_observed_array,

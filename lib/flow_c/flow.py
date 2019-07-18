@@ -7,6 +7,7 @@ from __future__ import absolute_import, division, print_function
 import sys
 import os
 import os.path as osp
+
 cur_dir = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(1, os.path.join(cur_dir, '../..'))
 
@@ -16,7 +17,6 @@ from .gpu_flow import gpu_flow
 
 
 def gpu_flow_wrapper(device_id):
-
     def _flow(depth_src, depth_tgt, KT, Kinv):
         return gpu_flow(depth_src, depth_tgt, KT, Kinv, device_id)
 
@@ -31,14 +31,14 @@ if __name__ == '__main__':
 
     K = np.array([[572.4114, 0, 325.2611], [0, 573.57043, 242.04899], [0, 0, 1]])
     DEPTH_FACTOR = 1000.0
-    flow_thresh = 3E-3
+    flow_thresh = 3e-3
     batch_size = 8
     height = 480
     width = 640
     wh_rep = False
     device = 'cuda:0'
-    src_img_idx = ['{:06}'.format(x*100 + 1) for x in range(batch_size)]
-    tgt_img_idx = ['{:06}'.format(x*100 + 31) for x in range(batch_size)]
+    src_img_idx = ['{:06}'.format(x * 100 + 1) for x in range(batch_size)]
+    tgt_img_idx = ['{:06}'.format(x * 100 + 31) for x in range(batch_size)]
     class_name = 'driller'
     cls_idx = 8
     data_dir = osp.join(cur_dir, '../../data/LINEMOD_6D/LM6d_converted/LM6d_refine/data/')
@@ -72,11 +72,12 @@ if __name__ == '__main__':
 
     for i in range(10):
         tic = time()
-        flow_all, flow_weights_all = \
-            gpu_flow_machine(v_depth_src.astype(np.float32),
-                             v_depth_tgt.astype(np.float32),
-                             KT_array.astype(np.float32),
-                             np.array(Kinv).astype(np.float32))
+        flow_all, flow_weights_all = gpu_flow_machine(
+            v_depth_src.astype(np.float32),
+            v_depth_tgt.astype(np.float32),
+            KT_array.astype(np.float32),
+            np.array(Kinv).astype(np.float32),
+        )
         print('{} s'.format(time() - tic))
         print(flow_all.shape, np.unique(flow_all))
         print(flow_weights_all.shape, np.unique(flow_weights_all))
@@ -102,13 +103,20 @@ if __name__ == '__main__':
                 for w in range(width):
                     if flow_weights[h, w]:
                         cur_flow = flow[h, w, :]
-                        flow_img_src = cv2.line(flow_img_src, (np.round(w).astype(int), np.round(h).astype(int)),
-                                                (np.round(w).astype(int), np.round(h).astype(int)),
-                                                (255, h * 255 / height, w * 255 / width), 5)
+                        flow_img_src = cv2.line(
+                            flow_img_src,
+                            (np.round(w).astype(int), np.round(h).astype(int)),
+                            (np.round(w).astype(int), np.round(h).astype(int)),
+                            (255, h * 255 / height, w * 255 / width),
+                            5,
+                        )
                         flow_img_tgt = cv2.line(
-                            flow_img_tgt, (np.round(w + cur_flow[1]).astype(int), np.round(h + cur_flow[0]).astype(int)),
+                            flow_img_tgt,
                             (np.round(w + cur_flow[1]).astype(int), np.round(h + cur_flow[0]).astype(int)),
-                            (255, h * 255 / height, w * 255 / width), 5)
+                            (np.round(w + cur_flow[1]).astype(int), np.round(h + cur_flow[0]).astype(int)),
+                            (255, h * 255 / height, w * 255 / width),
+                            5,
+                        )
 
             depth_src = cv2.imread(depth_path.format(src_img_idx[j]), cv2.IMREAD_UNCHANGED) / DEPTH_FACTOR
 

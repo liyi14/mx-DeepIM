@@ -72,12 +72,8 @@ def class2idx(class_name):
 
 def load_object_diameter():
     diameters = {}
-    models_info_file = os.path.join(
-        cur_path, "../data/LINEMOD_6D/models/models_info.txt"
-    )
-    assert os.path.exists(models_info_file), "Path does not exist: {}".format(
-        models_info_file
-    )
+    models_info_file = os.path.join(cur_path, "../data/LINEMOD_6D/models/models_info.txt")
+    assert os.path.exists(models_info_file), "Path does not exist: {}".format(models_info_file)
     with open(models_info_file, "r") as f:
         for line in f:
             line_list = line.strip().split()
@@ -118,9 +114,7 @@ def read_info(pose_info_path):
         add = float(infos[3].split(":")[1])
         add_name = infos[3].split(":")[0]
         add_rel = add / diameter * 100
-        add_info = "{}: {:.2f}/{:.2f}={:.2f}%".format(
-            add_name, add * 1000, diameter * 1000, add_rel
-        )
+        add_info = "{}: {:.2f}/{:.2f}={:.2f}%".format(add_name, add * 1000, diameter * 1000, add_rel)
         # color_info = "gray: gt, red: initial, green: refined"
         legend = add_info  # "{}\n{}".format(add_info, color_info)
 
@@ -165,9 +159,7 @@ def main():
 
     pose_path_list = []
     for pose_dir in pose_dirs:
-        files = [
-            os.path.join(pose_dir, fn) for fn in os.listdir(pose_dir) if ".png" in fn
-        ]
+        files = [os.path.join(pose_dir, fn) for fn in os.listdir(pose_dir) if ".png" in fn]
         files = sorted(files)
         for i in range(len(files)):
             if i == 0 or i == len(files) - 1:
@@ -180,13 +172,7 @@ def main():
     mkdir_if_missing(save_dir)
 
     # zoom in
-    def get_zoom_iamges(
-        image_path,
-        save_dir,
-        is_initial=False,
-        is_last=False,
-        use_first_zoom_factor=True,
-    ):
+    def get_zoom_iamges(image_path, save_dir, is_initial=False, is_last=False, use_first_zoom_factor=True):
         legend_loc = 50
         t = 1
         cmap = {1: [1.0, 0.0, 0.0, t], 2: [0.75, 0.75, 0.75, t], 3: [0.0, 1.0, 0.0, t]}
@@ -194,10 +180,7 @@ def main():
         patches = [mpatches.Patch(color=cmap[i], label=labels[i]) for i in range(1, 4)]
         if use_first_zoom_factor:
             init_info_path = image_path.replace(
-                os.path.basename(image_path)[
-                    os.path.basename(image_path).find("iter") :
-                ],
-                "iter_00_info.txt",
+                os.path.basename(image_path)[os.path.basename(image_path).find("iter") :], "iter_00_info.txt"
             )
             _, _, zoom_factor = read_info(init_info_path)
 
@@ -209,20 +192,13 @@ def main():
 
         zoom_factor = zoom_factor[None, :]
         # print(zoom_factor)
-        image_real = cv2.imread(image_path, cv2.IMREAD_COLOR).transpose([2, 0, 1])[
-            None, :, :, :
-        ]
+        image_real = cv2.imread(image_path, cv2.IMREAD_COLOR).transpose([2, 0, 1])[None, :, :, :]
         image_rendered = image_real.copy()
         exe1 = zoom_op.simple_bind(
-            ctx=ctx,
-            zoom_factor=zoom_factor.shape,
-            image_real=image_real.shape,
-            image_rendered=image_rendered.shape,
+            ctx=ctx, zoom_factor=zoom_factor.shape, image_real=image_real.shape, image_rendered=image_rendered.shape
         )
 
-        def simple_forward(
-            exe1, zoom_factor, image_real, image_rendered, ctx=ctx, is_train=False
-        ):
+        def simple_forward(exe1, zoom_factor, image_real, image_rendered, ctx=ctx, is_train=False):
             print("zoom factor: ", zoom_factor)
             exe1.arg_dict["zoom_factor"][:] = mx.nd.array(zoom_factor, ctx=ctx)
             exe1.arg_dict["image_real"][:] = mx.nd.array(image_real, ctx=ctx)
@@ -237,23 +213,13 @@ def main():
             fig.add_axes(ax)
             # print(image_real[0].shape)
             ax.imshow(image_real[0].transpose((1, 2, 0))[:, :, [2, 1, 0]])
-            fig.gca().text(
-                10, 25, title, color="green", bbox=dict(facecolor="white", alpha=0.8)
-            )
-            fig.gca().text(
-                10,
-                legend_loc,
-                legend,
-                color="red",
-                bbox=dict(facecolor="white", alpha=0.8),
-            )
+            fig.gca().text(10, 25, title, color="green", bbox=dict(facecolor="white", alpha=0.8))
+            fig.gca().text(10, legend_loc, legend, color="red", bbox=dict(facecolor="white", alpha=0.8))
             plt.legend(handles=patches, loc=4, borderaxespad=0.0)
             # plt.show()
             save_d = os.path.join(save_dir, os.path.dirname(image_path).split("/")[-1])
             mkdir_if_missing(save_d)
-            save_path = os.path.join(
-                save_d, os.path.basename(image_path).replace(".png", "_0.png")
-            )
+            save_path = os.path.join(save_d, os.path.basename(image_path).replace(".png", "_0.png"))
             plt.savefig(save_path, aspect="normal")
             plt.close()
 
@@ -266,12 +232,8 @@ def main():
             zoom_factor_1[0, 2] = tx / 3
             zoom_factor_1[0, 3] = ty / 3
 
-            simple_forward(
-                exe1, zoom_factor_1, image_real, image_rendered, ctx=ctx, is_train=True
-            )
-            zoom_image_real = (
-                exe1.outputs[0].asnumpy()[0].transpose((1, 2, 0)) + pixel_means
-            )
+            simple_forward(exe1, zoom_factor_1, image_real, image_rendered, ctx=ctx, is_train=True)
+            zoom_image_real = exe1.outputs[0].asnumpy()[0].transpose((1, 2, 0)) + pixel_means
             zoom_image_real[zoom_image_real < 0] = 0
             zoom_image_real[zoom_image_real > 255] = 255
             zoom_image_real = zoom_image_real.astype("uint8")
@@ -280,22 +242,12 @@ def main():
             ax.set_axis_off()
             fig.add_axes(ax)
             ax.imshow(zoom_image_real[:, :, [2, 1, 0]])
-            fig.gca().text(
-                10, 25, title, color="green", bbox=dict(facecolor="white", alpha=0.8)
-            )
-            fig.gca().text(
-                10,
-                legend_loc,
-                legend,
-                color="red",
-                bbox=dict(facecolor="white", alpha=0.8),
-            )
+            fig.gca().text(10, 25, title, color="green", bbox=dict(facecolor="white", alpha=0.8))
+            fig.gca().text(10, legend_loc, legend, color="red", bbox=dict(facecolor="white", alpha=0.8))
             plt.legend(handles=patches, loc=4, borderaxespad=0.0)
             save_d = os.path.join(save_dir, os.path.dirname(image_path).split("/")[-1])
             mkdir_if_missing(save_d)
-            save_path = os.path.join(
-                save_d, os.path.basename(image_path).replace(".png", "_1.png")
-            )
+            save_path = os.path.join(save_d, os.path.basename(image_path).replace(".png", "_1.png"))
             plt.savefig(save_path, aspect="normal")
             # plt.show()
             plt.close()
@@ -307,12 +259,8 @@ def main():
             zoom_factor_2[0, 2] = tx / 3 * 2
             zoom_factor_2[0, 3] = ty / 3 * 2
 
-            simple_forward(
-                exe1, zoom_factor_2, image_real, image_rendered, ctx=ctx, is_train=True
-            )
-            zoom_image_real = (
-                exe1.outputs[0].asnumpy()[0].transpose((1, 2, 0)) + pixel_means
-            )
+            simple_forward(exe1, zoom_factor_2, image_real, image_rendered, ctx=ctx, is_train=True)
+            zoom_image_real = exe1.outputs[0].asnumpy()[0].transpose((1, 2, 0)) + pixel_means
             zoom_image_real[zoom_image_real < 0] = 0
             zoom_image_real[zoom_image_real > 255] = 255
             zoom_image_real = zoom_image_real.astype("uint8")
@@ -321,33 +269,19 @@ def main():
             ax.set_axis_off()
             fig.add_axes(ax)
             ax.imshow(zoom_image_real[:, :, [2, 1, 0]])
-            fig.gca().text(
-                10, 25, title, color="green", bbox=dict(facecolor="white", alpha=0.8)
-            )
-            fig.gca().text(
-                10,
-                legend_loc,
-                legend,
-                color="red",
-                bbox=dict(facecolor="white", alpha=0.8),
-            )
+            fig.gca().text(10, 25, title, color="green", bbox=dict(facecolor="white", alpha=0.8))
+            fig.gca().text(10, legend_loc, legend, color="red", bbox=dict(facecolor="white", alpha=0.8))
             plt.legend(handles=patches, loc=4, borderaxespad=0.0)
             save_d = os.path.join(save_dir, os.path.dirname(image_path).split("/")[-1])
             mkdir_if_missing(save_d)
-            save_path = os.path.join(
-                save_d, os.path.basename(image_path).replace(".png", "_2.png")
-            )
+            save_path = os.path.join(save_d, os.path.basename(image_path).replace(".png", "_2.png"))
             plt.savefig(save_path, aspect="normal")
             # plt.show()
             plt.close()
 
         # ###################### (3/3)
-        simple_forward(
-            exe1, zoom_factor, image_real, image_rendered, ctx=ctx, is_train=True
-        )
-        zoom_image_real = (
-            exe1.outputs[0].asnumpy()[0].transpose((1, 2, 0)) + pixel_means
-        )
+        simple_forward(exe1, zoom_factor, image_real, image_rendered, ctx=ctx, is_train=True)
+        zoom_image_real = exe1.outputs[0].asnumpy()[0].transpose((1, 2, 0)) + pixel_means
         zoom_image_real[zoom_image_real < 0] = 0
         zoom_image_real[zoom_image_real > 255] = 255
         zoom_image_real = zoom_image_real.astype("uint8")
@@ -356,32 +290,20 @@ def main():
         ax.set_axis_off()
         fig.add_axes(ax)
         ax.imshow(zoom_image_real[:, :, [2, 1, 0]])
-        fig.gca().text(
-            10, 25, title, color="green", bbox=dict(facecolor="white", alpha=0.8)
-        )
-        fig.gca().text(
-            10, legend_loc, legend, color="red", bbox=dict(facecolor="white", alpha=0.8)
-        )
+        fig.gca().text(10, 25, title, color="green", bbox=dict(facecolor="white", alpha=0.8))
+        fig.gca().text(10, legend_loc, legend, color="red", bbox=dict(facecolor="white", alpha=0.8))
         plt.legend(handles=patches, loc=4, borderaxespad=0.0)
         save_d = os.path.join(save_dir, os.path.dirname(image_path).split("/")[-1])
         mkdir_if_missing(save_d)
         if is_initial:
-            save_path = os.path.join(
-                save_d, os.path.basename(image_path).replace(".png", "_3.png")
-            )
+            save_path = os.path.join(save_d, os.path.basename(image_path).replace(".png", "_3.png"))
             # plt.show()
             plt.savefig(save_path, aspect="normal")
             plt.close()
         elif is_last:
-            save_path_0 = os.path.join(
-                save_d, os.path.basename(image_path).replace(".png", "_0.png")
-            )
-            save_path_1 = os.path.join(
-                save_d, os.path.basename(image_path).replace(".png", "_1.png")
-            )
-            save_path_2 = os.path.join(
-                save_d, os.path.basename(image_path).replace(".png", "_2.png")
-            )
+            save_path_0 = os.path.join(save_d, os.path.basename(image_path).replace(".png", "_0.png"))
+            save_path_1 = os.path.join(save_d, os.path.basename(image_path).replace(".png", "_1.png"))
+            save_path_2 = os.path.join(save_d, os.path.basename(image_path).replace(".png", "_2.png"))
             plt.savefig(save_path_0, aspect="normal")
             plt.savefig(save_path_1, aspect="normal")
             plt.savefig(save_path_2, aspect="normal")
@@ -420,18 +342,12 @@ def main():
 
     ########################################
     # generate video with new images
-    new_pose_dirs = [
-        os.path.join(save_dir, d) for d in os.listdir(save_dir) if "pose" in d
-    ]
+    new_pose_dirs = [os.path.join(save_dir, d) for d in os.listdir(save_dir) if "pose" in d]
     new_pose_dirs = sorted(new_pose_dirs)
 
     new_pose_path_list = []
     for new_pose_dir in new_pose_dirs:
-        files = [
-            os.path.join(new_pose_dir, fn)
-            for fn in os.listdir(new_pose_dir)
-            if ".png" in fn
-        ]
+        files = [os.path.join(new_pose_dir, fn) for fn in os.listdir(new_pose_dir) if ".png" in fn]
         files = sorted(files)
         for i in range(len(files)):
             if i == 0 or i == len(files) - 1:
@@ -454,10 +370,7 @@ def main():
     fourcc = cv2.VideoWriter_fourcc(*"MJPG")
 
     video_pose_zoom = cv2.VideoWriter(
-        os.path.join(exp_dir, "../video_full/pose_iter_zoom.avi"),
-        fourcc,
-        2.0,
-        (width, height),
+        os.path.join(exp_dir, "../video_full/pose_iter_zoom.avi"), fourcc, 2.0, (width, height)
     )
 
     print("writing video...")
@@ -465,14 +378,7 @@ def main():
         res_img = images_dict["pose"][i]
         if res_img.shape[0] == 480:
             im_scale = 600.0 / 480.0
-            res_img = cv2.resize(
-                res_img,
-                None,
-                None,
-                fx=im_scale,
-                fy=im_scale,
-                interpolation=cv2.INTER_CUBIC,
-            )
+            res_img = cv2.resize(res_img, None, None, fx=im_scale, fy=im_scale, interpolation=cv2.INTER_CUBIC)
         video_pose_zoom.write(res_img)
 
     video_pose_zoom.release()

@@ -118,9 +118,7 @@ def re_old(R_est, R_gt):
     """
     assert R_est.shape == R_gt.shape == (3, 3)
     error_cos = 0.5 * (np.trace(R_est.dot(np.linalg.inv(R_gt))) - 1.0)
-    error_cos = min(
-        1.0, max(-1.0, error_cos)
-    )  # Avoid invalid values due to numerical errors
+    error_cos = min(1.0, max(-1.0, error_cos))  # Avoid invalid values due to numerical errors
     error = math.acos(error_cos)
     error = 180.0 * error / np.pi  # [rad] -> [deg]
     return error

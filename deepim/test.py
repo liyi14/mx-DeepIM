@@ -15,32 +15,18 @@ from config.config import config, update_config
 def parse_args():
     parser = argparse.ArgumentParser(description="Test a DeepIM Network")
     # general
-    parser.add_argument(
-        "--cfg", help="experiment configure file name", required=True, type=str
-    )
+    parser.add_argument("--cfg", help="experiment configure file name", required=True, type=str)
 
     args, rest = parser.parse_known_args()
     update_config(args.cfg)
 
     # testing
     parser.add_argument("--vis", help="turn on visualization", action="store_true")
-    parser.add_argument(
-        "--vis_video", help="turn on video visualization", action="store_true"
-    )
-    parser.add_argument(
-        "--vis_video_zoom", help="turn on zoom video visualization", action="store_true"
-    )
-    parser.add_argument(
-        "--ignore_cache",
-        help="ignore cached pose prediction results",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--gpus", help="specify the gpu to be use", required=True, type=str
-    )
-    parser.add_argument(
-        "--skip_flow", help="whether skip flow during test", action="store_true"
-    )
+    parser.add_argument("--vis_video", help="turn on video visualization", action="store_true")
+    parser.add_argument("--vis_video_zoom", help="turn on zoom video visualization", action="store_true")
+    parser.add_argument("--ignore_cache", help="ignore cached pose prediction results", action="store_true")
+    parser.add_argument("--gpus", help="specify the gpu to be use", required=True, type=str)
+    parser.add_argument("--skip_flow", help="whether skip flow during test", action="store_true")
     args = parser.parse_args()
     return args
 
@@ -65,6 +51,7 @@ from core.tester import Predictor, pred_eval
 from lib.utils.load_data import load_gt_pairdb, merge_pairdb
 from lib.utils.load_model import load_param
 from lib.utils.create_logger import create_logger
+from lib.utils import logger
 
 
 def test_deepim():
@@ -82,9 +69,7 @@ def test_deepim():
     dataset_path = config.dataset.dataset_path
 
     new_args_name = args.cfg
-    logger, final_output_path = create_logger(
-        config.output_path, new_args_name, image_set
-    )
+    final_output_path = create_logger(config.output_path, new_args_name, image_set)
     prefix = os.path.join(
         final_output_path,
         "..",
@@ -156,26 +141,12 @@ def test_deepim():
     # load model and check parameters
     arg_params, aux_params = load_param(prefix, epoch, process=True)
 
-    sym_instance.check_parameter_shapes(
-        arg_params, aux_params, data_shape_dict, is_train=False
-    )
+    sym_instance.check_parameter_shapes(arg_params, aux_params, data_shape_dict, is_train=False)
 
     # decide maximum shape
     data_names = [k[0] for k in test_data.provide_data_single]
     label_names = None
-    max_data_shape = [
-        [
-            (
-                "data",
-                (
-                    1,
-                    3,
-                    max([v[0] for v in config.SCALES]),
-                    max([v[1] for v in config.SCALES]),
-                ),
-            )
-        ]
-    ]
+    max_data_shape = [[("data", (1, 3, max([v[0] for v in config.SCALES]), max([v[1] for v in config.SCALES])))]]
 
     # create predictor
     predictor = Predictor(

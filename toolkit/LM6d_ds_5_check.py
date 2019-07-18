@@ -47,9 +47,7 @@ def class2idx(class_name, idx2class=idx2class):
 version = "v1"
 
 LINEMOD_root = os.path.join(cur_path, "../data/LINEMOD_6D/LM6d_converted/LM6d_refine")
-LINEMOD_syn_root = os.path.join(
-    cur_path, "../data/LINEMOD_6D/LM6d_converted/LM6d_refine_syn"
-)
+LINEMOD_syn_root = os.path.join(cur_path, "../data/LINEMOD_6D/LM6d_converted/LM6d_refine_syn")
 # input render observed poses
 gt_observed_dir = os.path.join(LINEMOD_syn_root, "data", "gt_observed")
 observed_dir = os.path.join(LINEMOD_syn_root, "data", "observed")
@@ -67,15 +65,9 @@ def check():
 
     for pair in pairs:
         observed_idx, rendered_idx = pair.split()
-        observed_color = read_img(
-            os.path.join(observed_dir, "{}-color.png".format(observed_idx)), 3
-        )
-        gt_rendered_color = read_img(  # noqa:F841
-            os.path.join(gt_observed_dir, "{}-color.png".format(observed_idx)), 3
-        )
-        rendered_color = read_img(
-            os.path.join(rendered_dir, "{}-color.png".format(rendered_idx)), 3
-        )
+        observed_color = read_img(os.path.join(observed_dir, "{}-color.png".format(observed_idx)), 3)
+        gt_rendered_color = read_img(os.path.join(gt_observed_dir, "{}-color.png".format(observed_idx)), 3)  # noqa:F841
+        rendered_color = read_img(os.path.join(rendered_dir, "{}-color.png".format(rendered_idx)), 3)
 
         fig = plt.figure(dpi=150)  # noqa:F841
         plt.subplot(2, 3, 1)
@@ -89,9 +81,7 @@ def check():
         plt.axis("off")
 
         plt.subplot(2, 3, 5)
-        observed_rendered_diff = np.abs(
-            observed_color[:, :, [2, 1, 0]] - rendered_color[:, :, [2, 1, 0]]
-        )
+        observed_rendered_diff = np.abs(observed_color[:, :, [2, 1, 0]] - rendered_color[:, :, [2, 1, 0]])
         plt.imshow(observed_rendered_diff.astype(np.uint8))
         plt.title("observed - rendered")
         plt.axis("off")
@@ -117,9 +107,7 @@ def check_rot_distribution():
         if cls_name != "bowl":
             continue
         new_points[cls_name] = {"pz": []}
-        train_idx_file = os.path.join(
-            observed_set_dir, "LM6d_data_syn_train_observed_{}.txt".format(cls_name)
-        )
+        train_idx_file = os.path.join(observed_set_dir, "LM6d_data_syn_train_observed_{}.txt".format(cls_name))
         with open(train_idx_file, "r") as f:
             observed_indices = [line.strip() for line in f.readlines()]
 
@@ -129,9 +117,7 @@ def check_rot_distribution():
         quat_stat[cls_name] = {}
         for observed_i, observed_idx in enumerate(tqdm(observed_indices)):
             prefix = observed_idx.split("/")[1]
-            pose_path = os.path.join(
-                gt_observed_dir, cls_name, "{}-pose.txt".format(prefix)
-            )
+            pose_path = os.path.join(gt_observed_dir, cls_name, "{}-pose.txt".format(prefix))
             assert os.path.exists(pose_path), "path {} not exists".format(pose_path)
             pose = np.loadtxt(pose_path, skiprows=1)
             rot = pose[:3, :3]
@@ -157,13 +143,7 @@ def check_rot_distribution():
         quat_stat[cls_name]["quat_mean"] = quat_mean
         quat_stat[cls_name]["quat_std"] = quat_std
 
-        print(
-            "new z: ",
-            "mean: ",
-            new_points[cls_name]["pz_mean"],
-            "std: ",
-            new_points[cls_name]["pz_std"],
-        )
+        print("new z: ", "mean: ", new_points[cls_name]["pz_mean"], "std: ", new_points[cls_name]["pz_std"])
 
         new_points[cls_name]["angle"] = []  # angle between mean vector and points
         pz_mean = new_points[cls_name]["pz_mean"]
@@ -256,20 +236,14 @@ def check_model_points():
         if cls_name != "bowl":
             continue
 
-        train_idx_file = os.path.join(
-            observed_set_dir, "LM6d_data_syn_train_observed_{}.txt".format(cls_name)
-        )
+        train_idx_file = os.path.join(observed_set_dir, "LM6d_data_syn_train_observed_{}.txt".format(cls_name))
         with open(train_idx_file, "r") as f:
             observed_indices = [line.strip() for line in f.readlines()]
 
         for observed_i, observed_idx in enumerate(tqdm(observed_indices)):
             prefix = observed_idx.split("/")[1]
-            pose_path = os.path.join(
-                gt_observed_dir, cls_name, "{}-pose.txt".format(prefix)
-            )
-            observed_color_path = os.path.join(
-                gt_observed_dir, cls_name, "{}-color.png".format(prefix)
-            )
+            pose_path = os.path.join(gt_observed_dir, cls_name, "{}-pose.txt".format(prefix))
+            observed_color_path = os.path.join(gt_observed_dir, cls_name, "{}-color.png".format(prefix))
             observed_color = read_img(observed_color_path)
             assert os.path.exists(pose_path), "path {} not exists".format(pose_path)
             pose = np.loadtxt(pose_path, skiprows=1)

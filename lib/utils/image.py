@@ -9,10 +9,7 @@ import os
 import cv2
 import random
 from PIL import Image
-from lib.pair_matching.load_object_points import (
-    load_object_points,
-    load_points_from_obj,
-)
+from lib.pair_matching.load_object_points import load_object_points, load_points_from_obj
 from lib.utils.mask_dilate import mask_dilate
 from lib.utils.get_min_rect import get_min_rect
 
@@ -34,9 +31,7 @@ def get_segmentation_image(segdb, config):
     for i in range(num_images):
         seg_rec = segdb[i]
         print(seg_rec["image"])
-        assert os.path.exists(seg_rec["image"]), "{} does not exist".format(
-            seg_rec["image"]
-        )
+        assert os.path.exists(seg_rec["image"]), "{} does not exist".format(seg_rec["image"])
         im = np.array(cv2.imread(seg_rec["image"]))
 
         new_rec = seg_rec.copy()
@@ -50,9 +45,7 @@ def get_segmentation_image(segdb, config):
         new_rec["im_info"] = im_info
 
         seg_cls_gt = np.array(Image.open(seg_rec["seg_cls_path"]))
-        seg_cls_gt, seg_cls_gt_scale = resize(
-            seg_cls_gt, target_size, max_size, interpolation=cv2.INTER_NEAREST
-        )
+        seg_cls_gt, seg_cls_gt_scale = resize(seg_cls_gt, target_size, max_size, interpolation=cv2.INTER_NEAREST)
         seg_cls_gt_tensor = transform_seg_gt(seg_cls_gt)
 
         processed_ims.append(im_tensor)
@@ -90,14 +83,10 @@ def get_pair_image(pairdb, config, phase="train", random_k=18):
         # process rgb image
         image_observed_path = pair_rec["image_observed"]
         # image_observed_path = pair_rec['image_observed']
-        assert os.path.exists(image_observed_path), "{} does not exist".format(
-            pair_rec["image_observed"]
-        )
+        assert os.path.exists(image_observed_path), "{} does not exist".format(pair_rec["image_observed"])
         im_observed = cv2.imread(image_observed_path, cv2.IMREAD_COLOR)
 
-        assert os.path.exists(pair_rec["image_rendered"]), "{} does not exist".format(
-            pair_rec["image_rendered"]
-        )
+        assert os.path.exists(pair_rec["image_rendered"]), "{} does not exist".format(pair_rec["image_rendered"])
         im_rendered = cv2.imread(pair_rec["image_rendered"], cv2.IMREAD_COLOR)
 
         im_observed, im_scale = resize(im_observed, target_size, max_size)
@@ -107,19 +96,14 @@ def get_pair_image(pairdb, config, phase="train", random_k=18):
         # add random background to data_syn observed image
         if "data_syn" in pair_rec.keys() and phase == "train":
             if pair_rec["data_syn"] is True or (
-                pair_rec["data_syn"] is False
-                and np.random.rand() < config.TRAIN.REPLACE_OBSERVED_BG_RATIO
+                pair_rec["data_syn"] is False and np.random.rand() < config.TRAIN.REPLACE_OBSERVED_BG_RATIO
             ):
                 VOC_root = os.path.join(config.dataset.root_path, "VOCdevkit/VOC2012")
                 VOC_image_set_dir = os.path.join(VOC_root, "ImageSets/Main")
-                VOC_bg_list_path = os.path.join(
-                    VOC_image_set_dir, "diningtable_trainval.txt"
-                )
+                VOC_bg_list_path = os.path.join(VOC_image_set_dir, "diningtable_trainval.txt")
                 with open(VOC_bg_list_path, "r") as f:
                     VOC_bg_list = [
-                        line.strip("\r\n").split()[0]
-                        for line in f.readlines()
-                        if line.strip("\r\n").split()[1] == "1"
+                        line.strip("\r\n").split()[0] for line in f.readlines() if line.strip("\r\n").split()[1] == "1"
                     ]
                 height, width, channel = im_observed.shape
                 target_size = min(height, width)
@@ -132,9 +116,7 @@ def get_pair_image(pairdb, config, phase="train", random_k=18):
                 bg_image = cv2.imread(bg_path, cv2.IMREAD_COLOR)
                 bg_h, bg_w, bg_c = bg_image.shape
                 bg_image_resize = np.zeros((height, width, channel), dtype="uint8")
-                if (
-                    float(height) / float(width) < 1 and float(bg_h) / float(bg_w) < 1
-                ) or (
+                if (float(height) / float(width) < 1 and float(bg_h) / float(bg_w) < 1) or (
                     float(height) / float(width) >= 1 and float(bg_h) / float(bg_w) >= 1
                 ):
                     if bg_h >= bg_w:
@@ -165,9 +147,7 @@ def get_pair_image(pairdb, config, phase="train", random_k=18):
                 # add background to image_observed
                 res_image = bg_image_resize.copy()
                 if phase == "train":
-                    fg_label = cv2.imread(
-                        pair_rec["mask_gt_observed"], cv2.IMREAD_UNCHANGED
-                    )
+                    fg_label = cv2.imread(pair_rec["mask_gt_observed"], cv2.IMREAD_UNCHANGED)
 
                 fg_label = np.dstack([fg_label, fg_label, fg_label])
                 res_image[fg_label != 0] = im_observed[fg_label != 0]
@@ -194,12 +174,8 @@ def get_gt_observed_depth(pairdb, config, scale_ind_list, phase="train", random_
         max_size = config.SCALES[scale_ind][1]
 
         depth_gt_observed_path = pair_rec["depth_gt_observed"]
-        assert os.path.exists(depth_gt_observed_path), "{} does not exist".format(
-            pair_rec["depth_gt_observed"]
-        )
-        depth_gt_observed = cv2.imread(
-            depth_gt_observed_path, cv2.IMREAD_UNCHANGED
-        ).astype(np.float32)
+        assert os.path.exists(depth_gt_observed_path), "{} does not exist".format(pair_rec["depth_gt_observed"])
+        depth_gt_observed = cv2.imread(depth_gt_observed_path, cv2.IMREAD_UNCHANGED).astype(np.float32)
 
         depth_gt_observed, _ = resize(depth_gt_observed, target_size, max_size)
         depth_gt_observed = depth_gt_observed / config.dataset.DEPTH_FACTOR
@@ -223,37 +199,19 @@ def get_pair_depth(pairdb, config, scale_ind_list, phase="train", random_k=[]):
         max_size = config.SCALES[scale_ind][1]
 
         depth_observed_path = pair_rec["depth_observed"]
-        assert os.path.exists(depth_observed_path), "{} does not exist".format(
-            pair_rec["depth_observed"]
-        )
-        depth_observed = cv2.imread(depth_observed_path, cv2.IMREAD_UNCHANGED).astype(
-            np.float32
-        )
+        assert os.path.exists(depth_observed_path), "{} does not exist".format(pair_rec["depth_observed"])
+        depth_observed = cv2.imread(depth_observed_path, cv2.IMREAD_UNCHANGED).astype(np.float32)
         if config.network.MASK_INPUTS:
-            if (
-                config.TRAIN.MASK_SYN
-                and phase == "train"
-                and random_k[i] < config.TRAIN.MASK_SYN_RATIO
-            ):
+            if config.TRAIN.MASK_SYN and phase == "train" and random_k[i] < config.TRAIN.MASK_SYN_RATIO:
                 mask_observed = cv2.imread(pair_rec["mask_syn"], cv2.IMREAD_UNCHANGED)
-            elif config.dataset.MASK_GT or (
-                phase == "train" and not config.dataset.MASK_GT
-            ):
-                mask_observed = cv2.imread(
-                    pair_rec["mask_gt_observed"], cv2.IMREAD_UNCHANGED
-                )
+            elif config.dataset.MASK_GT or (phase == "train" and not config.dataset.MASK_GT):
+                mask_observed = cv2.imread(pair_rec["mask_gt_observed"], cv2.IMREAD_UNCHANGED)
             else:
-                mask_observed = cv2.imread(
-                    pair_rec["mask_observed_est"], cv2.IMREAD_UNCHANGED
-                )
+                mask_observed = cv2.imread(pair_rec["mask_observed_est"], cv2.IMREAD_UNCHANGED)
             depth_observed *= mask_observed == pair_rec["mask_idx"]
 
-        assert os.path.exists(pair_rec["depth_rendered"]), "{} does not exist".format(
-            pair_rec["depth_rendered"]
-        )
-        depth_rendered = cv2.imread(
-            pair_rec["depth_rendered"], cv2.IMREAD_UNCHANGED
-        ).astype(np.float32)
+        assert os.path.exists(pair_rec["depth_rendered"]), "{} does not exist".format(pair_rec["depth_rendered"])
+        depth_rendered = cv2.imread(pair_rec["depth_rendered"], cv2.IMREAD_UNCHANGED).astype(np.float32)
 
         depth_observed, _ = resize(depth_observed, target_size, max_size)
         depth_rendered, _ = resize(depth_rendered, target_size, max_size)
@@ -293,24 +251,14 @@ def get_pair_mask(pairdb, config, scale_ind_list, phase="train", random_k=[]):
         if phase == "train":
             # mask_gt_observed
             mask_gt_observed_path = pair_rec["mask_gt_observed"]
-            assert os.path.exists(mask_gt_observed_path), "{} does not exist".format(
-                pair_rec["mask_gt_observed"]
-            )
-            mask_gt_observed = cv2.imread(
-                mask_gt_observed_path, cv2.IMREAD_UNCHANGED
-            ).astype(np.float32)
+            assert os.path.exists(mask_gt_observed_path), "{} does not exist".format(pair_rec["mask_gt_observed"])
+            mask_gt_observed = cv2.imread(mask_gt_observed_path, cv2.IMREAD_UNCHANGED).astype(np.float32)
             cur_mask_gt_observed = np.zeros(mask_gt_observed.shape)
             fg = mask_gt_observed == pair_rec["mask_idx"]
             cur_mask_gt_observed[fg] = 1.0
-            cur_mask_gt_observed, _ = resize(
-                cur_mask_gt_observed, target_size, max_size
-            )
-            cur_mask_gt_observed[
-                cur_mask_gt_observed < 0.5
-            ] = 0.0  # binarize the resized result
-            assert fg.any(), "NOT_VALID: {}, {}".format(
-                mask_gt_observed_path, np.unique(fg)
-            )
+            cur_mask_gt_observed, _ = resize(cur_mask_gt_observed, target_size, max_size)
+            cur_mask_gt_observed[cur_mask_gt_observed < 0.5] = 0.0  # binarize the resized result
+            assert fg.any(), "NOT_VALID: {}, {}".format(mask_gt_observed_path, np.unique(fg))
 
             # mask_observed
             if config.TRAIN.INIT_MASK == "mask_gt":
@@ -322,21 +270,17 @@ def get_pair_mask(pairdb, config, scale_ind_list, phase="train", random_k=[]):
                 mask_observed[y_start:y_end, x_start:x_end] = 1.0  # rectangle
             elif config.TRAIN.INIT_MASK == "box_rendered":
                 # mask_observed: use mask_rendered's bbox area
-                assert os.path.exists(
+                assert os.path.exists(pair_rec["depth_rendered"]), "{} does not exist".format(
                     pair_rec["depth_rendered"]
-                ), "{} does not exist".format(pair_rec["depth_rendered"])
-                depth_rendered = cv2.imread(
-                    pair_rec["depth_rendered"], cv2.IMREAD_UNCHANGED
-                ).astype(np.float32)
+                )
+                depth_rendered = cv2.imread(pair_rec["depth_rendered"], cv2.IMREAD_UNCHANGED).astype(np.float32)
                 depth_rendered, _ = resize(depth_rendered, target_size, max_size)
                 depth_rendered = depth_rendered / config.dataset.DEPTH_FACTOR
                 cur_mask_rendered = np.zeros(depth_rendered.shape)
                 fg = depth_rendered > 0.2
                 cur_mask_rendered[fg] = 1.0
                 cur_mask_observed = np.zeros(cur_mask_rendered.shape)
-                assert fg.any(), "NO POINT VALID IN INIT MASK: {}".format(
-                    pair_rec["depth_rendered"]
-                )
+                assert fg.any(), "NO POINT VALID IN INIT MASK: {}".format(pair_rec["depth_rendered"])
                 x_start, y_start, x_end, y_end = get_min_rect(cur_mask_rendered)
                 cur_mask_observed[y_start:y_end, x_start:x_end] = 1.0  # rectangle
             else:
@@ -352,53 +296,31 @@ def get_pair_mask(pairdb, config, scale_ind_list, phase="train", random_k=[]):
 
         else:  # test phase
             # in Yu_rendered, some objects are not detected
-            assert os.path.exists(
-                pair_rec["depth_rendered"]
-            ), "{} does not exist".format(pair_rec["depth_rendered"])
-            depth_rendered = cv2.imread(
-                pair_rec["depth_rendered"], cv2.IMREAD_UNCHANGED
-            ).astype(np.float32)
+            assert os.path.exists(pair_rec["depth_rendered"]), "{} does not exist".format(pair_rec["depth_rendered"])
+            depth_rendered = cv2.imread(pair_rec["depth_rendered"], cv2.IMREAD_UNCHANGED).astype(np.float32)
             if np.sum(depth_rendered) == 0:
                 cur_mask_observed = np.zeros(depth_rendered.shape)
                 print("NO POINT VALID IN INIT MASK")
             else:
                 if config.TEST.INIT_MASK == "mask_gt_observed":
                     mask_observed_path = pair_rec["mask_gt_observed"]
-                    assert os.path.exists(
-                        mask_observed_path
-                    ), "{} does not exist".format(mask_observed_path)
-                    mask_observed = cv2.imread(
-                        mask_observed_path, cv2.IMREAD_UNCHANGED
-                    ).astype(np.float32)
+                    assert os.path.exists(mask_observed_path), "{} does not exist".format(mask_observed_path)
+                    mask_observed = cv2.imread(mask_observed_path, cv2.IMREAD_UNCHANGED).astype(np.float32)
                     cur_mask_observed = np.zeros(mask_observed.shape)
                     cur_mask_observed[mask_observed == pair_rec["mask_idx"]] = 1.0
-                    cur_mask_observed, _ = resize(
-                        cur_mask_observed, target_size, max_size
-                    )
-                    cur_mask_observed[
-                        cur_mask_observed < 0.5
-                    ] = 0.0  # binarize the resized result
+                    cur_mask_observed, _ = resize(cur_mask_observed, target_size, max_size)
+                    cur_mask_observed[cur_mask_observed < 0.5] = 0.0  # binarize the resized result
                 elif config.TEST.INIT_MASK == "mask_observed":
                     mask_observed_path = pair_rec["mask_observed"]
-                    assert os.path.exists(
-                        mask_observed_path
-                    ), "{} does not exist".format(mask_observed_path)
-                    mask_observed = cv2.imread(
-                        mask_observed_path, cv2.IMREAD_UNCHANGED
-                    ).astype(np.float32)
+                    assert os.path.exists(mask_observed_path), "{} does not exist".format(mask_observed_path)
+                    mask_observed = cv2.imread(mask_observed_path, cv2.IMREAD_UNCHANGED).astype(np.float32)
                     cur_mask_observed = np.zeros(mask_observed.shape)
                     cur_mask_observed[mask_observed == pair_rec["mask_idx"]] = 1.0
-                    cur_mask_observed, _ = resize(
-                        cur_mask_observed, target_size, max_size
-                    )
-                    cur_mask_observed[
-                        cur_mask_observed < 0.5
-                    ] = 0.0  # binarize the resized result
+                    cur_mask_observed, _ = resize(cur_mask_observed, target_size, max_size)
+                    cur_mask_observed[cur_mask_observed < 0.5] = 0.0  # binarize the resized result
                 elif config.TEST.INIT_MASK == "box_gt_observed":
                     # print("use box as mask")
-                    mask_gt_observed = cv2.imread(
-                        pair_rec["mask_gt_observed"], cv2.IMREAD_UNCHANGED
-                    ).astype(np.float32)
+                    mask_gt_observed = cv2.imread(pair_rec["mask_gt_observed"], cv2.IMREAD_UNCHANGED).astype(np.float32)
                     cur_mask_gt_observed = np.zeros(mask_gt_observed.shape)
                     cur_mask_gt_observed[mask_gt_observed == pair_rec["mask_idx"]] = 1.0
                     assert np.nonzero(cur_mask_gt_observed), pairdb
@@ -414,9 +336,7 @@ def get_pair_mask(pairdb, config, scale_ind_list, phase="train", random_k=[]):
                     cur_mask_observed[y_start:y_end, x_start:x_end] = 1.0  # rectangle
                 elif config.TEST.INIT_MASK == "box_":
                     # print("use box as mask")
-                    mask_observed = cv2.imread(
-                        pair_rec["mask_observed"], cv2.IMREAD_UNCHANGED
-                    ).astype(np.float32)
+                    mask_observed = cv2.imread(pair_rec["mask_observed"], cv2.IMREAD_UNCHANGED).astype(np.float32)
                     cur_mask_rendered = np.zeros(mask_observed.shape)
                     cur_mask_rendered[mask_observed == pair_rec["mask_idx"]] = 1.0
                     cur_mask_observed = np.zeros(cur_mask_rendered.shape)
@@ -429,18 +349,14 @@ def get_pair_mask(pairdb, config, scale_ind_list, phase="train", random_k=[]):
                         x_end = np.max(nz_x)
                         y_start = np.min(nz_y)
                         y_end = np.max(nz_y)
-                        cur_mask_observed[
-                            y_start:y_end, x_start:x_end
-                        ] = 1.0  # rectangle
+                        cur_mask_observed[y_start:y_end, x_start:x_end] = 1.0  # rectangle
                     else:
                         print("NO POINT VALID IN INIT MASK")
                 elif config.TEST.INIT_MASK == "box_rendered":
-                    assert os.path.exists(
+                    assert os.path.exists(pair_rec["depth_rendered"]), "{} does not exist".format(
                         pair_rec["depth_rendered"]
-                    ), "{} does not exist".format(pair_rec["depth_rendered"])
-                    depth_rendered = cv2.imread(
-                        pair_rec["depth_rendered"], cv2.IMREAD_UNCHANGED
-                    ).astype(np.float32)
+                    )
+                    depth_rendered = cv2.imread(pair_rec["depth_rendered"], cv2.IMREAD_UNCHANGED).astype(np.float32)
                     depth_rendered, _ = resize(depth_rendered, target_size, max_size)
                     depth_rendered = depth_rendered / config.dataset.DEPTH_FACTOR
                     cur_mask_rendered = np.zeros(depth_rendered.shape)
@@ -455,15 +371,11 @@ def get_pair_mask(pairdb, config, scale_ind_list, phase="train", random_k=[]):
                         x_end = np.max(nz_x)
                         y_start = np.min(nz_y)
                         y_end = np.max(nz_y)
-                        cur_mask_observed[
-                            y_start:y_end, x_start:x_end
-                        ] = 1.0  # rectangle
+                        cur_mask_observed[y_start:y_end, x_start:x_end] = 1.0  # rectangle
                     else:
                         print("NO POINT VALID IN INIT MASK")
                 else:
-                    raise Exception(
-                        "Unknown init mask type: {}".format(config.TEST.INIT_MASK)
-                    )
+                    raise Exception("Unknown init mask type: {}".format(config.TEST.INIT_MASK))
 
             if config.TEST.MASK_DILATE:
                 cur_mask_observed = mask_dilate(cur_mask_observed, max_thickness=10)
@@ -475,12 +387,8 @@ def get_pair_mask(pairdb, config, scale_ind_list, phase="train", random_k=[]):
             mask_gt_observed_list.append(cur_mask_observed)
 
         # prepare mask_rendered
-        assert os.path.exists(pair_rec["depth_rendered"]), "{} does not exist".format(
-            pair_rec["depth_rendered"]
-        )
-        depth_rendered = cv2.imread(
-            pair_rec["depth_rendered"], cv2.IMREAD_UNCHANGED
-        ).astype(np.float32)
+        assert os.path.exists(pair_rec["depth_rendered"]), "{} does not exist".format(pair_rec["depth_rendered"])
+        depth_rendered = cv2.imread(pair_rec["depth_rendered"], cv2.IMREAD_UNCHANGED).astype(np.float32)
         depth_rendered, _ = resize(depth_rendered, target_size, max_size)
         depth_rendered = depth_rendered / config.dataset.DEPTH_FACTOR
         depth_rendered[depth_rendered > 0.2] = 1
@@ -502,19 +410,13 @@ def get_pair_flow(pairdb, config, scale_ind_list, phase="train", random_k=[]):
 
     for i in range(num_pairs):
         pair_rec = pairdb[i]
-        flow_depth_rendered = cv2.imread(
-            pair_rec["depth_rendered"], cv2.IMREAD_UNCHANGED
-        ).astype(np.float32)
+        flow_depth_rendered = cv2.imread(pair_rec["depth_rendered"], cv2.IMREAD_UNCHANGED).astype(np.float32)
         flow_depth_rendered /= config.dataset.DEPTH_FACTOR
 
         if "depth_gt_observed" in pair_rec:
-            flow_depth_observed_raw = cv2.imread(
-                pair_rec["depth_gt_observed"], cv2.IMREAD_UNCHANGED
-            ).astype(np.float32)
+            flow_depth_observed_raw = cv2.imread(pair_rec["depth_gt_observed"], cv2.IMREAD_UNCHANGED).astype(np.float32)
         else:
-            flow_depth_observed_raw = cv2.imread(
-                pair_rec["depth_observed"], cv2.IMREAD_UNCHANGED
-            ).astype(np.float32)
+            flow_depth_observed_raw = cv2.imread(pair_rec["depth_observed"], cv2.IMREAD_UNCHANGED).astype(np.float32)
         flow_depth_observed_raw /= config.dataset.DEPTH_FACTOR
 
         flow_depth_observed = flow_depth_observed_raw
@@ -536,21 +438,12 @@ def get_pair_flow(pairdb, config, scale_ind_list, phase="train", random_k=[]):
             elif config.TRAIN.FLOW_WEIGHT_TYPE == "viz":
                 flow_weights = visible
             elif config.TRAIN.FLOW_WEIGHT_TYPE == "valid":
-                flow_weights = np.logical_or(
-                    np.squeeze(flow_depth_rendered == 0), visible
-                )
-            flow_weights_tensor.append(
-                np.tile(flow_weights[np.newaxis, np.newaxis, :, :], (1, 2, 1, 1))
-            )
+                flow_weights = np.logical_or(np.squeeze(flow_depth_rendered == 0), visible)
+            flow_weights_tensor.append(np.tile(flow_weights[np.newaxis, np.newaxis, :, :], (1, 2, 1, 1)))
             # flow_weights_tensor.append(flow_weights[np.newaxis, np.newaxis, :, :])
             X_rendered_valid_list.append(X_rendered_valid)
 
-    return (
-        flow_tensor,
-        flow_weights_tensor,
-        X_rendered_valid_list,
-        X_observed_valid_list,
-    )
+    return (flow_tensor, flow_weights_tensor, X_rendered_valid_list, X_observed_valid_list)
 
 
 point_cloud_dict = {}
@@ -559,14 +452,10 @@ point_cloud_dict = {}
 def get_point_cloud_model(config, pairdb):
     if pairdb[0]["gt_class"] not in point_cloud_dict:
         if not config.dataset.dataset.startswith("ModelNet"):
-            point_path = os.path.join(
-                config.dataset.model_dir, pairdb[0]["gt_class"], "points.xyz"
-            )
+            point_path = os.path.join(config.dataset.model_dir, pairdb[0]["gt_class"], "points.xyz")
             point_cloud_dict[pairdb[0]["gt_class"]] = load_object_points(point_path)
         else:
-            obj_path = os.path.join(
-                config.dataset.model_dir, pairdb[0]["gt_class"] + ".obj"
-            )
+            obj_path = os.path.join(config.dataset.model_dir, pairdb[0]["gt_class"] + ".obj")
             point_cloud_dict[pairdb[0]["gt_class"]] = load_points_from_obj(obj_path)
 
     points_obj = point_cloud_dict[pairdb[0]["gt_class"]]
@@ -606,21 +495,15 @@ def get_point_cloud(pairdb, config, scale_ind_list, X_list=None, phase="train"):
     for batch_idx in range(num_pairs):
         pair_rec = pairdb[batch_idx]
         if "depth_gt_observed" in pair_rec:
-            depth_observed_raw = cv2.imread(
-                pair_rec["depth_gt_observed"], cv2.IMREAD_UNCHANGED
-            ).astype(np.float32)
+            depth_observed_raw = cv2.imread(pair_rec["depth_gt_observed"], cv2.IMREAD_UNCHANGED).astype(np.float32)
         else:
-            depth_observed_raw = cv2.imread(
-                pair_rec["depth_observed"], cv2.IMREAD_UNCHANGED
-            ).astype(np.float32)
+            depth_observed_raw = cv2.imread(pair_rec["depth_observed"], cv2.IMREAD_UNCHANGED).astype(np.float32)
         depth_observed_raw /= config.dataset.DEPTH_FACTOR
 
         # needs to be checked !!!
         if "mask_gt_observed" in pair_rec and config.network.MASK_INPUTS:
             mask_observed_path = pair_rec["mask_gt_observed"]
-            assert os.path.exists(mask_observed_path), "{} does not exist".format(
-                pair_rec["mask_observed"]
-            )
+            assert os.path.exists(mask_observed_path), "{} does not exist".format(pair_rec["mask_observed"])
             mask_observed = cv2.imread(mask_observed_path, cv2.IMREAD_UNCHANGED)
             depth_observed = np.zeros(depth_observed_raw.shape)
             depth_observed[mask_observed == pair_rec["mask_idx"]] = depth_observed_raw[
@@ -632,20 +515,13 @@ def get_point_cloud(pairdb, config, scale_ind_list, X_list=None, phase="train"):
         if X_list:
             X = X_list[batch_idx]
         else:
-            X = backproject_camera(
-                depth_observed, intrinsic_matrix=config.dataset.INTRINSIC_MATRIX
-            )
-        transform_r2i = se3_mul(
-            pair_rec["pose_rendered"], se3_inverse(pair_rec["pose_observed"])
+            X = backproject_camera(depth_observed, intrinsic_matrix=config.dataset.INTRINSIC_MATRIX)
+        transform_r2i = se3_mul(pair_rec["pose_rendered"], se3_inverse(pair_rec["pose_observed"]))
+        X_obj = np.matmul(transform_r2i, np.append(X, np.ones([1, X.shape[1]], dtype=np.float32), axis=0)).reshape(
+            (1, 3, depth_observed.shape[0], depth_observed.shape[1])
         )
-        X_obj = np.matmul(
-            transform_r2i,
-            np.append(X, np.ones([1, X.shape[1]], dtype=np.float32), axis=0),
-        ).reshape((1, 3, depth_observed.shape[0], depth_observed.shape[1]))
         X_obj_weights = (depth_observed != 0).astype(np.float32)
-        X_obj_weights = np.tile(
-            X_obj_weights[np.newaxis, np.newaxis, :, :], (1, 3, 1, 1)
-        )
+        X_obj_weights = np.tile(X_obj_weights[np.newaxis, np.newaxis, :, :], (1, 3, 1, 1))
         # X_obj_weights = X_obj_weights[np.newaxis, np.newaxis, :, :]
         X_obj_tensor.append(X_obj)
         X_obj_weights_tensor.append(X_obj_weights)
@@ -690,9 +566,7 @@ def resize(im, target_size, max_size, stride=0, interpolation=cv2.INTER_LINEAR):
     # prevent bigger axis from being more than max_size:
     if np.round(im_scale * im_size_max) > max_size:
         im_scale = float(max_size) / float(im_size_max)
-    im = cv2.resize(
-        im, None, None, fx=im_scale, fy=im_scale, interpolation=interpolation
-    )
+    im = cv2.resize(im, None, None, fx=im_scale, fy=im_scale, interpolation=interpolation)
 
     if stride == 0:
         return im, im_scale
@@ -781,16 +655,11 @@ def tensor_vstack(tensor_list, pad=0):
             all_tensor[ind * islice : (ind + 1) * islice, : tensor.shape[1]] = tensor
     elif ndim == 3:
         for ind, tensor in enumerate(tensor_list):
-            all_tensor[
-                ind * islice : (ind + 1) * islice, : tensor.shape[1], : tensor.shape[2]
-            ] = tensor
+            all_tensor[ind * islice : (ind + 1) * islice, : tensor.shape[1], : tensor.shape[2]] = tensor
     elif ndim == 4:
         for ind, tensor in enumerate(tensor_list):
             all_tensor[
-                ind * islice : (ind + 1) * islice,
-                : tensor.shape[1],
-                : tensor.shape[2],
-                : tensor.shape[3],
+                ind * islice : (ind + 1) * islice, : tensor.shape[1], : tensor.shape[2], : tensor.shape[3]
             ] = tensor
     else:
         raise Exception("Sorry, unimplemented.")

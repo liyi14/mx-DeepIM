@@ -62,10 +62,7 @@ class PrefetchingIter(mx.io.DataIter):
                 self.data_taken[i].clear()
                 self.data_ready[i].set()
 
-        self.prefetch_threads = [
-            threading.Thread(target=prefetch_func, args=[self, i])
-            for i in range(self.n_iter)
-        ]
+        self.prefetch_threads = [threading.Thread(target=prefetch_func, args=[self, i]) for i in range(self.n_iter)]
         for thread in self.prefetch_threads:
             thread.setDaemon(True)
             thread.start()
@@ -86,9 +83,7 @@ class PrefetchingIter(mx.io.DataIter):
             return sum(
                 [
                     [
-                        DataDesc(r[x.name], x.shape, x.dtype)
-                        if isinstance(x, DataDesc)
-                        else DataDesc(*x)
+                        DataDesc(r[x.name], x.shape, x.dtype) if isinstance(x, DataDesc) else DataDesc(*x)
                         for x in i.provide_data
                     ]
                     for r, i in zip(self.rename_data, self.iters)
@@ -105,9 +100,7 @@ class PrefetchingIter(mx.io.DataIter):
             return sum(
                 [
                     [
-                        DataDesc(r[x.name], x.shape, x.dtype)
-                        if isinstance(x, DataDesc)
-                        else DataDesc(*x)
+                        DataDesc(r[x.name], x.shape, x.dtype) if isinstance(x, DataDesc) else DataDesc(*x)
                         for x in i.provide_label
                     ]
                     for r, i in zip(self.rename_label, self.iters)

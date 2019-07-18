@@ -22,33 +22,25 @@ def mask_dilate(mask_origin, max_thickness=10):
     if direction not in [0, 1, 4]:
         thickness = np.random.randint(max_thickness) + 1
         mask_expand[thickness:, :] = (
-            np.logical_and(
-                mask_origin[:-thickness, :] != 0, mask_origin[thickness:, :] == 0
-            )
+            np.logical_and(mask_origin[:-thickness, :] != 0, mask_origin[thickness:, :] == 0)
             + mask_expand[thickness:, :]
         )
     if direction not in [1, 2, 5]:
         thickness = np.random.randint(max_thickness) + 1
         mask_expand[:-thickness, :] = (
-            np.logical_and(
-                mask_origin[thickness:, :] != 0, mask_origin[:-thickness, :] == 0
-            )
+            np.logical_and(mask_origin[thickness:, :] != 0, mask_origin[:-thickness, :] == 0)
             + mask_expand[:-thickness, :]
         )
     if direction not in [2, 3, 6]:
         thickness = np.random.randint(max_thickness) + 1
         mask_expand[:, thickness:] = (
-            np.logical_and(
-                mask_origin[:, :-thickness] != 0, mask_origin[:, thickness:] == 0
-            )
+            np.logical_and(mask_origin[:, :-thickness] != 0, mask_origin[:, thickness:] == 0)
             + mask_expand[:, thickness:]
         )
     if direction not in [0, 3, 7]:
         thickness = np.random.randint(max_thickness) + 1
         mask_expand[:, :-thickness] = (
-            np.logical_and(
-                mask_origin[:, thickness:] != 0, mask_origin[:, :-thickness] == 0
-            )
+            np.logical_and(mask_origin[:, thickness:] != 0, mask_origin[:, :-thickness] == 0)
             + mask_expand[:, :-thickness]
         )
     mask_expand[mask_expand > 1] = 1

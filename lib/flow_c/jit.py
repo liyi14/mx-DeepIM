@@ -8,12 +8,6 @@ gpu_flow = load(
     ["gpu_flow.cpp", "gpu_flow_kernel.cu"],
     build_directory=cur_dir,
     verbose=True,
-    extra_cuda_cflags=[
-        "-arch=sm_52",  # sm_35, sm_61
-        "--ptxas-options=-v",
-        "-c",
-        "--compiler-options",
-        "'-fPIC'",
-    ],
+    extra_cuda_cflags=["-arch=sm_52", "--ptxas-options=-v", "-c", "--compiler-options", "'-fPIC'"],  # sm_35, sm_61
 )
 help(gpu_flow)

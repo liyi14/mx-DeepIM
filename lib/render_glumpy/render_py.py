@@ -57,15 +57,11 @@ class Render_Py:
         self.depth_buffer = np.zeros((self.height, self.width), dtype=np.float32)
 
         log.info("Loading mesh")
-        vertices, indices = data.objload(
-            "{}/textured.obj".format(model_folder), rescale=False
-        )
+        vertices, indices = data.objload("{}/textured.obj".format(model_folder), rescale=False)
         self.render_kernel = gloo.Program(self.vertex, self.fragment)
         self.render_kernel.bind(vertices)
         log.info("Loading texture")
-        self.render_kernel["u_texture"] = np.copy(
-            data.load("{}/texture_map.png".format(model_folder))[::-1, :, :]
-        )
+        self.render_kernel["u_texture"] = np.copy(data.load("{}/texture_map.png".format(model_folder))[::-1, :, :])
 
         self.render_kernel["u_model"] = np.eye(4, dtype=np.float32)
         u_projection = self.my_compute_calib_proj(K, width, height, zNear, zFar)
@@ -81,18 +77,8 @@ class Render_Py:
             gl.glDisable(gl.GL_BLEND)
             gl.glEnable(gl.GL_DEPTH_TEST)
             self.render_kernel.draw(gl.GL_TRIANGLES)
-            gl.glReadPixels(
-                0, 0, self.width, self.height, gl.GL_RGBA, gl.GL_FLOAT, self.rgb_buffer
-            )
-            gl.glReadPixels(
-                0,
-                0,
-                self.width,
-                self.height,
-                gl.GL_DEPTH_COMPONENT,
-                gl.GL_FLOAT,
-                self.depth_buffer,
-            )
+            gl.glReadPixels(0, 0, self.width, self.height, gl.GL_RGBA, gl.GL_FLOAT, self.rgb_buffer)
+            gl.glReadPixels(0, 0, self.width, self.height, gl.GL_DEPTH_COMPONENT, gl.GL_FLOAT, self.depth_buffer)
 
         @self.window.event
         def on_init():
@@ -105,9 +91,7 @@ class Render_Py:
             R = r
         self.render_kernel["u_view"] = self._get_view_mtx(R, t)
         if K is not None:
-            u_projection = self.my_compute_calib_proj(
-                K, self.width, self.height, self.zNear, self.zFar
-            )
+            u_projection = self.my_compute_calib_proj(K, self.width, self.height, self.zNear, self.zFar)
             self.render_kernel["u_projection"] = np.copy(u_projection)
         app.run(framecount=0, framerate=0)
 
@@ -118,12 +102,7 @@ class Render_Py:
         bgr_gl *= 255
 
         depth_bg = depth_gl == 1
-        depth_gl = (
-            2
-            * self.zFar
-            * self.zNear
-            / (self.zFar + self.zNear - (self.zFar - self.zNear) * (2 * depth_gl - 1))
-        )
+        depth_gl = 2 * self.zFar * self.zNear / (self.zFar + self.zNear - (self.zFar - self.zNear) * (2 * depth_gl - 1))
         depth_gl[depth_bg] = 0
         return bgr_gl, depth_gl
 

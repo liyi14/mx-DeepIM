@@ -31,20 +31,7 @@ _UNIT_0_01MM = 5
 _UNIT_UM = 6
 _UNIT_INCH = 6
 
-_TIFF_TYPE_SIZES = {
-    1: 1,
-    2: 1,
-    3: 2,
-    4: 4,
-    5: 8,
-    6: 1,
-    7: 1,
-    8: 2,
-    9: 4,
-    10: 8,
-    11: 4,
-    12: 8,
-}
+_TIFF_TYPE_SIZES = {1: 1, 2: 1, 3: 2, 4: 4, 5: 8, 6: 1, 7: 1, 8: 2, 9: 4, 10: 8, 11: 4, 12: 8}
 
 
 def _convertToDPI(density, unit):
@@ -90,11 +77,7 @@ def get_image_size(filepath):
             except struct.error:
                 raise ValueError("Invalid GIF file")
         # see png edition spec bytes are below chunk length then and finally the
-        elif (
-            size >= 24
-            and head.startswith(b"\211PNG\r\n\032\n")
-            and head[12:16] == b"IHDR"
-        ):
+        elif size >= 24 and head.startswith(b"\211PNG\r\n\032\n") and head[12:16] == b"IHDR":
             try:
                 width, height = struct.unpack(">LL", head[16:24])
             except struct.error:
@@ -144,24 +127,18 @@ def get_image_size(filepath):
                     elif datatype == 4:
                         width = data
                     else:
-                        raise ValueError(
-                            "Invalid TIFF file: width column data type should be SHORT/LONG."
-                        )
+                        raise ValueError("Invalid TIFF file: width column data type should be SHORT/LONG.")
                 elif tag == 257:
                     if datatype == 3:
                         height = int(data / 65536)
                     elif datatype == 4:
                         height = data
                     else:
-                        raise ValueError(
-                            "Invalid TIFF file: height column data type should be SHORT/LONG."
-                        )
+                        raise ValueError("Invalid TIFF file: height column data type should be SHORT/LONG.")
                 if width != -1 and height != -1:
                     break
             if width == -1 or height == -1:
-                raise ValueError(
-                    "Invalid TIFF file: width and/or height IDS entries are missing."
-                )
+                raise ValueError("Invalid TIFF file: width and/or height IDS entries are missing.")
         elif size >= 8 and head.startswith(b"\x49\x49\x2a\x00"):
             offset = struct.unpack("<L", head[4:8])[0]
             fhandle.seek(offset)
@@ -175,9 +152,7 @@ def get_image_size(filepath):
                 if width != -1 and height != -1:
                     break
             if width == -1 or height == -1:
-                raise ValueError(
-                    "Invalid TIFF file: width and/or height IDS entries are missing."
-                )
+                raise ValueError("Invalid TIFF file: width and/or height IDS entries are missing.")
 
     return height, width
 
@@ -233,9 +208,7 @@ def getDPI(filepath):
                 while not 0xC0 <= ftype <= 0xCF:
                     if ftype == 0xE0:  # APP0 marker
                         fhandle.seek(7, 1)
-                        unit, xDensity, yDensity = struct.unpack(
-                            ">BHH", fhandle.read(5)
-                        )
+                        unit, xDensity, yDensity = struct.unpack(">BHH", fhandle.read(5))
                         if unit == 1 or unit == 0:
                             xDPI = xDensity
                             yDPI = yDensity
@@ -281,9 +254,7 @@ def getDPI(filepath):
                         print(boxType)
                         if boxType == "resd":  # Display resolution box
                             print("@2")
-                            yDensity, xDensity, yUnit, xUnit = struct.unpack(
-                                ">HHBB", fhandle.read(10)
-                            )
+                            yDensity, xDensity, yUnit, xUnit = struct.unpack(">HHBB", fhandle.read(10))
                             xDPI = _convertToDPI(xDensity, xUnit)
                             yDPI = _convertToDPI(yDensity, yUnit)
                             break

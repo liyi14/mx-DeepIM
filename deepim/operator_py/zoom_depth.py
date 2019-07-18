@@ -30,22 +30,16 @@ class ZoomDepthOperator(mx.operator.CustomOp):
         for batch_idx in range(batch_size):
             wx, wy, tx, ty = zoom_factor[batch_idx]
             print("wx: {}, wy: {}, tx: {}, ty: {}".format(wx, wy, tx, ty))
-            affine_matrix = mx.ndarray.array(
-                [[wx, 0, tx], [0, wy, ty]], ctx=ctx
-            ).reshape((1, 6))
+            affine_matrix = mx.ndarray.array([[wx, 0, tx], [0, wy, ty]], ctx=ctx).reshape((1, 6))
             a = mx.ndarray.GridGenerator(
-                data=affine_matrix,
-                transform_type="affine",
-                target_shape=(self.height, self.width),
+                data=affine_matrix, transform_type="affine", target_shape=(self.height, self.width)
             )
             grid_array[batch_idx] = a[0]
 
         depth_real_array = in_data[1]
         depth_rendered_array = in_data[2]
         zoom_depth_real_array = mx.ndarray.BilinearSampler(depth_real_array, grid_array)
-        zoom_depth_rendered_array = mx.ndarray.BilinearSampler(
-            depth_rendered_array, grid_array
-        )
+        zoom_depth_rendered_array = mx.ndarray.BilinearSampler(depth_rendered_array, grid_array)
         self.assign(out_data[0], req[0], zoom_depth_real_array)
         self.assign(out_data[1], req[1], zoom_depth_rendered_array)
 
@@ -138,10 +132,7 @@ if __name__ == "__main__":
         )
 
     exe1 = proj2d.simple_bind(
-        ctx=ctx,
-        zoom_factor=v_zoom_factor.shape,
-        depth_real=v_depth_real.shape,
-        depth_rendered=v_depth_rendered.shape,
+        ctx=ctx, zoom_factor=v_zoom_factor.shape, depth_real=v_depth_real.shape, depth_rendered=v_depth_rendered.shape
     )
 
     # forward

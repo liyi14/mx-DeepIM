@@ -5,7 +5,7 @@
 # --------------------------------------------------------
 from __future__ import print_function, division
 import time
-import logging
+from lib.utils import logger
 
 
 class Speedometer(object):
@@ -29,22 +29,13 @@ class Speedometer(object):
                 s = ""
                 if param.eval_metric is not None:
                     name, value = param.eval_metric.get()
-                    s = "Epoch[%d] Batch [%d]\tSpeed: %.2f samples/sec\tTrain-" % (
-                        param.epoch,
-                        count,
-                        speed,
-                    )
+                    s = "Epoch[%d] Batch [%d]\tSpeed: %.2f samples/sec\tTrain-" % (param.epoch, count, speed)
                     for n, v in zip(name, value):
                         s += "%s=%f,\t" % (n, v)
                 else:
-                    s = "Iter[%d] Batch [%d]\tSpeed: %.2f samples/sec" % (
-                        param.epoch,
-                        count,
-                        speed,
-                    )
+                    s = "Iter[%d] Batch [%d]\tSpeed: %.2f samples/sec" % (param.epoch, count, speed)
 
-                logging.info(s)
-                print(s)
+                logger.info(s)
                 self.tic = time.time()
         else:
             self.init = True

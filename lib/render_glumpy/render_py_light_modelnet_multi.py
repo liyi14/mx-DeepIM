@@ -81,15 +81,7 @@ def get_fragment(brightness_ratio=0.4):
 
 class Render_Py_Light_ModelNet_Multi:
     def __init__(
-        self,
-        model_path_list,
-        texture_path,
-        K,
-        width=640,
-        height=480,
-        zNear=0.25,
-        zFar=6.0,
-        brightness_ratios=[0.7],
+        self, model_path_list, texture_path, K, width=640, height=480, zNear=0.25, zFar=6.0, brightness_ratios=[0.7]
     ):
         self.width = width
         self.height = height
@@ -102,11 +94,7 @@ class Render_Py_Light_ModelNet_Multi:
 
         log.info("Loading mesh")
         for model_i, model_path in enumerate(model_path_list):
-            print(
-                "loading model: {}/{}, {}".format(
-                    model_i + 1, len(model_path_list), model_path
-                )
-            )
+            print("loading model: {}/{}, {}".format(model_i + 1, len(model_path_list), model_path))
             vertices, indices = data.objload("{}".format(model_path), rescale=True)
             vertices["position"] = vertices["position"] / 10.0
 
@@ -116,9 +104,7 @@ class Render_Py_Light_ModelNet_Multi:
                 render_kernel.bind(vertices)
 
                 log.info("Loading texture")
-                render_kernel["u_texture"] = np.copy(
-                    data.load("{}".format(texture_path))[::-1, :, :]
-                )
+                render_kernel["u_texture"] = np.copy(data.load("{}".format(texture_path))[::-1, :, :])
 
                 render_kernel["u_model"] = np.eye(4, dtype=np.float32)
                 u_projection = self.my_compute_calib_proj(K, width, height, zNear, zFar)
@@ -126,9 +112,7 @@ class Render_Py_Light_ModelNet_Multi:
 
                 render_kernel["u_light_intensity"] = 1, 1, 1
                 self.render_kernels[model_path].append(render_kernel)
-        print(
-            "************Finish loading models in Render_Py_Light_ModelNet_Multi********************"
-        )
+        print("************Finish loading models in Render_Py_Light_ModelNet_Multi********************")
         self.brightness_k = 0  # init
 
         self.window = app.Window(width=width, height=height, visible=False)
@@ -138,24 +122,13 @@ class Render_Py_Light_ModelNet_Multi:
             self.window.clear()
             gl.glDisable(gl.GL_BLEND)
             gl.glEnable(gl.GL_DEPTH_TEST)
-            self.render_kernels[self.model_path][self.brightness_k].draw(
-                gl.GL_TRIANGLES
-            )
+            self.render_kernels[self.model_path][self.brightness_k].draw(gl.GL_TRIANGLES)
 
         @self.window.event
         def on_init():
             gl.glEnable(gl.GL_DEPTH_TEST)
 
-    def render(
-        self,
-        model_idx,
-        r,
-        t,
-        light_position,
-        light_intensity,
-        brightness_k=0,
-        r_type="quat",
-    ):
+    def render(self, model_idx, r, t, light_position, light_intensity, brightness_k=0, r_type="quat"):
         """
         :param r:
         :param t:
@@ -171,62 +144,35 @@ class Render_Py_Light_ModelNet_Multi:
             R = r
         self.model_path = self.model_path_list[model_idx]
         self.brightness_k = brightness_k
-        self.render_kernels[self.model_path][brightness_k][
-            "u_view"
-        ] = self._get_view_mtx(R, t)
-        self.render_kernels[self.model_path][brightness_k][
-            "u_light_position"
-        ] = light_position
+        self.render_kernels[self.model_path][brightness_k]["u_view"] = self._get_view_mtx(R, t)
+        self.render_kernels[self.model_path][brightness_k]["u_light_position"] = light_position
         self.render_kernels[self.model_path][brightness_k]["u_normal"] = np.array(
             np.matrix(
                 np.dot(
-                    self.render_kernels[self.model_path][brightness_k][
-                        "u_view"
-                    ].reshape(4, 4),
-                    self.render_kernels[self.model_path][brightness_k][
-                        "u_model"
-                    ].reshape(4, 4),
+                    self.render_kernels[self.model_path][brightness_k]["u_view"].reshape(4, 4),
+                    self.render_kernels[self.model_path][brightness_k]["u_model"].reshape(4, 4),
                 )
             ).I.T
         )
-        self.render_kernels[self.model_path][brightness_k][
-            "u_light_intensity"
-        ] = light_intensity
+        self.render_kernels[self.model_path][brightness_k]["u_light_intensity"] = light_intensity
 
         app.run(framecount=0)
         rgb_buffer = np.zeros((self.height, self.width, 4), dtype=np.float32)
-        gl.glReadPixels(
-            0, 0, self.width, self.height, gl.GL_RGBA, gl.GL_FLOAT, rgb_buffer
-        )
+        gl.glReadPixels(0, 0, self.width, self.height, gl.GL_RGBA, gl.GL_FLOAT, rgb_buffer)
 
         rgb_gl = np.copy(rgb_buffer)
         rgb_gl.shape = 480, 640, 4
         rgb_gl = rgb_gl[::-1, :]
-        rgb_gl = np.round(rgb_gl[:, :, :3] * 255).astype(
-            np.uint8
-        )  # Convert to [0, 255]
+        rgb_gl = np.round(rgb_gl[:, :, :3] * 255).astype(np.uint8)  # Convert to [0, 255]
         bgr_gl = rgb_gl[:, :, [2, 1, 0]]
 
         depth_buffer = np.zeros((self.height, self.width), dtype=np.float32)
-        gl.glReadPixels(
-            0,
-            0,
-            self.width,
-            self.height,
-            gl.GL_DEPTH_COMPONENT,
-            gl.GL_FLOAT,
-            depth_buffer,
-        )
+        gl.glReadPixels(0, 0, self.width, self.height, gl.GL_DEPTH_COMPONENT, gl.GL_FLOAT, depth_buffer)
         depth_gl = np.copy(depth_buffer)
         depth_gl.shape = 480, 640
         depth_gl = depth_gl[::-1, :]
         depth_bg = depth_gl == 1
-        depth_gl = (
-            2
-            * self.zFar
-            * self.zNear
-            / (self.zFar + self.zNear - (self.zFar - self.zNear) * (2 * depth_gl - 1))
-        )
+        depth_gl = 2 * self.zFar * self.zNear / (self.zFar + self.zNear - (self.zFar - self.zNear) * (2 * depth_gl - 1))
         depth_gl[depth_bg] = 0
         return bgr_gl, depth_gl
 

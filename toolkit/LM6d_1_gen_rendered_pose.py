@@ -13,12 +13,7 @@ cur_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(1, os.path.join(cur_dir, ".."))
 from lib.utils.mkdir_if_missing import mkdir_if_missing
 import numpy as np
-from lib.pair_matching.RT_transform import (
-    euler2quat,
-    mat2euler,
-    calc_rt_dist_m,
-    euler2mat,
-)
+from lib.pair_matching.RT_transform import euler2quat, mat2euler, calc_rt_dist_m, euler2mat
 from math import pi
 from tqdm import tqdm
 
@@ -57,11 +52,7 @@ num_rendered_per_observed = 10
 K = np.array([[572.4114, 0, 325.2611], [0, 573.57043, 242.04899], [0, 0, 1]])
 # generate a set of my val
 angle_std, angle_max, x_std, y_std, z_std = [15.0, 45.0, 0.01, 0.01, 0.05]
-print(
-    "angle_std={}, angle_max={}, x_std={}, y_std={}, z_std={}".format(
-        angle_std, angle_max, x_std, y_std, z_std
-    )
-)
+print("angle_std={}, angle_max={}, x_std={}, y_std={}, z_std={}".format(angle_std, angle_max, x_std, y_std, z_std))
 
 image_set = "all"
 for cls_idx, cls_name in idx2class.items():
@@ -76,18 +67,14 @@ for cls_idx, cls_name in idx2class.items():
     pose_observed = []
     pose_rendered = []
 
-    sel_set_file = os.path.join(
-        observed_set_root, "{}_{}.txt".format(cls_name, image_set)
-    )
+    sel_set_file = os.path.join(observed_set_root, "{}_{}.txt".format(cls_name, image_set))
     with open(sel_set_file) as f:
         image_list = [x.strip() for x in f.readlines()]
 
     for observed_idx in tqdm(image_list):
         # get src_pose_m
         video_name, prefix = observed_idx.split("/")
-        pose_path = os.path.join(
-            gt_observed_root, cls_name, "{}-pose.txt".format(prefix)
-        )
+        pose_path = os.path.join(gt_observed_root, cls_name, "{}-pose.txt".format(prefix))
         src_pose_m = np.loadtxt(pose_path, skiprows=1)
 
         src_euler = np.squeeze(mat2euler(src_pose_m[:3, :3]))
@@ -101,31 +88,19 @@ for cls_idx, cls_name in idx2class.items():
             y_error = np.random.normal(0, y_std, 1)[0]
             z_error = np.random.normal(0, z_std, 1)[0]
             tgt_trans = src_trans + np.array([x_error, y_error, z_error])
-            tgt_pose_m = np.hstack(
-                (
-                    euler2mat(tgt_euler[0], tgt_euler[1], tgt_euler[2]),
-                    tgt_trans.reshape((3, 1)),
-                )
-            )
+            tgt_pose_m = np.hstack((euler2mat(tgt_euler[0], tgt_euler[1], tgt_euler[2]), tgt_trans.reshape((3, 1))))
             r_dist, t_dist = calc_rt_dist_m(tgt_pose_m, src_pose_m)
             transform = np.matmul(K, tgt_trans.reshape(3, 1))
             center_x = transform[0] / transform[2]
             center_y = transform[1] / transform[2]
             count = 0
-            while r_dist > angle_max or not (
-                16 < center_x < (640 - 16) and 16 < center_y < (480 - 16)
-            ):
+            while r_dist > angle_max or not (16 < center_x < (640 - 16) and 16 < center_y < (480 - 16)):
                 tgt_euler = src_euler + np.random.normal(0, angle_std / 180 * pi, 3)
                 x_error = np.random.normal(0, x_std, 1)[0]
                 y_error = np.random.normal(0, y_std, 1)[0]
                 z_error = np.random.normal(0, z_std, 1)[0]
                 tgt_trans = src_trans + np.array([x_error, y_error, z_error])
-                tgt_pose_m = np.hstack(
-                    (
-                        euler2mat(tgt_euler[0], tgt_euler[1], tgt_euler[2]),
-                        tgt_trans.reshape((3, 1)),
-                    )
-                )
+                tgt_pose_m = np.hstack((euler2mat(tgt_euler[0], tgt_euler[1], tgt_euler[2]), tgt_trans.reshape((3, 1))))
                 r_dist, t_dist = calc_rt_dist_m(tgt_pose_m, src_pose_m)
                 transform = np.matmul(K, tgt_trans.reshape(3, 1))
                 center_x = transform[0] / transform[2]
@@ -134,9 +109,7 @@ for cls_idx, cls_name in idx2class.items():
                 if count == 100:
                     print(rendered_idx)
 
-            tgt_quat = euler2quat(tgt_euler[0], tgt_euler[1], tgt_euler[2]).reshape(
-                1, -1
-            )
+            tgt_quat = euler2quat(tgt_euler[0], tgt_euler[1], tgt_euler[2]).reshape(1, -1)
             pose_rendered.append(np.hstack((tgt_quat, tgt_trans.reshape(1, 3))))
             rd_stat.append(r_dist)
             td_stat.append(t_dist)
@@ -145,9 +118,7 @@ for cls_idx, cls_name in idx2class.items():
     print("r dist: {} +/- {}".format(np.mean(rd_stat), np.std(rd_stat)))
     print("t dist: {} +/- {}".format(np.mean(td_stat), np.std(td_stat)))
 
-    output_file_name = os.path.join(
-        pose_dir, "LM6d_{}_rendered_pose_{}.txt".format(image_set, cls_name)
-    )
+    output_file_name = os.path.join(pose_dir, "LM6d_{}_rendered_pose_{}.txt".format(image_set, cls_name))
     with open(output_file_name, "w") as text_file:
         for x in pose_rendered:
             text_file.write("{}\n".format(" ".join(map(str, np.squeeze(x)))))

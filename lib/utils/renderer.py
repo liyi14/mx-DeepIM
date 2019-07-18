@@ -190,12 +190,7 @@ def _compute_calib_proj(K, x0, y0, w, h, nc, fc, window_coords="y_down"):
             [
                 [2 * K[0, 0] / w, -2 * K[0, 1] / w, (-2 * K[0, 2] + w + 2 * x0) / w, 0],
                 [0, -2 * K[1, 1] / h, (-2 * K[1, 2] + h + 2 * y0) / h, 0],
-                [
-                    0,
-                    0,
-                    q,
-                    qn,
-                ],  # This row is standard glPerspective and sets near and far planes
+                [0, 0, q, qn],  # This row is standard glPerspective and sets near and far planes
                 [0, 0, -1, 0],
             ]
         )  # This row is also standard glPerspective
@@ -208,12 +203,7 @@ def _compute_calib_proj(K, x0, y0, w, h, nc, fc, window_coords="y_down"):
             [
                 [2 * K[0, 0] / w, -2 * K[0, 1] / w, (-2 * K[0, 2] + w + 2 * x0) / w, 0],
                 [0, 2 * K[1, 1] / h, (2 * K[1, 2] - h + 2 * y0) / h, 0],
-                [
-                    0,
-                    0,
-                    q,
-                    qn,
-                ],  # This row is standard glPerspective and sets near and far planes
+                [0, 0, q, qn],  # This row is standard glPerspective and sets near and far planes
                 [0, 0, -1, 0],
             ]
         )  # This row is also standard glPerspective
@@ -222,16 +212,7 @@ def _compute_calib_proj(K, x0, y0, w, h, nc, fc, window_coords="y_down"):
 
 # -------------------------------------------------------------------------------
 def draw_color(
-    shape,
-    vertex_buffer,
-    index_buffer,
-    texture,
-    mat_model,
-    mat_view,
-    mat_proj,
-    ambient_weight,
-    bg_color,
-    shading,
+    shape, vertex_buffer, index_buffer, texture, mat_model, mat_view, mat_proj, ambient_weight, bg_color, shading
 ):
 
     # Set shader for the selected shading
@@ -379,10 +360,7 @@ def render(
 
     # Set the vertex data
     if mode == "depth":
-        vertices_type = [
-            ("a_position", np.float32, 3),
-            ("a_color", np.float32, colors.shape[1]),
-        ]
+        vertices_type = [("a_position", np.float32, 3), ("a_color", np.float32, colors.shape[1])]
         vertices = np.array(zip(model["pts"], colors), vertices_type)
     else:
         if shading == "flat":
@@ -399,9 +377,7 @@ def render(
                 ("a_color", np.float32, colors.shape[1]),
                 ("a_texcoord", np.float32, 2),
             ]
-            vertices = np.array(
-                zip(model["pts"], model["normals"], colors, texture_uv), vertices_type
-            )
+            vertices = np.array(zip(model["pts"], model["normals"], colors, texture_uv), vertices_type)
 
     # Rendering
     # ---------------------------------------------------------------------------
@@ -462,9 +438,7 @@ def render(
         if render_depth:
             # Render depth image
             global depth
-            depth = draw_depth(
-                shape, vertex_buffer, index_buffer, mat_model, mat_view, mat_proj
-            )
+            depth = draw_depth(shape, vertex_buffer, index_buffer, mat_model, mat_view, mat_proj)
 
     app.run(framecount=0)  # The on_draw function is called framecount+1 times
     window.close()

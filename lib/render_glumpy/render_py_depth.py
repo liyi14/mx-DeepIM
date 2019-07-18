@@ -54,15 +54,11 @@ class Render_Py_depth:
         self.model_folder = model_folder
 
         log.info("Loading mesh")
-        vertices, indices = data.objload(
-            "{}/textured.obj".format(model_folder), rescale=False
-        )
+        vertices, indices = data.objload("{}/textured.obj".format(model_folder), rescale=False)
         self.render_kernel = gloo.Program(vertex, fragment)
         self.render_kernel.bind(vertices)
         log.info("Loading texture")
-        self.render_kernel["u_texture"] = np.copy(
-            data.load("{}/texture_map.png".format(model_folder))[::-1, :, :]
-        )
+        self.render_kernel["u_texture"] = np.copy(data.load("{}/texture_map.png".format(model_folder))[::-1, :, :])
 
         self.render_kernel["u_model"] = np.eye(4, dtype=np.float32)
         u_projection = self.my_compute_calib_proj(K, width, height, zNear, zFar)
@@ -90,38 +86,21 @@ class Render_Py_depth:
         self.render_kernel["u_view"] = self._get_view_mtx(R, t)
         app.run(framecount=0)
         rgb_buffer = np.zeros((self.height, self.width, 4), dtype=np.float32)
-        gl.glReadPixels(
-            0, 0, self.width, self.height, gl.GL_RGBA, gl.GL_FLOAT, rgb_buffer
-        )
+        gl.glReadPixels(0, 0, self.width, self.height, gl.GL_RGBA, gl.GL_FLOAT, rgb_buffer)
 
         rgb_gl = np.copy(rgb_buffer)
         rgb_gl.shape = 480, 640, 4
         rgb_gl = rgb_gl[::-1, :]
-        rgb_gl = np.round(rgb_gl[:, :, :3] * 255).astype(
-            np.uint8
-        )  # Convert to [0, 255]
+        rgb_gl = np.round(rgb_gl[:, :, :3] * 255).astype(np.uint8)  # Convert to [0, 255]
         bgr_gl = rgb_gl[:, :, [2, 1, 0]]
 
         depth_buffer = np.zeros((self.height, self.width), dtype=np.float32)
-        gl.glReadPixels(
-            0,
-            0,
-            self.width,
-            self.height,
-            gl.GL_DEPTH_COMPONENT,
-            gl.GL_FLOAT,
-            depth_buffer,
-        )
+        gl.glReadPixels(0, 0, self.width, self.height, gl.GL_DEPTH_COMPONENT, gl.GL_FLOAT, depth_buffer)
         depth_gl = np.copy(depth_buffer)
         depth_gl.shape = 480, 640
         depth_gl = depth_gl[::-1, :]
         depth_bg = depth_gl == 1
-        depth_gl = (
-            2
-            * self.zFar
-            * self.zNear
-            / (self.zFar + self.zNear - (self.zFar - self.zNear) * (2 * depth_gl - 1))
-        )
+        depth_gl = 2 * self.zFar * self.zNear / (self.zFar + self.zNear - (self.zFar - self.zNear) * (2 * depth_gl - 1))
         depth_gl[depth_bg] = 0
         return bgr_gl, depth_gl
 
@@ -189,15 +168,9 @@ if __name__ == "__main__":
 
     class_name = "002_master_chef_can"
     model_dir = "/home/yili/PoseEst/mx-DeepPose/data/LOV/models/{}".format(class_name)
-    pose_path = "/home/yili/PoseEst/render/synthesize/train/%s/{}_pose.txt" % (
-        class_name
-    )
-    color_path = "/home/yili/PoseEst/render/synthesize/train/%s/{}_color.png" % (
-        class_name
-    )
-    depth_path = "/home/yili/PoseEst/render/synthesize/train/%s/{}_depth.png" % (
-        class_name
-    )
+    pose_path = "/home/yili/PoseEst/render/synthesize/train/%s/{}_pose.txt" % (class_name)
+    color_path = "/home/yili/PoseEst/render/synthesize/train/%s/{}_color.png" % (class_name)
+    depth_path = "/home/yili/PoseEst/render/synthesize/train/%s/{}_depth.png" % (class_name)
     width = 640
     height = 480
     K = np.array([[1066.778, 0, 312.9869], [0, 1067.487, 241.3109], [0, 0, 1]])
@@ -219,16 +192,10 @@ if __name__ == "__main__":
     print("using {} seconds".format(time.time() - start_t))
 
     rgb_pa = cv2.imread(
-        "/home/yili/PoseEst/render/synthesize/train/002_master_chef_can/{}_color.png".format(
-            idx
-        ),
-        cv2.IMREAD_COLOR,
+        "/home/yili/PoseEst/render/synthesize/train/002_master_chef_can/{}_color.png".format(idx), cv2.IMREAD_COLOR
     )
     rgb_pa = cv2.imread(color_path.format(idx), cv2.IMREAD_COLOR)
-    depth_pa = (
-        cv2.imread(depth_path.format(idx), cv2.IMREAD_UNCHANGED).astype(np.float32)
-        / 10000.0
-    )
+    depth_pa = cv2.imread(depth_path.format(idx), cv2.IMREAD_UNCHANGED).astype(np.float32) / 10000.0
     print(depth_pa.shape, np.max(depth_pa))
     import matplotlib.pyplot as plt
 

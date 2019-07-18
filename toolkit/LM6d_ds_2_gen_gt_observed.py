@@ -61,12 +61,8 @@ ZFAR = 6.0
 depth_factor = 1000
 
 LINEMOD_root = os.path.join(cur_path, "../data/LINEMOD_6D/LM6d_converted/LM6d_refine")
-LINEMOD_syn_root = os.path.join(
-    cur_path, "../data/LINEMOD_6D/LM6d_converted/LM6d_refine_syn"
-)
-syn_poses_path = os.path.join(
-    LINEMOD_syn_root, "poses/LM6d_ds_train_observed_pose_all.pkl"
-)
+LINEMOD_syn_root = os.path.join(cur_path, "../data/LINEMOD_6D/LM6d_converted/LM6d_refine_syn")
+syn_poses_path = os.path.join(LINEMOD_syn_root, "poses/LM6d_ds_train_observed_pose_all.pkl")
 
 # output path
 gt_observed_root_dir = os.path.join(LINEMOD_syn_root, "data", "gt_observed")
@@ -94,9 +90,7 @@ def gen_gt_observed():
         # print(syn_poses.shape) # nx7
         syn_poses = syn_pose_dict[class_name]
         num_poses = syn_poses.shape[0]
-        observed_index_list = [
-            "{}/{:06d}".format(class_name, i + 1) for i in range(num_poses)
-        ]
+        observed_index_list = ["{}/{:06d}".format(class_name, i + 1) for i in range(num_poses)]
 
         # observed_set_path = os.path.join(
         #     image_set_dir,
@@ -112,18 +106,12 @@ def gen_gt_observed():
             gt_observed_dir = os.path.join(gt_observed_root_dir, class_name)
             mkdir_if_missing(gt_observed_dir)
 
-            gt_observed_color_file = os.path.join(
-                gt_observed_dir, prefix + "-color.png"
-            )
-            gt_observed_depth_file = os.path.join(
-                gt_observed_dir, prefix + "-depth.png"
-            )
+            gt_observed_color_file = os.path.join(gt_observed_dir, prefix + "-color.png")
+            gt_observed_depth_file = os.path.join(gt_observed_dir, prefix + "-depth.png")
             gt_observed_pose_file = os.path.join(gt_observed_dir, prefix + "-pose.txt")
 
             # observed_label_file = os.path.join(observed_root_dir, video_name, prefix + "-label.png")
-            gt_observed_label_file = os.path.join(
-                gt_observed_dir, prefix + "-label.png"
-            )
+            gt_observed_label_file = os.path.join(gt_observed_dir, prefix + "-label.png")
 
             pose_quat = syn_poses[idx, :]
             pose = se3.se3_q2m(pose_quat)
@@ -152,9 +140,7 @@ def gen_gt_observed():
             # print("light_position b: {}".format(light_position))
 
             # get render result
-            rgb_gl, depth_gl = render_machine.render(
-                pose[:3, :3], pose[:, 3], r_type="mat"
-            )
+            rgb_gl, depth_gl = render_machine.render(pose[:3, :3], pose[:, 3], r_type="mat")
             rgb_gl = rgb_gl.astype("uint8")
             # gt_observed label
             label_gl = np.zeros(depth_gl.shape)

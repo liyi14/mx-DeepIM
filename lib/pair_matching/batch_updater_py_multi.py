@@ -35,13 +35,10 @@ class batchUpdaterPyMulti:
         if big_cfg.dataset.dataset.startswith("ModelNet"):
             self.modelnet_root = big_cfg.modelnet_root
             self.texture_path = os.path.join(self.modelnet_root, "gray_texture.png")
-            from lib.render_glumpy.render_py_light_modelnet_multi import (
-                Render_Py_Light_ModelNet_Multi,
-            )
+            from lib.render_glumpy.render_py_light_modelnet_multi import Render_Py_Light_ModelNet_Multi
 
             self.model_path_list = [
-                os.path.join(self.model_dir, "{}.obj".format(model_name))
-                for model_name in big_cfg.dataset.class_name
+                os.path.join(self.model_dir, "{}.obj".format(model_name)) for model_name in big_cfg.dataset.class_name
             ]
             self.render_machine = Render_Py_Light_ModelNet_Multi(
                 self.model_path_list,
@@ -55,13 +52,7 @@ class batchUpdaterPyMulti:
             )
         else:
             self.render_machine = Render_Py(
-                self.model_dir,
-                big_cfg.dataset.class_name,
-                self.K,
-                self.width,
-                self.height,
-                self.zNear,
-                self.zFar,
+                self.model_dir, big_cfg.dataset.class_name, self.K, self.width, self.height, self.zNear, self.zFar
             )
 
         self.reinit = True
@@ -141,65 +132,37 @@ class batchUpdaterPyMulti:
         io_time = 0
         data_names = [x[0] for x in data_batch.provide_data[0]]
         label_names = [x[0] for x in data_batch.provide_label[0]]
-        src_pose_all = [
-            data_array[ctx_i][data_names.index("src_pose")].asnumpy()
-            for ctx_i in range(num_ctx)
-        ]
-        tgt_pose_all = [
-            data_array[ctx_i][data_names.index("tgt_pose")].asnumpy()
-            for ctx_i in range(num_ctx)
-        ]
-        class_index_all = [
-            data_array[ctx_i][data_names.index("class_index")].asnumpy()
-            for ctx_i in range(num_ctx)
-        ]
+        src_pose_all = [data_array[ctx_i][data_names.index("src_pose")].asnumpy() for ctx_i in range(num_ctx)]
+        tgt_pose_all = [data_array[ctx_i][data_names.index("tgt_pose")].asnumpy() for ctx_i in range(num_ctx)]
+        class_index_all = [data_array[ctx_i][data_names.index("class_index")].asnumpy() for ctx_i in range(num_ctx)]
         t = time.time()
         # print("pred lens: {}".format(len(preds)))
         # for i in preds:
         #     print(i[0].shape)
-        rot_est_all = [
-            preds[pred_names.index("rot_est")][ctx_i].asnumpy()
-            for ctx_i in range(num_ctx)
-        ]
-        trans_est_all = [
-            preds[pred_names.index("trans_est")][ctx_i].asnumpy()
-            for ctx_i in range(num_ctx)
-        ]
+        rot_est_all = [preds[pred_names.index("rot_est")][ctx_i].asnumpy() for ctx_i in range(num_ctx)]
+        trans_est_all = [preds[pred_names.index("trans_est")][ctx_i].asnumpy() for ctx_i in range(num_ctx)]
         init_time += time.time() - t
 
         if self.big_cfg.network.PRED_FLOW:
             depth_gt_observed_all = [
-                data_array[ctx_i][data_names.index("depth_gt_observed")].asnumpy()
-                for ctx_i in range(num_ctx)
+                data_array[ctx_i][data_names.index("depth_gt_observed")].asnumpy() for ctx_i in range(num_ctx)
             ]
 
         for ctx_i in range(num_ctx):
             batch_size = data_array[ctx_i][0].shape[0]
-            assert batch_size == self.batch_size, "{} vs. {}".format(
-                batch_size, self.batch_size
-            )
+            assert batch_size == self.batch_size, "{} vs. {}".format(batch_size, self.batch_size)
             cur_ctx = data_array[ctx_i][0].context
             t = time.time()
-            src_pose = src_pose_all[
-                ctx_i
-            ]  # data_array[ctx_i][data_names.index('src_pose')].asnumpy()
-            tgt_pose = tgt_pose_all[
-                ctx_i
-            ]  # data_array[ctx_i][data_names.index('tgt_pose')].asnumpy()
+            src_pose = src_pose_all[ctx_i]  # data_array[ctx_i][data_names.index('src_pose')].asnumpy()
+            tgt_pose = tgt_pose_all[ctx_i]  # data_array[ctx_i][data_names.index('tgt_pose')].asnumpy()
             if self.big_cfg.network.PRED_FLOW:
                 depth_gt_observed = depth_gt_observed_all[
                     ctx_i
                 ]  # data_array[ctx_i][data_names.index('depth_gt_observed')] # ndarray
 
-            class_index = class_index_all[
-                ctx_i
-            ]  # data_array[ctx_i][data_names.index('class_index')].asnumpy()
-            rot_est = rot_est_all[
-                ctx_i
-            ]  # preds[pred_names.index('rot_est')][ctx_i].asnumpy()
-            trans_est = trans_est_all[
-                ctx_i
-            ]  # preds[pred_names.index('trans_est')][ctx_i].asnumpy()
+            class_index = class_index_all[ctx_i]  # data_array[ctx_i][data_names.index('class_index')].asnumpy()
+            rot_est = rot_est_all[ctx_i]  # preds[pred_names.index('rot_est')][ctx_i].asnumpy()
+            trans_est = trans_est_all[ctx_i]  # preds[pred_names.index('trans_est')][ctx_i].asnumpy()
             init_time += time.time() - t
 
             refined_image_array = np.zeros((batch_size, 3, self.height, self.width))
@@ -214,20 +177,12 @@ class batchUpdaterPyMulti:
                 t_delta = np.squeeze(trans_est[batch_idx])
 
                 refined_pose = RT_transform.RT_transform(
-                    pre_pose,
-                    r_delta,
-                    t_delta,
-                    self.T_means,
-                    self.T_stds,
-                    rot_coord=self.rot_coord,
+                    pre_pose, r_delta, t_delta, self.T_means, self.T_stds, rot_coord=self.rot_coord
                 )
                 t = time.time()
                 if not self.big_cfg.dataset.dataset.startswith("ModelNet"):
                     refined_image, refined_depth = self.render_machine.render(
-                        class_index[batch_idx].astype("int"),
-                        refined_pose[:3, :3],
-                        refined_pose[:3, 3],
-                        r_type="mat",
+                        class_index[batch_idx].astype("int"), refined_pose[:3, :3], refined_pose[:3, 3], r_type="mat"
                     )
                 else:
                     idx = 2  # random.randint(0, 100)
@@ -276,11 +231,7 @@ class batchUpdaterPyMulti:
 
                 # process refined_image
                 t = time.time()
-                refined_image = (
-                    refined_image[:, :, [2, 1, 0]]
-                    .transpose([2, 0, 1])
-                    .astype(np.float32)
-                )
+                refined_image = refined_image[:, :, [2, 1, 0]].transpose([2, 0, 1]).astype(np.float32)
                 refined_image -= self.pixel_means
                 image_time += time.time() - t
 
@@ -297,16 +248,12 @@ class batchUpdaterPyMulti:
 
                 refined_pose_array[batch_idx] = refined_pose
                 refined_image_array[batch_idx] = refined_image
-                refined_depth_array[batch_idx] = refined_depth.reshape(
-                    (1, self.height, self.width)
-                )
+                refined_depth_array[batch_idx] = refined_depth.reshape((1, self.height, self.width))
                 rot_res_array[batch_idx] = rot_res
                 trans_res_array[batch_idx] = trans_res
 
                 se3_m = np.zeros([3, 4])
-                se3_rotm, se3_t = RT_transform.calc_se3(
-                    refined_pose, np.squeeze(tgt_pose[batch_idx])
-                )
+                se3_rotm, se3_t = RT_transform.calc_se3(refined_pose, np.squeeze(tgt_pose[batch_idx]))
                 se3_m[:, :3] = se3_rotm
                 se3_m[:, 3] = se3_t
                 KT_array[batch_idx] = np.dot(self.K, se3_m)
@@ -314,9 +261,7 @@ class batchUpdaterPyMulti:
             if self.big_cfg.network.INPUT_MASK:
                 t = time.time()
                 refined_mask_rendered_array = np.zeros(refined_depth_array.shape)
-                refined_mask_rendered_array[
-                    refined_depth_array > 0.2
-                ] = 1  # if the mask_rendered input is depth
+                refined_mask_rendered_array[refined_depth_array > 0.2] = 1  # if the mask_rendered input is depth
                 mask_time += time.time() - t
 
             update_package = {
@@ -356,12 +301,8 @@ class batchUpdaterPyMulti:
                 update_package["mask_rendered"] = refined_mask_rendered_array
 
             t = time.time()
-            data_array[ctx_i] = self.update_data_batch(
-                data_array[ctx_i], data_names, update_package
-            )
-            label_array[ctx_i] = self.update_data_batch(
-                label_array[ctx_i], label_names, update_package
-            )
+            data_array[ctx_i] = self.update_data_batch(data_array[ctx_i], data_names, update_package)
+            label_array[ctx_i] = self.update_data_batch(label_array[ctx_i], label_names, update_package)
             update_time += time.time() - t
 
         t = time.time()
@@ -403,9 +344,7 @@ if __name__ == "__main__":
     step = 1e-4
     ctx = mx.gpu(0)
     # K = np.array([[1066.778, 0, 312.9869], [0, 1067.487, 241.3109], [0, 0, 1]])
-    K = np.array(
-        [[572.4114, 0.0, 325.2611], [0.0, 573.57043, 242.04899], [0.0, 0.0, 1.0]]
-    )
+    K = np.array([[572.4114, 0.0, 325.2611], [0.0, 573.57043, 242.04899], [0.0, 0.0, 1.0]])
     pixel_means = np.array([128, 127, 126])[:, np.newaxis, np.newaxis]
     T_means = np.array([0.0, 0.0, 0.0])
     T_stds = np.array([1.0, 1.0, 1.0])
@@ -420,18 +359,9 @@ if __name__ == "__main__":
     tgt_img_idx = ["{:06}".format(x * 100 + 11) for x in range(batch_size)]
     class_name = ["driller"]  # '002_master_chef_can'
     model_dir = os.path.join(cur_dir, "../../data/LINEMOD_Dataset/models/")
-    pose_path = os.path.join(
-        cur_dir,
-        "../../data/render_v5/data/render_real/%s/0006/{}-pose.txt" % (class_name),
-    )
-    color_path = os.path.join(
-        cur_dir,
-        "../../data/render_v5/data/render_real/%s/0006/{}-color.png" % (class_name),
-    )
-    depth_path = os.path.join(
-        cur_dir,
-        "../../data/render_v5/data/render_real/%s/0006/{}-depth.png" % (class_name),
-    )
+    pose_path = os.path.join(cur_dir, "../../data/render_v5/data/render_real/%s/0006/{}-pose.txt" % (class_name))
+    color_path = os.path.join(cur_dir, "../../data/render_v5/data/render_real/%s/0006/{}-color.png" % (class_name))
+    depth_path = os.path.join(cur_dir, "../../data/render_v5/data/render_real/%s/0006/{}-depth.png" % (class_name))
 
     from easydict import EasyDict as edict
 
@@ -541,12 +471,7 @@ if __name__ == "__main__":
             src_pose = new_data[data_names.index("src_pose")].asnumpy()[j]
             tgt_pose = new_data[data_names.index("tgt_pose")].asnumpy()[j]
             refined_pose = RT_transform.RT_transform(
-                src_pose,
-                new_rot_i2r,
-                new_trans_i2r,
-                T_means,
-                T_stds,
-                rot_coord="CAMERA",
+                src_pose, new_rot_i2r, new_trans_i2r, T_means, T_stds, rot_coord="CAMERA"
             )
             print(
                 "src_pose: \n{}\nrefined_pose: \n{}\n, tgt_pose: \n{}\n, delta: \n{}\n".format(
@@ -554,20 +479,11 @@ if __name__ == "__main__":
                 )
             )
 
-            def vis_flow(
-                flow_i2r, flow_i2r_weights, sel_img_idx, image_observed, image_rendered
-            ):
+            def vis_flow(flow_i2r, flow_i2r_weights, sel_img_idx, image_observed, image_rendered):
                 flow_i2r = np.squeeze(flow_i2r[sel_img_idx, :, :, :]).transpose(1, 2, 0)
-                flow_i2r_weights = np.squeeze(
-                    flow_i2r_weights[sel_img_idx, :, :, :]
-                ).transpose([1, 2, 0])
+                flow_i2r_weights = np.squeeze(flow_i2r_weights[sel_img_idx, :, :, :]).transpose([1, 2, 0])
                 visible = np.squeeze(flow_i2r_weights[:, :, 0]) != 0
-                print(
-                    "image_rendered: ",
-                    image_rendered.shape,
-                    image_rendered.min(),
-                    image_rendered.max(),
-                )
+                print("image_rendered: ", image_rendered.shape, image_rendered.min(), image_rendered.max())
 
                 fig = plt.figure()
                 font_size = 5
@@ -591,26 +507,15 @@ if __name__ == "__main__":
                                 mesh_rendered,
                                 (np.round(w).astype(int), np.round(h).astype(int)),
                                 1,
-                                (
-                                    h * 255 / height,
-                                    255 - w * 255 / width,
-                                    w * 255 / width,
-                                ),
+                                (h * 255 / height, 255 - w * 255 / width, w * 255 / width),
                                 5,
                             )
 
                             mesh_observed = cv2.circle(
                                 mesh_observed,
-                                (
-                                    np.round(w + cur_flow[1]).astype(int),
-                                    np.round(h + cur_flow[0]).astype(int),
-                                ),
+                                (np.round(w + cur_flow[1]).astype(int), np.round(h + cur_flow[0]).astype(int)),
                                 1,
-                                (
-                                    h * 255 / height,
-                                    255 - w * 255 / width,
-                                    w * 255 / width,
-                                ),
+                                (h * 255 / height, 255 - w * 255 / width, w * 255 / width),
                                 5,
                             )
 

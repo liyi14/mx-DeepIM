@@ -16,24 +16,15 @@ from config.config import config, update_config
 def parse_args():
     parser = argparse.ArgumentParser(description="Train deepim network")
     # general
-    parser.add_argument(
-        "--cfg", help="experiment configure file name", required=True, type=str
-    )
+    parser.add_argument("--cfg", help="experiment configure file name", required=True, type=str)
 
     args, rest = parser.parse_known_args()
     # update config
     update_config(args.cfg)
 
     # training
-    parser.add_argument(
-        "--frequent",
-        help="frequency of logging",
-        default=config.default.frequent,
-        type=int,
-    )
-    parser.add_argument(
-        "--gpus", help="specify the gpu to be use", required=True, type=str
-    )
+    parser.add_argument("--frequent", help="frequency of logging", default=config.default.frequent, type=int)
+    parser.add_argument("--gpus", help="specify the gpu to be use", required=True, type=str)
     parser.add_argument("--temp", help="turn on visualization", action="store_true")
     parser.add_argument("--vis", help="turn on visualization", action="store_true")
     args = parser.parse_args()
@@ -55,35 +46,31 @@ from lib.utils.load_model import load_param
 from lib.utils.PrefetchingIter import PrefetchingIter
 from lib.utils.create_logger import create_logger
 from lib.utils.lr_scheduler import WarmupMultiFactorScheduler
-from lib.utils.print_and_log import print_and_log
+from lib.utils import logger
 
 
-def train_net(
-    args, ctx, pretrained, epoch, prefix, begin_epoch, end_epoch, lr, lr_step
-):
+def train_net(args, ctx, pretrained, epoch, prefix, begin_epoch, end_epoch, lr, lr_step):
     new_args_name = args.cfg
     if args.vis:
         config.TRAIN.VISUALIZE = True
-    logger, final_output_path = create_logger(
-        config.output_path, new_args_name, config.dataset.image_set, args.temp
-    )
+    final_output_path = create_logger(config.output_path, new_args_name, config.dataset.image_set, args.temp)
     prefix = os.path.join(final_output_path, prefix)
     logger.info("called with args {}".format(args))
 
     print(config.train_iter.SE3_PM_LOSS)
     if config.train_iter.SE3_PM_LOSS:
-        print("SE3_PM_LOSS == True")
+        logger.info("SE3_PM_LOSS == True")
     else:
-        print("SE3_PM_LOSS == False")
+        logger.info("SE3_PM_LOSS == False")
 
     if not config.network.STANDARD_FLOW_REP:
-        print_and_log("[h, w] representation for flow is dep", logger)
+        logger.info("[h, w] representation for flow is dep")
 
     # load dataset and prepare imdb for training
     image_sets = [iset for iset in config.dataset.image_set.split("+")]
     datasets = [dset for dset in config.dataset.dataset.split("+")]
-    print("config.dataset.class_name: {}".format(config.dataset.class_name))
-    print("image_sets: {}".format(image_sets))
+    logger.info("config.dataset.class_name: {}".format(config.dataset.class_name))
+    logger.info("image_sets: {}".format(image_sets))
     if datasets[0].startswith("ModelNet"):
         pairdbs = [
             load_gt_pairdb(
@@ -116,30 +103,22 @@ def train_net(
 
     if not args.temp:
         src_file = os.path.join(curr_path, "symbols", config.symbol + ".py")
-        dst_file = os.path.join(
-            final_output_path,
-            "{}_{}.py".format(config.symbol, time.strftime("%Y-%m-%d-%H-%M")),
-        )
+        dst_file = os.path.join(final_output_path, "{}_{}.py".format(config.symbol, time.strftime("%Y-%m-%d-%H-%M")))
         os.popen("cp {} {}".format(src_file, dst_file))
 
     sym_instance = eval(config.symbol + "." + config.symbol)()
     sym = sym_instance.get_symbol(config, is_train=True)
 
     # setup multi-gpu
-    batch_size = len(ctx)
-    input_batch_size = config.TRAIN.BATCH_PAIRS * batch_size
+    num_gpus = len(ctx)
+    input_batch_size = config.TRAIN.BATCH_PAIRS * num_gpus
 
     pprint.pprint(config)
     logger.info("training config:{}\n".format(pprint.pformat(config)))
 
     # load training data
     train_data = TrainDataLoader(
-        sym,
-        pairdb,
-        config,
-        batch_size=input_batch_size,
-        shuffle=config.TRAIN.SHUFFLE,
-        ctx=ctx,
+        sym, pairdb, config, batch_size=input_batch_size, shuffle=config.TRAIN.SHUFFLE, ctx=ctx
     )
 
     train_data.get_batch_parallel()
@@ -147,78 +126,31 @@ def train_net(
     max_data_shape = [
         ("image_observed", (config.TRAIN.BATCH_PAIRS, 3, max_scale[0], max_scale[1])),
         ("image_rendered", (config.TRAIN.BATCH_PAIRS, 3, max_scale[0], max_scale[1])),
-        (
-            "depth_gt_observed",
-            (config.TRAIN.BATCH_PAIRS, 1, max_scale[0], max_scale[1]),
-        ),
+        ("depth_gt_observed", (config.TRAIN.BATCH_PAIRS, 1, max_scale[0], max_scale[1])),
         ("src_pose", (config.TRAIN.BATCH_PAIRS, 3, 4)),
         ("tgt_pose", (config.TRAIN.BATCH_PAIRS, 3, 4)),
     ]
     if config.network.INPUT_DEPTH:
-        max_data_shape.append(
-            (
-                "depth_observed",
-                (config.TRAIN.BATCH_PAIRS, 1, max_scale[0], max_scale[1]),
-            )
-        )
-        max_data_shape.append(
-            (
-                "depth_rendered",
-                (config.TRAIN.BATCH_PAIRS, 1, max_scale[0], max_scale[1]),
-            )
-        )
+        max_data_shape.append(("depth_observed", (config.TRAIN.BATCH_PAIRS, 1, max_scale[0], max_scale[1])))
+        max_data_shape.append(("depth_rendered", (config.TRAIN.BATCH_PAIRS, 1, max_scale[0], max_scale[1])))
     if config.network.INPUT_MASK:
-        max_data_shape.append(
-            ("mask_observed", (config.TRAIN.BATCH_PAIRS, 1, max_scale[0], max_scale[1]))
-        )
-        max_data_shape.append(
-            ("mask_rendered", (config.TRAIN.BATCH_PAIRS, 1, max_scale[0], max_scale[1]))
-        )
+        max_data_shape.append(("mask_observed", (config.TRAIN.BATCH_PAIRS, 1, max_scale[0], max_scale[1])))
+        max_data_shape.append(("mask_rendered", (config.TRAIN.BATCH_PAIRS, 1, max_scale[0], max_scale[1])))
 
     rot_param = 3 if config.network.ROT_TYPE == "EULER" else 4
-    max_label_shape = [
-        ("rot", (config.TRAIN.BATCH_PAIRS, rot_param)),
-        ("trans", (config.TRAIN.BATCH_PAIRS, 3)),
-    ]
+    max_label_shape = [("rot", (config.TRAIN.BATCH_PAIRS, rot_param)), ("trans", (config.TRAIN.BATCH_PAIRS, 3))]
     if config.network.PRED_FLOW:
-        max_label_shape.append(
-            ("flow", (config.TRAIN.BATCH_PAIRS, 2, max_scale[0], max_scale[1]))
-        )
-        max_label_shape.append(
-            ("flow_weights", (config.TRAIN.BATCH_PAIRS, 2, max_scale[0], max_scale[1]))
-        )
+        max_label_shape.append(("flow", (config.TRAIN.BATCH_PAIRS, 2, max_scale[0], max_scale[1])))
+        max_label_shape.append(("flow_weights", (config.TRAIN.BATCH_PAIRS, 2, max_scale[0], max_scale[1])))
     if config.train_iter.SE3_PM_LOSS:
-        max_label_shape.append(
-            (
-                "point_cloud_model",
-                (config.TRAIN.BATCH_PAIRS, 3, config.train_iter.NUM_3D_SAMPLE),
-            )
-        )
-        max_label_shape.append(
-            (
-                "point_cloud_weights",
-                (config.TRAIN.BATCH_PAIRS, 3, config.train_iter.NUM_3D_SAMPLE),
-            )
-        )
-        max_label_shape.append(
-            (
-                "point_cloud_observed",
-                (config.TRAIN.BATCH_PAIRS, 3, config.train_iter.NUM_3D_SAMPLE),
-            )
-        )
+        max_label_shape.append(("point_cloud_model", (config.TRAIN.BATCH_PAIRS, 3, config.train_iter.NUM_3D_SAMPLE)))
+        max_label_shape.append(("point_cloud_weights", (config.TRAIN.BATCH_PAIRS, 3, config.train_iter.NUM_3D_SAMPLE)))
+        max_label_shape.append(("point_cloud_observed", (config.TRAIN.BATCH_PAIRS, 3, config.train_iter.NUM_3D_SAMPLE)))
     if config.network.INPUT_MASK or config.network.PRED_MASK:
-        max_label_shape.append(
-            (
-                "mask_gt_observed",
-                (config.TRAIN.BATCH_PAIRS, 1, max_scale[0], max_scale[1]),
-            )
-        )
+        max_label_shape.append(("mask_gt_observed", (config.TRAIN.BATCH_PAIRS, 1, max_scale[0], max_scale[1])))
 
     # max_data_shape, max_label_shape = train_data.infer_shape(max_data_shape, max_label_shape)
-    print_and_log(
-        "providing maximum shape, {}, {}".format(max_data_shape, max_label_shape),
-        logger,
-    )
+    logger.info("providing maximum shape, {}, {}".format(max_data_shape, max_label_shape))
 
     # infer max shape
     """
@@ -230,13 +162,11 @@ def train_net(
     print('providing maximum shape', max_data_shape, max_label_shape)
     """
     # infer shape
-    data_shape_dict = dict(
-        train_data.provide_data_single + train_data.provide_label_single
-    )
-    print_and_log("\ndata_shape_dict: {}\n".format(data_shape_dict), logger)
+    data_shape_dict = dict(train_data.provide_data_single + train_data.provide_label_single)
+    logger.info("\ndata_shape_dict: {}\n".format(data_shape_dict))
     sym_instance.infer_shape(data_shape_dict)
 
-    print("************(wg): infering shape **************")
+    logger.info("************(wg): infering shape **************")
     internals = sym.get_internals()
     _, out_shapes, _ = internals.infer_shape(**data_shape_dict)
     print(sym.list_outputs())
@@ -245,10 +175,10 @@ def train_net(
 
     # load and initialize params
     if config.TRAIN.RESUME:
-        print("continue training from ", begin_epoch)
+        logger.info("continue training from {}".format(begin_epoch))
         arg_params, aux_params = load_param(prefix, begin_epoch, convert=True)
     elif pretrained == "xavier":
-        print("xavier")
+        logger.info("xavier")
         # arg_params = {}
         # aux_params = {}
         # sym_instance.init_weights(config, arg_params, aux_params)
@@ -275,8 +205,8 @@ def train_net(
         label_names=label_names,
         logger=logger,
         context=ctx,
-        max_data_shapes=[max_data_shape for _ in range(batch_size)],
-        max_label_shapes=[max_label_shape for _ in range(batch_size)],
+        max_data_shapes=[max_data_shape for _ in range(num_gpus)],
+        max_label_shapes=[max_label_shape for _ in range(num_gpus)],
         fixed_param_prefix=fixed_param_prefix,
         config=config,
     )
@@ -308,27 +238,19 @@ def train_net(
         eval_metrics.add(child_metric)
 
     # callback
-    batch_end_callback = callback.Speedometer(
-        train_data.batch_size, frequent=args.frequent
-    )
-    epoch_end_callback = mx.callback.module_checkpoint(
-        mod, prefix, period=1, save_optimizer_states=True
-    )
+    batch_end_callback = callback.Speedometer(train_data.batch_size, frequent=args.frequent)
+    epoch_end_callback = mx.callback.module_checkpoint(mod, prefix, period=1, save_optimizer_states=True)
     # decide learning rate
     base_lr = lr
     lr_factor = 0.1
     lr_epoch = [float(epoch) for epoch in lr_step.split(",")]
     lr_epoch_diff = [epoch - begin_epoch for epoch in lr_epoch if epoch > begin_epoch]
     lr = base_lr * (lr_factor ** (len(lr_epoch) - len(lr_epoch_diff)))
-    lr_iters = [int(epoch * len(pairdb) / batch_size) for epoch in lr_epoch_diff]
+    lr_iters = [int(epoch * len(pairdb) / num_gpus) for epoch in lr_epoch_diff]
     print("lr", lr, "lr_epoch_diff", lr_epoch_diff, "lr_iters", lr_iters)
 
     lr_scheduler = WarmupMultiFactorScheduler(
-        lr_iters,
-        lr_factor,
-        config.TRAIN.warmup,
-        config.TRAIN.warmup_lr,
-        config.TRAIN.warmup_step,
+        lr_iters, lr_factor, config.TRAIN.warmup, config.TRAIN.warmup_lr, config.TRAIN.warmup_step
     )
 
     if not isinstance(train_data, PrefetchingIter):
@@ -340,10 +262,7 @@ def train_net(
         if pretrained == "xavier":
             init = mx.init.Mixed(
                 ["rot_weight|trans_weight", ".*"],
-                [
-                    mx.init.Zero(),
-                    mx.init.Xavier(rnd_type="gaussian", factor_type="in", magnitude=2),
-                ],
+                [mx.init.Zero(), mx.init.Xavier(rnd_type="gaussian", factor_type="in", magnitude=2)],
             )
             mod.fit(
                 train_data,
@@ -386,10 +305,7 @@ def train_net(
         if pretrained == "xavier":
             init = mx.init.Mixed(
                 ["rot_weight|trans_weight", ".*"],
-                [
-                    mx.init.Zero(),
-                    mx.init.Xavier(rnd_type="gaussian", factor_type="in", magnitude=2),
-                ],
+                [mx.init.Zero(), mx.init.Xavier(rnd_type="gaussian", factor_type="in", magnitude=2)],
             )
             mod.fit(
                 train_data,
@@ -423,7 +339,7 @@ def train_net(
 
 
 def main():
-    print("Called with argument:", args)
+    logger.info("Called with argument: {}".format(args))
     ctx = [mx.gpu(int(i)) for i in args.gpus.split(",")]
     train_net(
         args,

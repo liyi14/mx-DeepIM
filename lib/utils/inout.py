@@ -38,9 +38,7 @@ def load_cam_params(path):
         c = yaml.load(f, Loader=yaml.CLoader)
     cam = {
         "im_size": (c["width"], c["height"]),
-        "K": np.array(
-            [[c["fx"], 0.0, c["cx"]], [0.0, c["fy"], c["cy"]], [0.0, 0.0, 1.0]]
-        ),
+        "K": np.array([[c["fx"], 0.0, c["cx"]], [0.0, c["fy"], c["cy"]], [0.0, 0.0, 1.0]]),
     }
     if "depth_scale" in c.keys():
         cam["depth_scale"] = float(c["depth_scale"])
@@ -94,13 +92,9 @@ def load_info(path):
             if "cam_K" in info[eid].keys():
                 info[eid]["cam_K"] = np.array(info[eid]["cam_K"]).reshape((3, 3))
             if "cam_R_w2c" in info[eid].keys():
-                info[eid]["cam_R_w2c"] = np.array(info[eid]["cam_R_w2c"]).reshape(
-                    (3, 3)
-                )
+                info[eid]["cam_R_w2c"] = np.array(info[eid]["cam_R_w2c"]).reshape((3, 3))
             if "cam_t_w2c" in info[eid].keys():
-                info[eid]["cam_t_w2c"] = np.array(info[eid]["cam_t_w2c"]).reshape(
-                    (3, 1)
-                )
+                info[eid]["cam_t_w2c"] = np.array(info[eid]["cam_t_w2c"]).reshape((3, 1))
     return info
 
 
@@ -170,9 +164,7 @@ def save_results_sixd17(path, res, run_time=-1):
     txt = "run_time: " + str(run_time) + "\n"  # The first line contains run time
     txt += "ests:\n"
     line_tpl = (
-        "- {{score: {:.8f}, "
-        "R: [" + ", ".join(["{:.8f}"] * 9) + "], "
-        "t: [" + ", ".join(["{:.8f}"] * 3) + "]}}\n"
+        "- {{score: {:.8f}, " "R: [" + ", ".join(["{:.8f}"] * 9) + "], " "t: [" + ", ".join(["{:.8f}"] * 3) + "]}}\n"
     )
     for e in res["ests"]:
         Rt = e["R"].flatten().tolist() + e["t"].flatten().tolist()
@@ -189,10 +181,7 @@ def load_errors(path):
 
 def save_errors(path, errors):
     with open(path, "w") as f:
-        line_tpl = (
-            "- {{im_id: {:d}, obj_id: {:d}, est_id: {:d}, "
-            "score: {:.8f}, errors: {}}}\n"
-        )
+        line_tpl = "- {{im_id: {:d}, obj_id: {:d}, est_id: {:d}, " "score: {:.8f}, errors: {}}}\n"
         error_tpl = "{:d}: {:.8f}"
         txt = ""
         for e in errors:
@@ -200,9 +189,7 @@ def save_errors(path, errors):
             for gt_id, error in e["errors"].items():
                 txt_errors_elems.append(error_tpl.format(gt_id, error))
             txt_errors = "{" + ", ".join(txt_errors_elems) + "}"
-            txt += line_tpl.format(
-                e["im_id"], e["obj_id"], e["est_id"], e["score"], txt_errors
-            )
+            txt += line_tpl.format(e["im_id"], e["obj_id"], e["est_id"], e["score"], txt_errors)
         f.write(txt)
 
 
@@ -280,29 +267,12 @@ def load_ply(path):
         is_texture = True
         model["texture_uv"] = np.zeros((n_pts, 2), np.float)
 
-    formats = {  # For binary format
-        "float": ("f", 4),
-        "double": ("d", 8),
-        "int": ("i", 4),
-        "uchar": ("B", 1),
-    }
+    formats = {"float": ("f", 4), "double": ("d", 8), "int": ("i", 4), "uchar": ("B", 1)}  # For binary format
 
     # Load vertices
     for pt_id in range(n_pts):
         prop_vals = {}
-        load_props = [
-            "x",
-            "y",
-            "z",
-            "nx",
-            "ny",
-            "nz",
-            "red",
-            "green",
-            "blue",
-            "texture_u",
-            "texture_v",
-        ]
+        load_props = ["x", "y", "z", "nx", "ny", "nz", "red", "green", "blue", "texture_u", "texture_v"]
         if is_binary:
             for prop in pt_props:
                 format = formats[prop[1]]
@@ -367,9 +337,7 @@ def load_ply(path):
     return model
 
 
-def save_ply(
-    path, pts, pts_colors=np.array([]), pts_normals=np.array([]), faces=np.array([])
-):
+def save_ply(path, pts, pts_colors=np.array([]), pts_normals=np.array([]), faces=np.array([])):
     """
     Saves a 3D mesh model to a PLY file.
 
@@ -403,10 +371,7 @@ def save_ply(
     if pts_colors.size != 0:
         f.write("property uchar red\n" "property uchar green\n" "property uchar blue\n")
     if faces.size != 0:
-        f.write(
-            "element face " + str(len(faces)) + "\n"
-            "property list uchar int vertex_indices\n"
-        )
+        f.write("element face " + str(len(faces)) + "\n" "property list uchar int vertex_indices\n")
     f.write("end_header\n")
 
     format_float = "{:.4f}"

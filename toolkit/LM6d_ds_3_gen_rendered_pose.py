@@ -15,12 +15,7 @@ import sys
 cur_path = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(1, os.path.join(cur_path, ".."))
 
-from lib.pair_matching.RT_transform import (
-    mat2euler,
-    euler2mat,
-    euler2quat,
-    calc_rt_dist_m,
-)
+from lib.pair_matching.RT_transform import mat2euler, euler2mat, euler2quat, calc_rt_dist_m
 from math import pi
 from lib.utils.mkdir_if_missing import mkdir_if_missing
 from tqdm import tqdm
@@ -56,9 +51,7 @@ def class2idx(class_name, idx2class=idx2class):
 
 
 LINEMOD_root = os.path.join(cur_path, "../data/LINEMOD_6D/LM6d_converted/LM6d_refine")
-LINEMOD_syn_root = os.path.join(
-    cur_path, "../data/LINEMOD_6D/LM6d_converted/LM6d_refine_syn"
-)
+LINEMOD_syn_root = os.path.join(cur_path, "../data/LINEMOD_6D/LM6d_converted/LM6d_refine_syn")
 # input gt observed poses
 data_dir = os.path.join(LINEMOD_syn_root, "data", "gt_observed")
 image_set_root = os.path.join(LINEMOD_syn_root, "image_set/observed")
@@ -85,9 +78,7 @@ for cls_idx, cls_name in enumerate(sel_classes):
 
     cls_idx_in_all = class2idx(cls_name)  # classes.index(cls_name)
 
-    sel_set_file = os.path.join(
-        image_set_root, "LM6d_data_syn_train_observed_{}.txt".format(cls_name)
-    )
+    sel_set_file = os.path.join(image_set_root, "LM6d_data_syn_train_observed_{}.txt".format(cls_name))
     with open(sel_set_file) as f:
         image_list = [x.strip() for x in f.readlines()]
 
@@ -106,31 +97,19 @@ for cls_idx, cls_name in enumerate(sel_classes):
             y_error = np.random.normal(0, y_std, 1)[0]
             z_error = np.random.normal(0, z_std, 1)[0]
             tgt_trans = src_trans + np.array([x_error, y_error, z_error])
-            tgt_pose_m = np.hstack(
-                (
-                    euler2mat(tgt_euler[0], tgt_euler[1], tgt_euler[2]),
-                    tgt_trans.reshape((3, 1)),
-                )
-            )
+            tgt_pose_m = np.hstack((euler2mat(tgt_euler[0], tgt_euler[1], tgt_euler[2]), tgt_trans.reshape((3, 1))))
             r_dist, t_dist = calc_rt_dist_m(tgt_pose_m, src_pose_m)
             transform = np.matmul(K, tgt_trans.reshape(3, 1))
             center_x = transform[0] / transform[2]
             center_y = transform[1] / transform[2]
             count = 0
-            while r_dist > angle_max or not (
-                16 < center_x < (640 - 16) and 16 < center_y < (480 - 16)
-            ):
+            while r_dist > angle_max or not (16 < center_x < (640 - 16) and 16 < center_y < (480 - 16)):
                 tgt_euler = src_euler + np.random.normal(0, angle_std / 180 * pi, 3)
                 x_error = np.random.normal(0, x_std, 1)[0]
                 y_error = np.random.normal(0, y_std, 1)[0]
                 z_error = np.random.normal(0, z_std, 1)[0]
                 tgt_trans = src_trans + np.array([x_error, y_error, z_error])
-                tgt_pose_m = np.hstack(
-                    (
-                        euler2mat(tgt_euler[0], tgt_euler[1], tgt_euler[2]),
-                        tgt_trans.reshape((3, 1)),
-                    )
-                )
+                tgt_pose_m = np.hstack((euler2mat(tgt_euler[0], tgt_euler[1], tgt_euler[2]), tgt_trans.reshape((3, 1))))
                 r_dist, t_dist = calc_rt_dist_m(tgt_pose_m, src_pose_m)
                 transform = np.matmul(K, tgt_trans.reshape(3, 1))
                 center_x = transform[0] / transform[2]
@@ -138,22 +117,14 @@ for cls_idx, cls_name in enumerate(sel_classes):
                 count += 1
                 if count == 100:
                     print(rendered_idx)
-                    print(
-                        "{}: {}, {}, {}, {}".format(
-                            observed_idx, r_dist, t_dist, center_x, center_y
-                        )
-                    )
+                    print("{}: {}, {}, {}, {}".format(observed_idx, r_dist, t_dist, center_x, center_y))
                     print(
                         "count: {}, image_path: {}, rendered_idx: {}".format(
-                            count,
-                            pose_observed_path.replace("pose.txt", "color.png"),
-                            rendered_idx,
+                            count, pose_observed_path.replace("pose.txt", "color.png"), rendered_idx
                         )
                     )
 
-            tgt_quat = euler2quat(tgt_euler[0], tgt_euler[1], tgt_euler[2]).reshape(
-                1, -1
-            )
+            tgt_quat = euler2quat(tgt_euler[0], tgt_euler[1], tgt_euler[2]).reshape(1, -1)
             pose_rendered.append(np.hstack((tgt_quat, tgt_trans.reshape(1, 3))))
             rd_stat.append(r_dist)
             td_stat.append(t_dist)
@@ -162,9 +133,7 @@ for cls_idx, cls_name in enumerate(sel_classes):
     print("r dist: {} +/- {}".format(np.mean(rd_stat), np.std(rd_stat)))
     print("t dist: {} +/- {}".format(np.mean(td_stat), np.std(td_stat)))
 
-    output_file_name = os.path.join(
-        pose_dir, "LM6d_ds_rendered_pose_{}.txt".format(cls_name)
-    )
+    output_file_name = os.path.join(pose_dir, "LM6d_ds_rendered_pose_{}.txt".format(cls_name))
     with open(output_file_name, "w") as text_file:
         for x in pose_rendered:
             text_file.write("{}\n".format(" ".join(map(str, np.squeeze(x)))))

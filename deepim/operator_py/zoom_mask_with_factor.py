@@ -53,13 +53,9 @@ class ZoomMaskWithFactorOperator(mx.operator.CustomOp):
             else:
                 wx, wy, tx, ty = zoom_factor_array[batch_idx]
 
-            affine_matrix = mx.ndarray.array(
-                [[wx, 0, tx], [0, wy, ty]], ctx=ctx
-            ).reshape((1, 6))
+            affine_matrix = mx.ndarray.array([[wx, 0, tx], [0, wy, ty]], ctx=ctx).reshape((1, 6))
             a = mx.ndarray.GridGenerator(
-                data=affine_matrix,
-                transform_type="affine",
-                target_shape=(self.height, self.width),
+                data=affine_matrix, transform_type="affine", target_shape=(self.height, self.width)
             )
             grid_array[batch_idx] = a[0]
 
@@ -198,9 +194,7 @@ if __name__ == "__main__":
         v_src_pose[idx] = np.loadtxt(
             os.path.join(
                 cur_dir,
-                "../../data/render_v5/data/render_real/002_master_chef_can/0012/{:06}-pose.txt".format(
-                    sub_idx2[idx]
-                ),
+                "../../data/render_v5/data/render_real/002_master_chef_can/0012/{:06}-pose.txt".format(sub_idx2[idx]),
             ),
             skiprows=1,
         )
@@ -214,41 +208,17 @@ if __name__ == "__main__":
     )
 
     # forward
-    def simple_forward_1(
-        exe1,
-        v_mask_real_est,
-        v_mask_real_gt,
-        v_mask_rendered,
-        v_src_pose,
-        ctx,
-        is_train=False,
-    ):
-        exe1.arg_dict["mask_real_est"][:] = mx.ndarray.array(
-            v_mask_real_est, ctx=ctx, dtype="float32"
-        )
-        exe1.arg_dict["mask_real_gt"][:] = mx.ndarray.array(
-            v_mask_real_gt, ctx=ctx, dtype="float32"
-        )
-        exe1.arg_dict["mask_rendered"][:] = mx.ndarray.array(
-            v_mask_rendered, ctx=ctx, dtype="float32"
-        )
-        exe1.arg_dict["src_pose"][:] = mx.ndarray.array(
-            v_src_pose, ctx=ctx, dtype="float32"
-        )
+    def simple_forward_1(exe1, v_mask_real_est, v_mask_real_gt, v_mask_rendered, v_src_pose, ctx, is_train=False):
+        exe1.arg_dict["mask_real_est"][:] = mx.ndarray.array(v_mask_real_est, ctx=ctx, dtype="float32")
+        exe1.arg_dict["mask_real_gt"][:] = mx.ndarray.array(v_mask_real_gt, ctx=ctx, dtype="float32")
+        exe1.arg_dict["mask_rendered"][:] = mx.ndarray.array(v_mask_rendered, ctx=ctx, dtype="float32")
+        exe1.arg_dict["src_pose"][:] = mx.ndarray.array(v_src_pose, ctx=ctx, dtype="float32")
         exe1.forward(is_train=is_train)
 
     t = time.time()
 
     v_mask_real_est = v_mask_real_gt
-    simple_forward_1(
-        exe1,
-        v_mask_real_est,
-        v_mask_real_gt,
-        v_mask_rendered,
-        v_src_pose,
-        ctx,
-        is_train=True,
-    )
+    simple_forward_1(exe1, v_mask_real_est, v_mask_real_gt, v_mask_rendered, v_src_pose, ctx, is_train=True)
     zoom_mask_real_est = exe1.outputs[0].asnumpy()
     zoom_mask_real_gt = exe1.outputs[1].asnumpy()
     zoom_mask_rendered = exe1.outputs[2].asnumpy()
@@ -274,16 +244,12 @@ if __name__ == "__main__":
     print("v_zoom_factor: ", v_zoom_factor.shape)
     print("v_mask: ", v_mask.shape)
 
-    exe2 = proj2d_2.simple_bind(
-        ctx=ctx, zoom_factor=v_zoom_factor.shape, mask=v_mask.shape
-    )
+    exe2 = proj2d_2.simple_bind(ctx=ctx, zoom_factor=v_zoom_factor.shape, mask=v_mask.shape)
 
     # forward
     def simple_forward_2(exe, v_zoom_factor, v_mask, ctx, is_train=False):
         exe.arg_dict["mask"][:] = mx.nd.array(v_mask, ctx=ctx, dtype="float32")
-        exe.arg_dict["zoom_factor"][:] = mx.nd.array(
-            v_zoom_factor, ctx=ctx, dtype="float32"
-        )
+        exe.arg_dict["zoom_factor"][:] = mx.nd.array(v_zoom_factor, ctx=ctx, dtype="float32")
         exe.forward(is_train=is_train)
 
     t = time.time()

@@ -49,19 +49,13 @@ config.dataset.image_set = "train_ape"
 config.dataset.root_path = "./data"
 config.dataset.test_image_set = "val_ape"
 config.dataset.model_dir = ""
-config.dataset.model_file = (
-    "./data/ModelNet/render_v1/models.txt"
-)  # optional, if too many classes
-config.dataset.pose_file = (
-    "./data/ModelNet/render_v1/poses.txt"
-)  # optional, if too many classes
+config.dataset.model_file = "./data/ModelNet/render_v1/models.txt"  # optional, if too many classes
+config.dataset.pose_file = "./data/ModelNet/render_v1/poses.txt"  # optional, if too many classes
 
 config.dataset.DEPTH_FACTOR = 1000
 config.dataset.NORMALIZE_FLOW = 1.0
 config.dataset.NORMALIZE_3D_POINT = 0.1
-config.dataset.INTRINSIC_MATRIX = np.array(
-    [[572.4114, 0, 325.2611], [0, 573.57043, 242.04899], [0, 0, 1]]
-)
+config.dataset.INTRINSIC_MATRIX = np.array([[572.4114, 0, 325.2611], [0, 573.57043, 242.04899], [0, 0, 1]])
 config.dataset.ZNEAR = 0.25
 config.dataset.ZFAR = 6.0
 
@@ -140,25 +134,15 @@ def update_config(config_file):
                     elif k == "dataset":
                         # make elegant later
                         if "INTRINSIC_MATRIX" in v:
-                            v["INTRINSIC_MATRIX"] = (
-                                np.array(v["INTRINSIC_MATRIX"])
-                                .reshape([3, 3])
-                                .astype(np.float32)
-                            )
+                            v["INTRINSIC_MATRIX"] = np.array(v["INTRINSIC_MATRIX"]).reshape([3, 3]).astype(np.float32)
                         if "trans_means" in v:
-                            v["trans_means"] = (
-                                np.array(v["trans_means"]).flatten().astype(np.float32)
-                            )
+                            v["trans_means"] = np.array(v["trans_means"]).flatten().astype(np.float32)
                         if "trans_stds" in v:
-                            v["trans_stds"] = (
-                                np.array(v["trans_stds"]).flatten().astype(np.float32)
-                            )
+                            v["trans_stds"] = np.array(v["trans_stds"]).flatten().astype(np.float32)
                         if "class_name_file" in v:
                             if v["class_name_file"] != "":
                                 with open(v["class_name_file"]) as f:
-                                    v["class_name"] = [
-                                        line.strip() for line in f.readlines()
-                                    ]
+                                    v["class_name"] = [line.strip() for line in f.readlines()]
                     for vk, vv in v.items():
                         config[k][vk] = vv
                 else:

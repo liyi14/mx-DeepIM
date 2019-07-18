@@ -60,9 +60,7 @@ ZFAR = 6.0
 
 depth_factor = 1000
 
-LINEMOD_syn_root = os.path.join(
-    cur_path, "../data/LINEMOD_6D/LM6d_converted/LM6d_refine_syn"
-)
+LINEMOD_syn_root = os.path.join(cur_path, "../data/LINEMOD_6D/LM6d_converted/LM6d_refine_syn")
 observed_pose_dir = os.path.join(LINEMOD_syn_root, "poses")
 
 
@@ -73,9 +71,7 @@ def gen_observed():
     mkdir_if_missing(observed_root_dir)
     mkdir_if_missing(image_set_dir)
 
-    syn_poses_path = os.path.join(
-        observed_pose_dir, "LM6d_ds_train_observed_pose_all.pkl"
-    )
+    syn_poses_path = os.path.join(observed_pose_dir, "LM6d_ds_train_observed_pose_all.pkl")
     with open(syn_poses_path, "rb") as f:
         syn_pose_dict = cPickle.load(f)
 
@@ -89,19 +85,14 @@ def gen_observed():
         # init render machines
         brightness_ratios = [0.2, 0.25, 0.3, 0.35, 0.4]
         model_dir = os.path.join(LINEMOD_syn_root, "models", class_name)
-        render_machine = Render_Py_Light(
-            model_dir, K, width, height, ZNEAR, ZFAR, brightness_ratios
-        )
+        render_machine = Render_Py_Light(model_dir, K, width, height, ZNEAR, ZFAR, brightness_ratios)
 
         syn_poses = syn_pose_dict[class_name]
         num_poses = syn_poses.shape[0]
-        observed_index_list = [
-            "{}/{:06d}".format(class_name, i + 1) for i in range(num_poses)
-        ]
+        observed_index_list = ["{}/{:06d}".format(class_name, i + 1) for i in range(num_poses)]
 
         observed_set_path = os.path.join(
-            image_set_dir,
-            "observed/LM6d_data_syn_train_observed_{}.txt".format(class_name),
+            image_set_dir, "observed/LM6d_data_syn_train_observed_{}.txt".format(class_name)
         )
         mkdir_if_missing(os.path.join(image_set_dir, "observed"))
         f_observed_set = open(observed_set_path, "w")
@@ -144,17 +135,7 @@ def gen_observed():
             light_position[2] -= pose[2, 3]
 
             # randomly adjust color and intensity for light_intensity
-            colors = np.array(
-                [
-                    [0, 0, 1],
-                    [0, 1, 0],
-                    [0, 1, 1],
-                    [1, 0, 0],
-                    [1, 0, 1],
-                    [1, 1, 0],
-                    [1, 1, 1],
-                ]
-            )
+            colors = np.array([[0, 0, 1], [0, 1, 0], [0, 1, 1], [1, 0, 0], [1, 0, 1], [1, 1, 0], [1, 1, 1]])
             intensity = np.random.uniform(0.9, 1.1, size=(3,))
             colors_randk = random.randint(0, colors.shape[0] - 1)
             light_intensity = colors[colors_randk] * intensity
@@ -163,11 +144,7 @@ def gen_observed():
             rm_randk = random.randint(0, len(brightness_ratios) - 1)
             # get render result
             rgb_gl, depth_gl = render_machine.render(
-                se3.mat2quat(pose[:3, :3]),
-                pose[:, -1],
-                light_position,
-                light_intensity,
-                brightness_k=rm_randk,
+                se3.mat2quat(pose[:3, :3]), pose[:, -1], light_position, light_intensity, brightness_k=rm_randk
             )
             rgb_gl = rgb_gl.astype("uint8")
             # gt_observed label

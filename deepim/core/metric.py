@@ -132,10 +132,7 @@ class MaskLossMetric(mx.metric.EvalMetric):
         name2 = "mask_gt" if self.iter_idx == -1 else "mask_gt"
         mask_prob = preds[self.pred.index(name1)].asnumpy()
         mask_gt = preds[self.pred.index(name2)].asnumpy()
-        mask_loss = -(
-            mask_gt * np.log(mask_prob + 1e-19)
-            + (1 - mask_gt) * np.log(1 - mask_prob + 1e-19)
-        )
+        mask_loss = -(mask_gt * np.log(mask_prob + 1e-19) + (1 - mask_gt) * np.log(1 - mask_prob + 1e-19))
         self.sum_metric += np.sum(mask_loss)
         self.num_inst += 480 * 640
 
@@ -154,27 +151,18 @@ class SimpleVisualize(mx.metric.EvalMetric):
         num_imgs = preds[self.pred.index("image_real")].shape[0]
         sel_img_idx = np.random.randint(0, num_imgs, 1)
         image_real = preds[self.pred.index("image_real")].asnumpy() * 0.9 + 128
-        image_real = (
-            np.squeeze(image_real[sel_img_idx, :, :, :]).transpose(1, 2, 0) / 255
-        )
+        image_real = np.squeeze(image_real[sel_img_idx, :, :, :]).transpose(1, 2, 0) / 255
         image_rendered = preds[self.pred.index("image_rendered")].asnumpy() + 128
-        image_rendered = (
-            np.squeeze(image_rendered[sel_img_idx, :, :, :]).transpose(1, 2, 0) / 255
-        )
+        image_rendered = np.squeeze(image_rendered[sel_img_idx, :, :, :]).transpose(1, 2, 0) / 255
         zoom_mask_real_gt = np.squeeze(preds[-5].asnumpy()[sel_img_idx, 0, :, :])
         zoom_mask_real_est = np.squeeze(preds[-4].asnumpy()[sel_img_idx, 0, :, :])
         zoom_mask_rendered = np.squeeze(preds[-3].asnumpy()[sel_img_idx, 0, :, :])
         zoom_image_real = preds[-2].asnumpy() + 128
-        zoom_image_real = (
-            np.squeeze(zoom_image_real[sel_img_idx, :, :, :]).transpose(1, 2, 0) / 255
-        )
+        zoom_image_real = np.squeeze(zoom_image_real[sel_img_idx, :, :, :]).transpose(1, 2, 0) / 255
         zoom_image_real = np.maximum(zoom_image_real, 0.0)
         zoom_image_real = np.minimum(zoom_image_real, 1.0)
         zoom_image_rendered = preds[-1].asnumpy() + 128
-        zoom_image_rendered = (
-            np.squeeze(zoom_image_rendered[sel_img_idx, :, :, :]).transpose(1, 2, 0)
-            / 255
-        )
+        zoom_image_rendered = np.squeeze(zoom_image_rendered[sel_img_idx, :, :, :]).transpose(1, 2, 0) / 255
         zoom_image_rendered = np.maximum(zoom_image_rendered, 0.0)
         zoom_image_rendered = np.minimum(zoom_image_rendered, 1.0)
 
@@ -281,28 +269,19 @@ class MaskVisualize(mx.metric.EvalMetric):
         num_imgs = preds[self.pred.index("image_real")].shape[0]
         sel_img_idx = np.random.randint(0, num_imgs, 1)
         image_real = preds[self.pred.index("image_real")].asnumpy() * 0.9 + 128
-        image_real = (
-            np.squeeze(image_real[sel_img_idx, :, :, :]).transpose(1, 2, 0) / 255
-        )
+        image_real = np.squeeze(image_real[sel_img_idx, :, :, :]).transpose(1, 2, 0) / 255
         image_real = np.maximum(image_real, 0.0)
         image_real = np.minimum(image_real, 1.0)
 
         image_rendered = preds[self.pred.index("image_rendered")].asnumpy() + 128
-        image_rendered = (
-            np.squeeze(image_rendered[sel_img_idx, :, :, :]).transpose(1, 2, 0) / 255
-        )
+        image_rendered = np.squeeze(image_rendered[sel_img_idx, :, :, :]).transpose(1, 2, 0) / 255
 
         zoom_image_real = preds[-2].asnumpy() + 128
-        zoom_image_real = (
-            np.squeeze(zoom_image_real[sel_img_idx, :, :, :]).transpose(1, 2, 0) / 255
-        )
+        zoom_image_real = np.squeeze(zoom_image_real[sel_img_idx, :, :, :]).transpose(1, 2, 0) / 255
         zoom_image_real = np.maximum(zoom_image_real, 0.0)
         zoom_image_real = np.minimum(zoom_image_real, 1.0)
         zoom_image_rendered = preds[-1].asnumpy() + 128
-        zoom_image_rendered = (
-            np.squeeze(zoom_image_rendered[sel_img_idx, :, :, :]).transpose(1, 2, 0)
-            / 255
-        )
+        zoom_image_rendered = np.squeeze(zoom_image_rendered[sel_img_idx, :, :, :]).transpose(1, 2, 0) / 255
         zoom_image_rendered = np.maximum(zoom_image_rendered, 0.0)
         zoom_image_rendered = np.minimum(zoom_image_rendered, 1.0)
 
@@ -313,11 +292,7 @@ class MaskVisualize(mx.metric.EvalMetric):
             zoom_mask_rendered = np.squeeze(preds[-3].asnumpy()[sel_img_idx, 0, :, :])
 
             # output
-            zoom_mask_prob = np.squeeze(
-                preds[self.pred.index("mask_prob_iter0")].asnumpy()[
-                    sel_img_idx, 0, :, :
-                ]
-            )
+            zoom_mask_prob = np.squeeze(preds[self.pred.index("mask_prob_iter0")].asnumpy()[sel_img_idx, 0, :, :])
             zoom_mask_pred_bin = np.round(zoom_mask_prob)
 
         if self.cfg.network.PRED_FLOW:  # flow
@@ -332,16 +307,9 @@ class MaskVisualize(mx.metric.EvalMetric):
             print("flow: ", flow.shape)
             flow = np.squeeze(flow[sel_img_idx, :, :, :]).transpose(1, 2, 0)
             flow_weights = labels[self.label.index("flow_weight")].asnumpy()
-            flow_weights = np.squeeze(flow_weights[sel_img_idx, :, :, :]).transpose(
-                [1, 2, 0]
-            )
+            flow_weights = np.squeeze(flow_weights[sel_img_idx, :, :, :]).transpose([1, 2, 0])
             visible = np.squeeze(flow_weights[:, :, 0]) != 0
-            print(
-                "image_rendered: ",
-                image_rendered.shape,
-                image_rendered.min(),
-                image_rendered.max(),
-            )
+            print("image_rendered: ", image_rendered.shape, image_rendered.min(), image_rendered.max())
 
             height = image_real.shape[0]
             width = image_rendered.shape[1]
@@ -363,86 +331,48 @@ class MaskVisualize(mx.metric.EvalMetric):
 
                         mesh_real = cv2.circle(
                             mesh_real,
-                            (
-                                np.round(w + cur_flow[1]).astype(int),
-                                np.round(h + cur_flow[0]).astype(int),
-                            ),
+                            (np.round(w + cur_flow[1]).astype(int), np.round(h + cur_flow[0]).astype(int)),
                             1,
                             (h * 255 / height, 255 - w * 255 / width, w * 255 / width),
                             5,
                         )
 
-                        point = np.round(
-                            [w + cur_flow_est[1], h + cur_flow_est[0]]
-                        ).astype(int)
+                        point = np.round([w + cur_flow_est[1], h + cur_flow_est[0]]).astype(int)
                         point[0] = min(max(point[0], 0), width)
                         point[1] = min(max(point[1], 0), height)
                         mesh_real_est = cv2.circle(
-                            mesh_real_est,
-                            (point[0], point[1]),
-                            1,
-                            (h * 255 / height, 255 - w * 255 / width, 127),
-                            5,
+                            mesh_real_est, (point[0], point[1]), 1, (h * 255 / height, 255 - w * 255 / width, 127), 5
                         )
 
-            print(
-                "est_loss: {}".format(np.sum(flow_weights * self.l2(flow - flow_est)))
-            )
+            print("est_loss: {}".format(np.sum(flow_weights * self.l2(flow - flow_est))))
             print("act_loss: {}".format(np.sum(flow_loss)))
 
         time_str = time.strftime("%Y-%m-%d-%H-%M-%S")
         mkdir_if_missing(self.save_dir)
 
-        self.save_fig(
-            image_real, "{}/{}_image_real.png".format(self.save_dir, time_str)
-        )
+        self.save_fig(image_real, "{}/{}_image_real.png".format(self.save_dir, time_str))
 
-        self.save_fig(
-            image_rendered, "{}/{}_image_rendered.png".format(self.save_dir, time_str)
-        )
+        self.save_fig(image_rendered, "{}/{}_image_rendered.png".format(self.save_dir, time_str))
 
-        self.save_fig(
-            zoom_image_real, "{}/{}_zoom_image_real.png".format(self.save_dir, time_str)
-        )
+        self.save_fig(zoom_image_real, "{}/{}_zoom_image_real.png".format(self.save_dir, time_str))
 
-        self.save_fig(
-            zoom_image_rendered,
-            "{}/{}_zoom_image_rendered.png".format(self.save_dir, time_str),
-        )
+        self.save_fig(zoom_image_rendered, "{}/{}_zoom_image_rendered.png".format(self.save_dir, time_str))
 
         if self.cfg.network.PRED_MASK:
-            self.save_fig(
-                zoom_mask_real_est,
-                "{}/{}_zoom_mask_real_est.png".format(self.save_dir, time_str),
-            )
+            self.save_fig(zoom_mask_real_est, "{}/{}_zoom_mask_real_est.png".format(self.save_dir, time_str))
 
-            self.save_fig(
-                zoom_mask_real_gt,
-                "{}/{}_zoom_mask_real_gt.png".format(self.save_dir, time_str),
-            )
+            self.save_fig(zoom_mask_real_gt, "{}/{}_zoom_mask_real_gt.png".format(self.save_dir, time_str))
 
-            self.save_fig(
-                zoom_mask_rendered,
-                "{}/{}_zoom_mask_rendered.png".format(self.save_dir, time_str),
-            )
+            self.save_fig(zoom_mask_rendered, "{}/{}_zoom_mask_rendered.png".format(self.save_dir, time_str))
 
-            self.save_fig(
-                zoom_mask_pred_bin,
-                "{}/{}_zoom_mask_pred_bin.png".format(self.save_dir, time_str),
-            )
+            self.save_fig(zoom_mask_pred_bin, "{}/{}_zoom_mask_pred_bin.png".format(self.save_dir, time_str))
 
         if self.cfg.network.PRED_FLOW:
-            self.save_fig(
-                mesh_real, "{}/{}_mesh_real.png".format(self.save_dir, time_str)
-            )
+            self.save_fig(mesh_real, "{}/{}_mesh_real.png".format(self.save_dir, time_str))
 
-            self.save_fig(
-                mesh_rendered, "{}/{}_mesh_rendered.png".format(self.save_dir, time_str)
-            )
+            self.save_fig(mesh_rendered, "{}/{}_mesh_rendered.png".format(self.save_dir, time_str))
 
-            self.save_fig(
-                mesh_real_est, "{}/{}_mesh_real_est.png".format(self.save_dir, time_str)
-            )
+            self.save_fig(mesh_real_est, "{}/{}_mesh_real_est.png".format(self.save_dir, time_str))
         print("=====================")
 
 
@@ -475,13 +405,9 @@ class MinibatchVisualize(mx.metric.EvalMetric):
         num_imgs = preds[self.pred.index("image_real")].shape[0]
         sel_img_idx = np.random.randint(0, num_imgs, 1)
         image_real = preds[self.pred.index("image_real")].asnumpy() + 128
-        image_real = (
-            np.squeeze(image_real[sel_img_idx, :, :, :]).transpose(1, 2, 0) / 255
-        )
+        image_real = np.squeeze(image_real[sel_img_idx, :, :, :]).transpose(1, 2, 0) / 255
         image_rendered = preds[self.pred.index("image_rendered")].asnumpy() + 128
-        image_rendered = (
-            np.squeeze(image_rendered[sel_img_idx, :, :, :]).transpose(1, 2, 0) / 255
-        )
+        image_rendered = np.squeeze(image_rendered[sel_img_idx, :, :, :]).transpose(1, 2, 0) / 255
         flow_est = preds[self.pred.index("flow_est_crop")].asnumpy()
         print("flow_est:", flow_est.shape, np.unique(flow_est))
         flow_est = np.squeeze(flow_est[sel_img_idx, :, :, :]).transpose(1, 2, 0)
@@ -492,17 +418,10 @@ class MinibatchVisualize(mx.metric.EvalMetric):
         print("flow: ", flow.shape, np.unique(flow))
         flow = np.squeeze(flow[sel_img_idx, :, :, :]).transpose(1, 2, 0)
         flow_weights = labels[self.label.index("flow_weight")].asnumpy()
-        flow_weights = np.squeeze(flow_weights[sel_img_idx, :, :, :]).transpose(
-            [1, 2, 0]
-        )
+        flow_weights = np.squeeze(flow_weights[sel_img_idx, :, :, :]).transpose([1, 2, 0])
         visible = np.squeeze(flow_weights[:, :, 0]) != 0
         print("flow weights: ", visible.shape, np.unique(visible))
-        print(
-            "image_rendered: ",
-            image_rendered.shape,
-            image_rendered.min(),
-            image_rendered.max(),
-        )
+        print("image_rendered: ", image_rendered.shape, image_rendered.min(), image_rendered.max())
 
         fig = plt.figure()
         font_size = 5
@@ -534,26 +453,17 @@ class MinibatchVisualize(mx.metric.EvalMetric):
 
                     mesh_real = cv2.circle(
                         mesh_real,
-                        (
-                            np.round(w + cur_flow[1]).astype(int),
-                            np.round(h + cur_flow[0]).astype(int),
-                        ),
+                        (np.round(w + cur_flow[1]).astype(int), np.round(h + cur_flow[0]).astype(int)),
                         1,
                         (h * 255 / height, 255 - w * 255 / width, w * 255 / width),
                         5,
                     )
 
-                    point = np.round([w + cur_flow_est[1], h + cur_flow_est[0]]).astype(
-                        int
-                    )
+                    point = np.round([w + cur_flow_est[1], h + cur_flow_est[0]]).astype(int)
                     point[0] = min(max(point[0], 0), width)
                     point[1] = min(max(point[1], 0), height)
                     mesh_real_est = cv2.circle(
-                        mesh_real_est,
-                        (point[0], point[1]),
-                        1,
-                        (h * 255 / height, 255 - w * 255 / width, 127),
-                        5,
+                        mesh_real_est, (point[0], point[1]), 1, (h * 255 / height, 255 - w * 255 / width, 127), 5
                     )
 
         print("est_loss: {}".format(np.sum(flow_weights * self.l2(flow - flow_est))))

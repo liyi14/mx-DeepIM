@@ -18,20 +18,12 @@ ouput: points_tgt (transformed_3d_points)
 
 import mxnet as mx
 import numpy as np
-from lib.pair_matching.RT_transform import (
-    RT_transform,
-    quat2mat,
-    R_transform,
-    T_transform,
-    T_transform_naive,
-)
+from lib.pair_matching.RT_transform import RT_transform, quat2mat, R_transform, T_transform, T_transform_naive
 from distutils.util import strtobool
 
 
 class transform3dOperator(mx.operator.CustomOp):
-    def __init__(
-        self, T_means=None, T_stds=None, rot_coord="MODEL", projection_2d=False
-    ):
+    def __init__(self, T_means=None, T_stds=None, rot_coord="MODEL", projection_2d=False):
         super(transform3dOperator, self).__init__()
         self.T_means = T_means
         self.T_stds = T_stds
@@ -57,9 +49,7 @@ class transform3dOperator(mx.operator.CustomOp):
         T_delta = in_data[2]  # mx.nd.expand_dims(in_data[2], axis=2)
         pose_src = in_data[3]
         Rm_src = mx.nd.slice_axis(pose_src, axis=2, begin=0, end=3)  # (B, 3, 3)
-        T_src = mx.nd.slice_axis(pose_src, axis=2, begin=3, end=4).reshape(
-            (batch_size, 3)
-        )  # (B, 3)
+        T_src = mx.nd.slice_axis(pose_src, axis=2, begin=3, end=4).reshape((batch_size, 3))  # (B, 3)
 
         assert (
             rotation.shape[0] == batch_size and T_delta.shape[0] == batch_size
@@ -75,19 +65,14 @@ class transform3dOperator(mx.operator.CustomOp):
             elif rotation.shape[1] == 3:
                 raise Exception("NOT_IMPLEMENTED")
             else:
-                raise Exception(
-                    "UNKNOWN ROTATION REPRESENTATION {}".format(rotation.shape[1])
-                )
+                raise Exception("UNKNOWN ROTATION REPRESENTATION {}".format(rotation.shape[1]))
         self.Rm_delta = Rm_delta
 
         # rot coord == 'model', dot(Rm_src, Rm_delta)==>Rm_tgt
         Rm_tgt = mx.nd.zeros((batch_size, 3, 3), ctx=ctx)
         for i in range(batch_size):
             Rm_tgt[i] = mx.nd.array(
-                R_transform(
-                    Rm_src[i].asnumpy(), Rm_delta[i].asnumpy(), rot_coord=self.rot_coord
-                ),
-                ctx=ctx,
+                R_transform(Rm_src[i].asnumpy(), Rm_delta[i].asnumpy(), rot_coord=self.rot_coord), ctx=ctx
             )
 
         # T_delta, T_src --> T_tgt
@@ -95,18 +80,12 @@ class transform3dOperator(mx.operator.CustomOp):
         for i in range(batch_size):
             if self.rot_coord.lower() == "naive":
                 T_tgt[i] = mx.nd.array(
-                    T_transform_naive(
-                        Rm_delta[i].asnumpy(), T_src[i].asnumpy(), T_delta[i].asnumpy()
-                    )
+                    T_transform_naive(Rm_delta[i].asnumpy(), T_src[i].asnumpy(), T_delta[i].asnumpy())
                 )
             else:
                 T_tgt[i] = mx.nd.array(
                     T_transform(
-                        T_src[i].asnumpy(),
-                        T_delta[i].asnumpy(),
-                        self.T_means,
-                        self.T_stds,
-                        rot_coord=self.rot_coord,
+                        T_src[i].asnumpy(), T_delta[i].asnumpy(), self.T_means, self.T_stds, rot_coord=self.rot_coord
                     ),
                     ctx=ctx,
                 )
@@ -129,9 +108,7 @@ class transform3dOperator(mx.operator.CustomOp):
         pose_src = in_data[3]
 
         Rm_src = mx.nd.slice_axis(pose_src, axis=2, begin=0, end=3)  # (B, 3, 3)
-        T_src = mx.nd.slice_axis(pose_src, axis=2, begin=3, end=4).reshape(
-            (batch_size, 3)
-        )  # (B, 3)
+        T_src = mx.nd.slice_axis(pose_src, axis=2, begin=3, end=4).reshape((batch_size, 3))  # (B, 3)
 
         top_3d_diff = out_grad[0].reshape((batch_size, 3, -1))
 
@@ -143,39 +120,22 @@ class transform3dOperator(mx.operator.CustomOp):
         else:
             for i in range(batch_size):
                 T_delta_diff[i] = self.T_transform_backward(
-                    T_tgt_diff[i],
-                    T_src[i],
-                    T_delta[i],
-                    T_means,
-                    T_stds,
-                    ctx=ctx,
-                    rot_coord=self.rot_coord,
+                    T_tgt_diff[i], T_src[i], T_delta[i], T_means, T_stds, ctx=ctx, rot_coord=self.rot_coord
                 )
 
         # R diff
-        Rm_tgt_diff = mx.nd.batch_dot(
-            top_3d_diff, bottom_3d_points, transpose_b=True
-        )  # (B,3,3)
+        Rm_tgt_diff = mx.nd.batch_dot(top_3d_diff, bottom_3d_points, transpose_b=True)  # (B,3,3)
         Rm_src_T = mx.nd.transpose(Rm_src, axes=(0, 2, 1))
         if self.rot_coord.lower() == "model":
             Rm_delta_diff = mx.nd.batch_dot(Rm_src_T, Rm_tgt_diff)
-        elif (
-            self.rot_coord.lower() == "camera" or self.rot_coord.lower() == "camera_new"
-        ):
+        elif self.rot_coord.lower() == "camera" or self.rot_coord.lower() == "camera_new":
             Rm_delta_diff = mx.nd.batch_dot(Rm_tgt_diff, Rm_src_T)
         elif self.rot_coord.lower() == "naive":
-            src_3d_points = mx.nd.add(
-                mx.nd.batch_dot(Rm_src, bottom_3d_points),
-                mx.nd.expand_dims(T_src, axis=2),
-            )
-            Rm_delta_diff = mx.nd.batch_dot(
-                top_3d_diff, src_3d_points, transpose_b=True
-            )  # (B,3,3)
+            src_3d_points = mx.nd.add(mx.nd.batch_dot(Rm_src, bottom_3d_points), mx.nd.expand_dims(T_src, axis=2))
+            Rm_delta_diff = mx.nd.batch_dot(top_3d_diff, src_3d_points, transpose_b=True)  # (B,3,3)
 
         else:
-            raise Exception(
-                "Unknown rot_coord in transform3d operator: {}".format(self.rot_coord)
-            )
+            raise Exception("Unknown rot_coord in transform3d operator: {}".format(self.rot_coord))
 
         R_delta_diff = mx.nd.zeros_like(rotation, ctx=ctx, dtype="float32")
 
@@ -190,9 +150,7 @@ class transform3dOperator(mx.operator.CustomOp):
         self.assign(in_grad[2], req[2], T_delta_diff)
         self.assign(in_grad[3], req[3], 0)
 
-    def T_transform_backward(
-        self, T_tgt_diff, T_src, T_delta, T_means, T_stds, ctx, rot_coord="model"
-    ):
+    def T_transform_backward(self, T_tgt_diff, T_src, T_delta, T_means, T_stds, ctx, rot_coord="model"):
         """dy_dx, y: (3,1), x: (1,3)
         :param T_src:
         :param T_delta:
@@ -315,30 +273,20 @@ class transform3dOperator(mx.operator.CustomOp):
         )  # noqa:E127
         z_diff_ *= s
 
-        share_term = Nq_sqrt ** 3 * (
-            w * w_diff_ + x * x_diff_ + y * y_diff_ + z * z_diff_
-        )
+        share_term = Nq_sqrt ** 3 * (w * w_diff_ + x * x_diff_ + y * y_diff_ + z * z_diff_)
         w_diff = Nq_sqrt * w_diff_ - w * share_term
         x_diff = Nq_sqrt * x_diff_ - x * share_term
         y_diff = Nq_sqrt * y_diff_ - y * share_term
         z_diff = Nq_sqrt * z_diff_ - z * share_term
-        return mx.nd.array(
-            [w_diff, x_diff, y_diff, z_diff], ctx=q.context, dtype="float32"
-        )
+        return mx.nd.array([w_diff, x_diff, y_diff, z_diff], ctx=q.context, dtype="float32")
 
 
 @mx.operator.register("Transform3D")
 class transform3dProp(mx.operator.CustomOpProp):
-    def __init__(
-        self, T_means=None, T_stds=None, rot_coord="MODEL", b_project_2d="False"
-    ):
+    def __init__(self, T_means=None, T_stds=None, rot_coord="MODEL", b_project_2d="False"):
         super(transform3dProp, self).__init__(True)
-        self.T_means = np.fromstring(T_means[1:-1], dtype=np.float32, sep=" ").reshape(
-            (3,)
-        )
-        self.T_stds = np.fromstring(T_stds[1:-1], dtype=np.float32, sep=" ").reshape(
-            (3,)
-        )
+        self.T_means = np.fromstring(T_means[1:-1], dtype=np.float32, sep=" ").reshape((3,))
+        self.T_stds = np.fromstring(T_stds[1:-1], dtype=np.float32, sep=" ").reshape((3,))
         self._b_project_2d = strtobool(b_project_2d)
         self.rot_coord = rot_coord
 
@@ -357,9 +305,7 @@ class transform3dProp(mx.operator.CustomOpProp):
         return [dtype, dtype, dtype, dtype], [dtype], []
 
     def create_operator(self, ctx, shapes, dtypes):
-        return transform3dOperator(
-            self.T_means, self.T_stds, self.rot_coord, self._b_project_2d
-        )
+        return transform3dOperator(self.T_means, self.T_stds, self.rot_coord, self._b_project_2d)
 
 
 if __name__ == "__main__":
@@ -395,10 +341,7 @@ if __name__ == "__main__":
     points = load_object_points(point_file)
     points = points.T.astype("float32")
 
-    pose_path = os.path.join(
-        cur_dir,
-        "../../data/render_v5/data/render_real/%s/0006/{}-pose.txt" % (class_name),
-    )
+    pose_path = os.path.join(cur_dir, "../../data/render_v5/data/render_real/%s/0006/{}-pose.txt" % (class_name))
 
     point_cloud = mx.sym.Variable("point_cloud")
     rotation = mx.sym.Variable("rotation")
@@ -421,15 +364,11 @@ if __name__ == "__main__":
     print("v_point_cloud ", v_point_cloud.shape)
     v_rotation = np.random.randint
     v_rotation = np.random.randint(1e4, size=[batch_size, 4]) / 1e4
-    v_rotation = np.array(
-        [x / np.sqrt(np.dot(x, x)) for x in v_rotation], dtype="float32"
-    )
+    v_rotation = np.array([x / np.sqrt(np.dot(x, x)) for x in v_rotation], dtype="float32")
     v_translation = np.random.randint(1e4, size=[batch_size, 3]) / 1e4
     v_translation = v_translation.astype("float32")
     print(v_translation)
-    v_pose_src = np.tile(
-        np.array([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 1, 1]]), (batch_size, 1, 1)
-    )  # (B, 3, N)
+    v_pose_src = np.tile(np.array([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 1, 1]]), (batch_size, 1, 1))  # (B, 3, N)
     print("v_pose_src:", v_pose_src.shape)
 
     exe1 = tran3d.simple_bind(
@@ -440,32 +379,14 @@ if __name__ == "__main__":
         pose_src=v_pose_src.shape,
     )
 
-    def simple_forward(
-        exe1, v_point_cloud, v_rotation, v_translation, v_pose_src, ctx, is_train=False
-    ):
-        exe1.arg_dict["point_cloud"][:] = mx.ndarray.array(
-            v_point_cloud, ctx=ctx, dtype="float32"
-        )
-        exe1.arg_dict["rotation"][:] = mx.ndarray.array(
-            v_rotation, ctx=ctx, dtype="float32"
-        )
-        exe1.arg_dict["translation"][:] = mx.ndarray.array(
-            v_translation, ctx=ctx, dtype="float32"
-        )
-        exe1.arg_dict["pose_src"][:] = mx.ndarray.array(
-            v_pose_src, ctx=ctx, dtype="float32"
-        )
+    def simple_forward(exe1, v_point_cloud, v_rotation, v_translation, v_pose_src, ctx, is_train=False):
+        exe1.arg_dict["point_cloud"][:] = mx.ndarray.array(v_point_cloud, ctx=ctx, dtype="float32")
+        exe1.arg_dict["rotation"][:] = mx.ndarray.array(v_rotation, ctx=ctx, dtype="float32")
+        exe1.arg_dict["translation"][:] = mx.ndarray.array(v_translation, ctx=ctx, dtype="float32")
+        exe1.arg_dict["pose_src"][:] = mx.ndarray.array(v_pose_src, ctx=ctx, dtype="float32")
         exe1.forward(is_train=is_train)
 
-    simple_forward(
-        exe1,
-        v_point_cloud,
-        v_rotation,
-        v_translation,
-        v_pose_src,
-        ctx=ctx,
-        is_train=True,
-    )
+    simple_forward(exe1, v_point_cloud, v_rotation, v_translation, v_pose_src, ctx=ctx, is_train=True)
     y1_raw = exe1.outputs[0]
     y1 = y1_raw.asnumpy()
     sum_y1 = get_output(y1)
@@ -477,17 +398,13 @@ if __name__ == "__main__":
         pose_src = v_pose_src[iter]
         rot_m_delta = quat2mat(rot_q_delta)
 
-        pose_est = RT_transform(
-            pose_src, rot_q_delta, trans_delta, T_means, T_stds, rot_coord
-        )
+        pose_est = RT_transform(pose_src, rot_q_delta, trans_delta, T_means, T_stds, rot_coord)
         rot_m_tgt = pose_est[:3, :3]
         trans_tgt = pose_est[:, 3]
 
         pc_gt = np.matmul(rot_m_tgt, pc) + trans_tgt.reshape((3, 1))
         pc_est = y1[iter]
-        assert (
-            np.abs(pc_est - pc_gt).max(1) < 1e-4
-        ).all(), "forward check failed, {} > {}".format(
+        assert (np.abs(pc_est - pc_gt).max(1) < 1e-4).all(), "forward check failed, {} > {}".format(
             np.abs(pc_est - pc_gt).sum(), thresh
         )
     print("forward check succeed")
@@ -512,15 +429,11 @@ if __name__ == "__main__":
         v_translation_pos = np.copy(v_translation)
         v_translation_pos[i, j] += stride
 
-        simple_forward(
-            exe1, v_point_cloud, v_rotation, v_translation_neg, v_pose_src, ctx=ctx
-        )
+        simple_forward(exe1, v_point_cloud, v_rotation, v_translation_neg, v_pose_src, ctx=ctx)
         y0 = exe1.outputs[0].asnumpy()
         sum_y0 = y0.sum()
 
-        simple_forward(
-            exe1, v_point_cloud, v_rotation, v_translation_pos, v_pose_src, ctx=ctx
-        )
+        simple_forward(exe1, v_point_cloud, v_rotation, v_translation_pos, v_pose_src, ctx=ctx)
 
         y2 = exe1.outputs[0].asnumpy()
         sum_y2 = y2.sum()
@@ -532,9 +445,7 @@ if __name__ == "__main__":
             pose_src = v_pose_src[iter]
             rot_m_delta = quat2mat(rot_q_delta)
 
-            pose_est = RT_transform(
-                pose_src, rot_q_delta, trans_delta, T_means, T_stds, rot_coord
-            )
+            pose_est = RT_transform(pose_src, rot_q_delta, trans_delta, T_means, T_stds, rot_coord)
             rot_m_tgt = pose_est[:3, :3]
             trans_tgt = pose_est[:, 3]
 
@@ -576,25 +487,17 @@ if __name__ == "__main__":
 
             v_rotation_neg = np.copy(v_rotation)
             v_rotation_neg[i, j] -= stride
-            v_rotation_neg = np.array(
-                [x / np.sqrt(np.dot(x, x)) for x in v_rotation_neg]
-            )
+            v_rotation_neg = np.array([x / np.sqrt(np.dot(x, x)) for x in v_rotation_neg])
 
             v_rotation_pos = np.copy(v_rotation)
             v_rotation_pos[i, j] += stride
-            v_rotation_pos = np.array(
-                [x / np.sqrt(np.dot(x, x)) for x in v_rotation_pos]
-            )
+            v_rotation_pos = np.array([x / np.sqrt(np.dot(x, x)) for x in v_rotation_pos])
 
-            simple_forward(
-                exe1, v_point_cloud, v_rotation_neg, v_translation, v_pose_src, ctx=ctx
-            )
+            simple_forward(exe1, v_point_cloud, v_rotation_neg, v_translation, v_pose_src, ctx=ctx)
             y0 = exe1.outputs[0].asnumpy()
             sum_y0 = get_output(y0)
 
-            simple_forward(
-                exe1, v_point_cloud, v_rotation_pos, v_translation, v_pose_src, ctx=ctx
-            )
+            simple_forward(exe1, v_point_cloud, v_rotation_pos, v_translation, v_pose_src, ctx=ctx)
             y2 = exe1.outputs[0].asnumpy()
             sum_y2 = get_output(y2)
 
@@ -606,9 +509,7 @@ if __name__ == "__main__":
                 pose_src = v_pose_src[iter]
                 rot_m_delta = quat2mat(rot_q_delta)
 
-                pose_est = RT_transform(
-                    pose_src, rot_q_delta, trans_delta, T_means, T_stds, rot_coord
-                )
+                pose_est = RT_transform(pose_src, rot_q_delta, trans_delta, T_means, T_stds, rot_coord)
                 rot_m_tgt = pose_est[:3, :3]
                 trans_tgt = pose_est[:, 3]
 

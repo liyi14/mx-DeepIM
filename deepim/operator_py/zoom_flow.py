@@ -44,13 +44,9 @@ class ZoomFlowOperator(mx.operator.CustomOp):
                 ty = (self.height * 0.5 - obj_real_c_y) / crop_height * 2
             else:
                 wx, wy, tx, ty = zoom_factor_array[batch_idx]
-            affine_matrix = mx.ndarray.array(
-                [[wx, 0, tx], [0, wy, ty]], ctx=ctx
-            ).reshape((1, 6))
+            affine_matrix = mx.ndarray.array([[wx, 0, tx], [0, wy, ty]], ctx=ctx).reshape((1, 6))
             a = mx.ndarray.GridGenerator(
-                data=affine_matrix,
-                transform_type="affine",
-                target_shape=(self.height, self.width),
+                data=affine_matrix, transform_type="affine", target_shape=(self.height, self.width)
             )
             grid_array[batch_idx] = a[0]
 
@@ -68,9 +64,7 @@ class ZoomFlowOperator(mx.operator.CustomOp):
 
         if not self.b_inv_zoom:
             flow_weights_array = in_data[2]
-            zoom_flow_weights_array = mx.ndarray.BilinearSampler(
-                flow_weights_array, grid_array
-            )
+            zoom_flow_weights_array = mx.ndarray.BilinearSampler(flow_weights_array, grid_array)
             bin_zoom_flow_weights_array = mx.ndarray.round(
                 zoom_flow_weights_array - 0.45
             )  # binarize zoomed flow_weights
@@ -149,52 +143,34 @@ if __name__ == "__main__":
     v_flow_weights = np.zeros((batch_size, 2, height, width), dtype=np.float32)
     for idx in range(batch_size):
         v_image_rendered[idx] = cv2.imread(
-            "../../data/render_v5/data/rendered/0006/{}_{}-color.png".format(
-                img_idx[idx], sub_idx1[idx]
-            ),
+            "../../data/render_v5/data/rendered/0006/{}_{}-color.png".format(img_idx[idx], sub_idx1[idx]),
             cv2.IMREAD_COLOR,
         ).transpose([2, 0, 1])
         v_image_real[idx] = cv2.imread(
-            "../../data/render_v5/data/rendered/0006/{}_{}-color.png".format(
-                img_idx[idx], sub_idx2[idx]
-            ),
+            "../../data/render_v5/data/rendered/0006/{}_{}-color.png".format(img_idx[idx], sub_idx2[idx]),
             cv2.IMREAD_COLOR,
         ).transpose([2, 0, 1])
         v_depth_real[idx, 0] = (
             cv2.imread(
-                "../../data/render_v5/data/rendered/0006/{}_{}-depth.png".format(
-                    img_idx[idx], sub_idx1[idx]
-                ),
+                "../../data/render_v5/data/rendered/0006/{}_{}-depth.png".format(img_idx[idx], sub_idx1[idx]),
                 cv2.IMREAD_UNCHANGED,
             )
             / 10000.0
         )
         v_depth_rendered[idx, 0] = (
             cv2.imread(
-                "../../data/render_v5/data/rendered/0006/{}_{}-depth.png".format(
-                    img_idx[idx], sub_idx2[idx]
-                ),
+                "../../data/render_v5/data/rendered/0006/{}_{}-depth.png".format(img_idx[idx], sub_idx2[idx]),
                 cv2.IMREAD_UNCHANGED,
             )
             / 10000.0
         )
-        pose_real_path = "../../data/render_v5/data/rendered/0006/{}_{}-pose.txt".format(
-            img_idx[idx], sub_idx1[idx]
-        )
-        pose_est_path = "../../data/render_v5/data/rendered/0006/{}_{}-pose.txt".format(
-            img_idx[idx], sub_idx2[idx]
-        )
+        pose_real_path = "../../data/render_v5/data/rendered/0006/{}_{}-pose.txt".format(img_idx[idx], sub_idx1[idx])
+        pose_est_path = "../../data/render_v5/data/rendered/0006/{}_{}-pose.txt".format(img_idx[idx], sub_idx2[idx])
         pose_real = np.loadtxt(pose_real_path, skiprows=1)
         pose_est = np.loadtxt(pose_est_path, skiprows=1)
 
         flow, visible, _ = calc_flow(
-            v_depth_rendered[idx, 0],
-            pose_est,
-            pose_real,
-            K,
-            v_depth_real[idx, 0],
-            thresh=3e-3,
-            standard_rep=False,
+            v_depth_rendered[idx, 0], pose_est, pose_real, K, v_depth_real[idx, 0], thresh=3e-3, standard_rep=False
         )
         v_zoom_factor[:, :2] = 1.5
         v_zoom_factor[:, 2:] = 0.2
@@ -212,10 +188,7 @@ if __name__ == "__main__":
         b_inv_zoom=False,
     )
     exe0 = zoom_flow_mx.simple_bind(
-        ctx=ctx,
-        zoom_factor=v_zoom_factor.shape,
-        flow=v_flow.shape,
-        flow_weights=v_flow_weights.shape,
+        ctx=ctx, zoom_factor=v_zoom_factor.shape, flow=v_flow.shape, flow_weights=v_flow_weights.shape
     )
     # forward
     exe0.arg_dict["zoom_factor"][:] = mx.ndarray.array(v_zoom_factor, ctx=ctx)
@@ -243,10 +216,7 @@ if __name__ == "__main__":
         b_inv_zoom=True,
     )
     exe1 = simple_zoom_flow.simple_bind(
-        ctx=ctx,
-        zoom_factor=v_zoom_factor.shape,
-        flow=v_flow.shape,
-        flow_weights=v_flow_weights.shape,
+        ctx=ctx, zoom_factor=v_zoom_factor.shape, flow=v_flow.shape, flow_weights=v_flow_weights.shape
     )
 
     # forward
@@ -308,18 +278,10 @@ if __name__ == "__main__":
                         sigmoid(float(h) / height + float(w) / width - 1) * 200 + 50,
                     ]
 
-                    mesh_src = cv2.circle(
-                        mesh_src,
-                        (np.round(w).astype(int), np.round(h).astype(int)),
-                        1,
-                        point_color,
-                    )
+                    mesh_src = cv2.circle(mesh_src, (np.round(w).astype(int), np.round(h).astype(int)), 1, point_color)
                     mesh_tgt = cv2.circle(
                         mesh_tgt,
-                        (
-                            np.round(w + cur_flow[0]).astype(int),
-                            np.round(h + cur_flow[1]).astype(int),
-                        ),
+                        (np.round(w + cur_flow[0]).astype(int), np.round(h + cur_flow[1]).astype(int)),
                         1,
                         point_color,
                     )
@@ -334,17 +296,11 @@ if __name__ == "__main__":
                         sigmoid(float(h) / height + float(w) / width - 1) * 200 + 50,
                     ]
                     mesh_back_src = cv2.circle(
-                        mesh_back_src,
-                        (np.round(w).astype(int), np.round(h).astype(int)),
-                        1,
-                        point_color,
+                        mesh_back_src, (np.round(w).astype(int), np.round(h).astype(int)), 1, point_color
                     )
                     mesh_back_tgt = cv2.circle(
                         mesh_back_tgt,
-                        (
-                            np.round(w + cur_flow_inv[0]).astype(int),
-                            np.round(h + cur_flow_inv[1]).astype(int),
-                        ),
+                        (np.round(w + cur_flow_inv[0]).astype(int), np.round(h + cur_flow_inv[1]).astype(int)),
                         1,
                         point_color,
                     )
@@ -364,17 +320,11 @@ if __name__ == "__main__":
                     ]
 
                     z_mesh_src = cv2.circle(
-                        z_mesh_src,
-                        (np.round(w).astype(int), np.round(h).astype(int)),
-                        1,
-                        point_color,
+                        z_mesh_src, (np.round(w).astype(int), np.round(h).astype(int)), 1, point_color
                     )
                     z_mesh_tgt = cv2.circle(
                         z_mesh_tgt,
-                        (
-                            np.round(w + cur_flow[0]).astype(int),
-                            np.round(h + cur_flow[1]).astype(int),
-                        ),
+                        (np.round(w + cur_flow[0]).astype(int), np.round(h + cur_flow[1]).astype(int)),
                         1,
                         point_color,
                     )

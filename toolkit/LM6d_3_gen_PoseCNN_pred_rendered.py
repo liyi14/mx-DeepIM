@@ -66,27 +66,18 @@ if __name__ == "__main__":
 
     gen_images = True
     version = "PoseCNN"  # you can change it to your own method
-    LINEMOD_root = os.path.join(
-        cur_path, "../data/LINEMOD_6D/LM6d_converted/LM6d_refine"
-    )
+    LINEMOD_root = os.path.join(cur_path, "../data/LINEMOD_6D/LM6d_converted/LM6d_refine")
     observed_root_dir = os.path.join(LINEMOD_root, "data/observed")
     observed_meta_path = "%s/{}-meta.mat" % (observed_root_dir)
 
     # config for external method results
-    keyframe_path = "%s/{}_test.txt" % (
-        os.path.join(LINEMOD_root, "image_set/observed")
-    )
+    keyframe_path = "%s/{}_test.txt" % (os.path.join(LINEMOD_root, "image_set/observed"))
     exMethod_pred_dir = os.path.join(
-        cur_path,
-        "../data/LINEMOD_6D/LM6d_converted/LM6d_refine/{}_LINEMOD_6D_results".format(
-            version
-        ),
+        cur_path, "../data/LINEMOD_6D/LM6d_converted/LM6d_refine/{}_LINEMOD_6D_results".format(version)
     )
 
     # output_path
-    rendered_root_dir = os.path.join(
-        LINEMOD_root, "data/rendered_val_{}".format(version)
-    )
+    rendered_root_dir = os.path.join(LINEMOD_root, "data/rendered_val_{}".format(version))
     pair_set_dir = os.path.join(LINEMOD_root, "image_set")
     mkdir_if_missing(rendered_root_dir)
     mkdir_if_missing(pair_set_dir)
@@ -112,14 +103,10 @@ if __name__ == "__main__":
 
         all_pair = []
         for idx, observed_index in enumerate(tqdm(observed_index_list)):
-            rendered_dir = os.path.join(
-                rendered_root_dir, video_name_list[idx], class_name
-            )
+            rendered_dir = os.path.join(rendered_root_dir, video_name_list[idx], class_name)
             mkdir_if_missing(rendered_dir)
             exMethod_idx = idx
-            exMethod_pred_file = os.path.join(
-                exMethod_pred_dir, class_name, "{:04d}.mat".format(exMethod_idx)
-            )
+            exMethod_pred_file = os.path.join(exMethod_pred_dir, class_name, "{:04d}.mat".format(exMethod_idx))
             exMethod_pred = sio.loadmat(exMethod_pred_file)
             labels = exMethod_pred["rois"][:, 1]  # 1: found; -1: not found
             if labels != -1:
@@ -139,55 +126,28 @@ if __name__ == "__main__":
 
                 pose_gt = meta_data["poses"]
                 if len(pose_gt.shape) > 2:
-                    pose_gt = pose_gt[
-                        :, :, list(meta_data["cls_indexes"][0]).index(big_class_idx)
-                    ]
-                if (
-                    idx % 100 == 0
-                ):  # to check whether the pose representation is different
-                    print(
-                        "{}, {:04d}, {}".format(
-                            class_name,
-                            idx,
-                            RT_transform.calc_rt_dist_m(pose_ori_m, pose_gt),
-                        )
-                    )
+                    pose_gt = pose_gt[:, :, list(meta_data["cls_indexes"][0]).index(big_class_idx)]
+                if idx % 100 == 0:  # to check whether the pose representation is different
+                    print("{}, {:04d}, {}".format(class_name, idx, RT_transform.calc_rt_dist_m(pose_ori_m, pose_gt)))
 
                 pose_ori_file = os.path.join(
-                    rendered_dir,
-                    "{}_{}_{}-pose.txt".format(
-                        class_name, observed_prefix_list[idx], 0
-                    ),
+                    rendered_dir, "{}_{}_{}-pose.txt".format(class_name, observed_prefix_list[idx], 0)
                 )
                 pose_icp_file = os.path.join(
-                    rendered_dir,
-                    "{}_{}_{}-pose_icp.txt".format(
-                        class_name, observed_prefix_list[idx], 0
-                    ),
+                    rendered_dir, "{}_{}_{}-pose_icp.txt".format(class_name, observed_prefix_list[idx], 0)
                 )
                 image_file = os.path.join(
-                    rendered_dir,
-                    "{}_{}_{}-color.png".format(
-                        class_name, observed_prefix_list[idx], 0
-                    ),
+                    rendered_dir, "{}_{}_{}-color.png".format(class_name, observed_prefix_list[idx], 0)
                 )
                 depth_file = os.path.join(
-                    rendered_dir,
-                    "{}_{}_{}-depth.png".format(
-                        class_name, observed_prefix_list[idx], 0
-                    ),
+                    rendered_dir, "{}_{}_{}-depth.png".format(class_name, observed_prefix_list[idx], 0)
                 )
                 segmentation_file = os.path.join(
-                    rendered_dir,
-                    "{}_{}_{}-label.png".format(
-                        class_name, observed_prefix_list[idx], 0
-                    ),
+                    rendered_dir, "{}_{}_{}-label.png".format(class_name, observed_prefix_list[idx], 0)
                 )
 
                 if gen_images:
-                    rgb_gl, depth_gl = render_machine.render(
-                        pose_ori_q[:4], pose_ori_q[4:]
-                    )
+                    rgb_gl, depth_gl = render_machine.render(pose_ori_q[:4], pose_ori_q[4:])
                     depth_gl = (depth_gl * depth_factor).astype(np.uint16)
                     segmentation = exMethod_pred["labels"] * big_class_idx
                     cv2.imwrite(image_file, rgb_gl)
@@ -232,24 +192,13 @@ if __name__ == "__main__":
 
                 all_pair.append(
                     "{} {}/{}/{}_{}_{}".format(
-                        observed_index,
-                        video_name_list[idx],
-                        class_name,
-                        class_name,
-                        observed_prefix_list[idx],
-                        0,
+                        observed_index, video_name_list[idx], class_name, class_name, observed_prefix_list[idx], 0
                     )
                 )
             else:
-                print(
-                    "no exMethod_pred in {} {} {}".format(
-                        class_name, idx, observed_index
-                    )
-                )
+                print("no exMethod_pred in {} {} {}".format(class_name, idx, observed_index))
 
-            pair_set_file = os.path.join(
-                pair_set_dir, "{}_val_{}.txt".format(version, class_name)
-            )
+            pair_set_file = os.path.join(pair_set_dir, "{}_val_{}.txt".format(version, class_name))
             with open(pair_set_file, "w") as text_file:
                 for x in all_pair:
                     text_file.write("{}\n".format(x))

@@ -76,29 +76,19 @@ class ZoomImageOperator(mx.operator.CustomOp):
                 zoom_c_x = obj_rendered_c_x
                 zoom_c_y = obj_rendered_c_y
 
-            left_dist = max(
-                zoom_c_x - obj_rendered_start_x, zoom_c_x - obj_real_start_x
-            )
+            left_dist = max(zoom_c_x - obj_rendered_start_x, zoom_c_x - obj_real_start_x)
             right_dist = max(obj_rendered_end_x - zoom_c_x, obj_real_end_x - zoom_c_x)
             up_dist = max(zoom_c_y - obj_rendered_start_y, zoom_c_y - obj_real_start_y)
             down_dist = max(obj_real_end_y - zoom_c_y, obj_rendered_end_y - zoom_c_y)
-            crop_height = (
-                np.max([0.75 * right_dist, 0.75 * left_dist, up_dist, down_dist])
-                * 1.4
-                * 2
-            )
+            crop_height = np.max([0.75 * right_dist, 0.75 * left_dist, up_dist, down_dist]) * 1.4 * 2
 
             wx = crop_height / self.height
             wy = crop_height / self.height
             tx = zoom_c_x / self.width * 2 - 1
             ty = zoom_c_y / self.height * 2 - 1
-            affine_matrix = mx.ndarray.array(
-                [[wx, 0, tx], [0, wy, ty]], ctx=ctx
-            ).reshape((1, 6))
+            affine_matrix = mx.ndarray.array([[wx, 0, tx], [0, wy, ty]], ctx=ctx).reshape((1, 6))
             a = mx.ndarray.GridGenerator(
-                data=affine_matrix,
-                transform_type="affine",
-                target_shape=(self.height, self.width),
+                data=affine_matrix, transform_type="affine", target_shape=(self.height, self.width)
             )
             grid_array[batch_idx] = a[0]
 
@@ -109,9 +99,7 @@ class ZoomImageOperator(mx.operator.CustomOp):
 
         zoom_image_real_array = mx.ndarray.BilinearSampler(image_real_array, grid_array)
         zoom_image_real_array -= self.pixel_means
-        zoom_image_rendered_array = mx.ndarray.BilinearSampler(
-            image_rendered_array, grid_array
-        )
+        zoom_image_rendered_array = mx.ndarray.BilinearSampler(image_rendered_array, grid_array)
         zoom_image_rendered_array -= self.pixel_means
 
         self.assign(out_data[0], req[0], zoom_image_real_array)
@@ -131,9 +119,7 @@ class ZoomImageProp(mx.operator.CustomOpProp):
         self.K = np.fromstring(K[1:-1], dtype=np.float32, sep=" ").reshape([3, 3])
         self.height = int(height)
         self.width = int(width)
-        self.pixel_means = np.fromstring(
-            pixel_means[1:-1], dtype=np.float32, sep=" "
-        ).reshape(3)
+        self.pixel_means = np.fromstring(pixel_means[1:-1], dtype=np.float32, sep=" ").reshape(3)
         self.pixel_means = self.pixel_means[::-1]
         self.pixel_means = self.pixel_means[np.newaxis, :, np.newaxis, np.newaxis]
 
@@ -197,45 +183,29 @@ if __name__ == "__main__":
     for idx in range(batch_size):
         v_image_rendered[idx] = cv2.imread(
             os.path.join(
-                cur_dir,
-                "../../data/render_v5/data/rendered/0003/{}_{}-color.png".format(
-                    img_idx[idx], sub_idx1[idx]
-                ),
+                cur_dir, "../../data/render_v5/data/rendered/0003/{}_{}-color.png".format(img_idx[idx], sub_idx1[idx])
             ),
             cv2.IMREAD_COLOR,
         ).transpose([2, 0, 1])
         v_image_real[idx] = cv2.imread(
             os.path.join(
-                cur_dir,
-                "../../data/render_v5/data/rendered/0003/{}_{}-color.png".format(
-                    img_idx[idx], sub_idx2[idx]
-                ),
+                cur_dir, "../../data/render_v5/data/rendered/0003/{}_{}-color.png".format(img_idx[idx], sub_idx2[idx])
             ),
             cv2.IMREAD_COLOR,
         ).transpose([2, 0, 1])
         v_src_pose[idx] = np.loadtxt(
             os.path.join(
-                cur_dir,
-                "../../data/render_v5/data/rendered/0003/{}_{}-pose.txt".format(
-                    img_idx[idx], sub_idx1[idx]
-                ),
+                cur_dir, "../../data/render_v5/data/rendered/0003/{}_{}-pose.txt".format(img_idx[idx], sub_idx1[idx])
             ),
             skiprows=1,
         )
     exe1 = proj2d.simple_bind(
-        ctx=ctx,
-        image_real=v_image_real.shape,
-        image_rendered=v_image_rendered.shape,
-        src_pose=v_src_pose.shape,
+        ctx=ctx, image_real=v_image_real.shape, image_rendered=v_image_rendered.shape, src_pose=v_src_pose.shape
     )
 
     # forward
-    exe1.arg_dict["image_real"][:] = mx.ndarray.array(
-        v_image_real - pixel_means, ctx=ctx
-    )
-    exe1.arg_dict["image_rendered"][:] = mx.ndarray.array(
-        v_image_rendered - pixel_means, ctx=ctx
-    )
+    exe1.arg_dict["image_real"][:] = mx.ndarray.array(v_image_real - pixel_means, ctx=ctx)
+    exe1.arg_dict["image_rendered"][:] = mx.ndarray.array(v_image_rendered - pixel_means, ctx=ctx)
     exe1.arg_dict["src_pose"][:] = mx.ndarray.array(v_src_pose, ctx=ctx)
     import time
     import matplotlib.pyplot as plt
@@ -248,9 +218,7 @@ if __name__ == "__main__":
         im_real = v_image_real[batch_idx].transpose([1, 2, 0]).astype(np.uint8)
         im_rendered = v_image_rendered[batch_idx].transpose([1, 2, 0]).astype(np.uint8)
         z_im_real = zoom_image_real[batch_idx].transpose([1, 2, 0]) + pixel_means
-        z_im_rendered = (
-            zoom_image_rendered[batch_idx].transpose([1, 2, 0]) + pixel_means
-        )
+        z_im_rendered = zoom_image_rendered[batch_idx].transpose([1, 2, 0]) + pixel_means
         fig = plt.figure()
         tmp = fig.add_subplot(2, 2, 1)
         tmp.set_title("image_real")

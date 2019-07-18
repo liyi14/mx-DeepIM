@@ -37,12 +37,8 @@ class ZoomMaskOperator(mx.operator.CustomOp):
         valid_real_array = np.sum(valid_pixels, axis=1) > 0.3
 
         mask_rendered_np = mask_rendered_array.asnumpy()
-        mask_rendered_np[
-            mask_rendered_np > 0.2
-        ] = 1  # if the mask_rendered input is depth
-        mask_rendered_np[
-            mask_rendered_np <= 0.2
-        ] = 0  # if the mask_rendered input is depth
+        mask_rendered_np[mask_rendered_np > 0.2] = 1  # if the mask_rendered input is depth
+        mask_rendered_np[mask_rendered_np <= 0.2] = 0  # if the mask_rendered input is depth
         mask_rendered_array = mx.nd.array(mask_rendered_np, ctx=ctx)
         valid_rendered_array = np.sum(mask_rendered_np, axis=1) > 0.3
 
@@ -87,30 +83,18 @@ class ZoomMaskOperator(mx.operator.CustomOp):
                 zoom_c_x = obj_rendered_c_x
                 zoom_c_y = obj_rendered_c_y
 
-            left_dist = max(
-                zoom_c_x - obj_rendered_start_x, zoom_c_x - obj_real_start_x
-            )
+            left_dist = max(zoom_c_x - obj_rendered_start_x, zoom_c_x - obj_real_start_x)
             right_dist = max(obj_rendered_end_x - zoom_c_x, obj_real_end_x - zoom_c_x)
             up_dist = max(zoom_c_y - obj_rendered_start_y, zoom_c_y - obj_real_start_y)
             down_dist = max(obj_real_end_y - zoom_c_y, obj_rendered_end_y - zoom_c_y)
-            crop_height = (
-                np.max([0.75 * right_dist, 0.75 * left_dist, up_dist, down_dist])
-                * 1.4
-                * 2
-            )
+            crop_height = np.max([0.75 * right_dist, 0.75 * left_dist, up_dist, down_dist]) * 1.4 * 2
 
             wx = crop_height / self.height
             wy = crop_height / self.height
             tx = zoom_c_x / self.width * 2 - 1
             ty = zoom_c_y / self.height * 2 - 1
-            affine_matrix = mx.nd.array([[wx, 0, tx], [0, wy, ty]], ctx=ctx).reshape(
-                (1, 6)
-            )
-            a = mx.nd.GridGenerator(
-                data=affine_matrix,
-                transform_type="affine",
-                target_shape=(self.height, self.width),
-            )
+            affine_matrix = mx.nd.array([[wx, 0, tx], [0, wy, ty]], ctx=ctx).reshape((1, 6))
+            a = mx.nd.GridGenerator(data=affine_matrix, transform_type="affine", target_shape=(self.height, self.width))
             grid_array[batch_idx] = a[0]
 
             zoom_factor_array[batch_idx, 0] = wx
@@ -118,15 +102,9 @@ class ZoomMaskOperator(mx.operator.CustomOp):
             zoom_factor_array[batch_idx, 2] = tx
             zoom_factor_array[batch_idx, 3] = ty
 
-        zoom_mask_real_est_array = mx.nd.round(
-            mx.nd.BilinearSampler(mask_real_est_array, grid_array)
-        )
-        zoom_mask_real_gt_array = mx.nd.round(
-            mx.nd.BilinearSampler(mask_real_gt_array, grid_array)
-        )
-        zoom_mask_rendered_array = mx.nd.round(
-            mx.nd.BilinearSampler(mask_rendered_array, grid_array)
-        )
+        zoom_mask_real_est_array = mx.nd.round(mx.nd.BilinearSampler(mask_real_est_array, grid_array))
+        zoom_mask_real_gt_array = mx.nd.round(mx.nd.BilinearSampler(mask_real_gt_array, grid_array))
+        zoom_mask_rendered_array = mx.nd.round(mx.nd.BilinearSampler(mask_rendered_array, grid_array))
 
         self.assign(out_data[0], req[0], zoom_mask_real_est_array)
         self.assign(out_data[1], req[1], zoom_mask_real_gt_array)
@@ -153,12 +131,7 @@ class ZoomMaskProp(mx.operator.CustomOpProp):
         return input_list
 
     def list_outputs(self):
-        output_list = [
-            "zoom_mask_observed",
-            "zoom_mask_gt_observed",
-            "zoom_mask_rendered",
-            "zoom_factor",
-        ]
+        output_list = ["zoom_mask_observed", "zoom_mask_gt_observed", "zoom_mask_rendered", "zoom_factor"]
         return output_list
 
     def infer_shape(self, in_shape):
@@ -273,9 +246,7 @@ if __name__ == "__main__":
         v_src_pose[idx] = np.loadtxt(
             os.path.join(
                 cur_dir,
-                "../../data/render_v5/data/render_real/002_master_chef_can/0012/{:06}-pose.txt".format(
-                    sub_idx2[idx]
-                ),
+                "../../data/render_v5/data/render_real/002_master_chef_can/0012/{:06}-pose.txt".format(sub_idx2[idx]),
             ),
             skiprows=1,
         )
@@ -289,40 +260,16 @@ if __name__ == "__main__":
     )
 
     # forward
-    def simple_forward(
-        exe1,
-        v_mask_real_est,
-        v_mask_real_gt,
-        v_mask_rendered,
-        v_src_pose,
-        ctx,
-        is_train=False,
-    ):
-        exe1.arg_dict["mask_real_est"][:] = mx.ndarray.array(
-            v_mask_real_est, ctx=ctx, dtype="float32"
-        )
-        exe1.arg_dict["mask_real_gt"][:] = mx.ndarray.array(
-            v_mask_real_gt, ctx=ctx, dtype="float32"
-        )
-        exe1.arg_dict["mask_rendered"][:] = mx.ndarray.array(
-            v_mask_rendered, ctx=ctx, dtype="float32"
-        )
-        exe1.arg_dict["src_pose"][:] = mx.ndarray.array(
-            v_src_pose, ctx=ctx, dtype="float32"
-        )
+    def simple_forward(exe1, v_mask_real_est, v_mask_real_gt, v_mask_rendered, v_src_pose, ctx, is_train=False):
+        exe1.arg_dict["mask_real_est"][:] = mx.ndarray.array(v_mask_real_est, ctx=ctx, dtype="float32")
+        exe1.arg_dict["mask_real_gt"][:] = mx.ndarray.array(v_mask_real_gt, ctx=ctx, dtype="float32")
+        exe1.arg_dict["mask_rendered"][:] = mx.ndarray.array(v_mask_rendered, ctx=ctx, dtype="float32")
+        exe1.arg_dict["src_pose"][:] = mx.ndarray.array(v_src_pose, ctx=ctx, dtype="float32")
         exe1.forward(is_train=is_train)
 
     t = time.time()
 
-    simple_forward(
-        exe1,
-        v_mask_real_est,
-        v_mask_real_gt,
-        v_mask_rendered,
-        v_src_pose,
-        ctx,
-        is_train=True,
-    )
+    simple_forward(exe1, v_mask_real_est, v_mask_real_gt, v_mask_rendered, v_src_pose, ctx, is_train=True)
     zoom_mask_real_est = exe1.outputs[0].asnumpy()
     zoom_mask_real_gt = exe1.outputs[1].asnumpy()
     zoom_mask_rendered = exe1.outputs[2].asnumpy()

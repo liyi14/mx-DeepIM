@@ -40,28 +40,18 @@ if __name__ == "__main__":
     pose_dirs = [os.path.join(exp_dir, d) for d in os.listdir(exp_dir) if "pose" in d]
     pose_dirs = sorted(pose_dirs)
 
-    zoom_mask_dirs = [
-        os.path.join(exp_dir, d) for d in os.listdir(exp_dir) if "zoom_mask" in d
-    ]
+    zoom_mask_dirs = [os.path.join(exp_dir, d) for d in os.listdir(exp_dir) if "zoom_mask" in d]
     zoom_mask_dirs = sorted(zoom_mask_dirs)
 
-    z_image_real_dirs = [
-        os.path.join(exp_dir, d) for d in os.listdir(exp_dir) if "zoom_image_real" in d
-    ]
+    z_image_real_dirs = [os.path.join(exp_dir, d) for d in os.listdir(exp_dir) if "zoom_image_real" in d]
     z_image_real_dirs = sorted(z_image_real_dirs)
 
-    z_image_rendered_dirs = [
-        os.path.join(exp_dir, d)
-        for d in os.listdir(exp_dir)
-        if "zoom_image_rendered" in d
-    ]
+    z_image_rendered_dirs = [os.path.join(exp_dir, d) for d in os.listdir(exp_dir) if "zoom_image_rendered" in d]
     z_image_rendered_dirs = sorted(z_image_rendered_dirs)
 
     pose_path_list = []
     for pose_dir in pose_dirs:
-        files = [
-            os.path.join(pose_dir, fn) for fn in os.listdir(pose_dir) if ".png" in fn
-        ]
+        files = [os.path.join(pose_dir, fn) for fn in os.listdir(pose_dir) if ".png" in fn]
         files.sort(cmp=my_cmp)
         for i in range(len(files)):
             if i == 0 or i == len(files) - 1:
@@ -72,11 +62,7 @@ if __name__ == "__main__":
 
     zoom_mask_path_list = []
     for z_mask_dir in zoom_mask_dirs:
-        files = [
-            os.path.join(z_mask_dir, fn)
-            for fn in os.listdir(z_mask_dir)
-            if ".png" in fn
-        ]
+        files = [os.path.join(z_mask_dir, fn) for fn in os.listdir(z_mask_dir) if ".png" in fn]
         files.sort(cmp=my_cmp)
         for i in range(len(files)):
             if i == 0 or i == len(files) - 1:
@@ -91,15 +77,9 @@ if __name__ == "__main__":
         z_image_real_dir = z_image_real_dirs[i]
         z_image_rendered_dir = z_image_rendered_dirs[i]
 
-        real_files = [
-            os.path.join(z_image_real_dir, fn)
-            for fn in os.listdir(z_image_real_dir)
-            if ".png" in fn
-        ]
+        real_files = [os.path.join(z_image_real_dir, fn) for fn in os.listdir(z_image_real_dir) if ".png" in fn]
         rendered_files = [
-            os.path.join(z_image_rendered_dir, fn)
-            for fn in os.listdir(z_image_rendered_dir)
-            if ".png" in fn
+            os.path.join(z_image_rendered_dir, fn) for fn in os.listdir(z_image_rendered_dir) if ".png" in fn
         ]
         real_files.sort(cmp=my_cmp)
         rendered_files.sort(cmp=my_cmp)
@@ -113,30 +93,14 @@ if __name__ == "__main__":
                 z_image_rendered_path_list.append(rendered_files[i])
 
     N = len(pose_path_list)
-    images_dict = {
-        k: []
-        for k in [
-            "flow",
-            "pose",
-            "mask",
-            "zoom_mask",
-            "zoom_image_real",
-            "zoom_image_rendered",
-        ]
-    }
+    images_dict = {k: [] for k in ["flow", "pose", "mask", "zoom_mask", "zoom_image_real", "zoom_image_rendered"]}
     print("loading images...")
 
     for i in tqdm(range(N)):
         images_dict["pose"].append(cv2.imread(pose_path_list[i], cv2.IMREAD_COLOR))
-        images_dict["zoom_mask"].append(
-            cv2.imread(zoom_mask_path_list[i], cv2.IMREAD_COLOR)
-        )
-        images_dict["zoom_image_real"].append(
-            cv2.imread(z_image_real_path_list[i], cv2.IMREAD_COLOR)
-        )
-        images_dict["zoom_image_rendered"].append(
-            cv2.imread(z_image_rendered_path_list[i], cv2.IMREAD_COLOR)
-        )
+        images_dict["zoom_mask"].append(cv2.imread(zoom_mask_path_list[i], cv2.IMREAD_COLOR))
+        images_dict["zoom_image_real"].append(cv2.imread(z_image_real_path_list[i], cv2.IMREAD_COLOR))
+        images_dict["zoom_image_rendered"].append(cv2.imread(z_image_rendered_path_list[i], cv2.IMREAD_COLOR))
 
     height, width, channel = images_dict["pose"][0].shape
     print(height, width)
@@ -145,10 +109,7 @@ if __name__ == "__main__":
 
     fourcc = cv2.VideoWriter_fourcc(*"MJPG")
     video_pose_mask_image = cv2.VideoWriter(
-        os.path.join(exp_dir, "../video_full/zoom_image_mask_pose.avi"),
-        fourcc,
-        2.0,
-        (width, height),
+        os.path.join(exp_dir, "../video_full/zoom_image_mask_pose.avi"), fourcc, 2.0, (width, height)
     )
 
     print("writing video...")
@@ -157,23 +118,12 @@ if __name__ == "__main__":
         res_img_2 = images_dict["zoom_mask"][i]
         res_img_3 = images_dict["zoom_image_rendered"][i]
         res_img_4 = images_dict["pose"][i]
-        res_img = np.vstack(
-            (np.hstack((res_img_1, res_img_2)), np.hstack((res_img_3, res_img_4)))
-        )
+        res_img = np.vstack((np.hstack((res_img_1, res_img_2)), np.hstack((res_img_3, res_img_4))))
         im_scale = 0.5
-        res_img = cv2.resize(
-            res_img, None, None, fx=im_scale, fy=im_scale, interpolation=cv2.INTER_CUBIC
-        )
+        res_img = cv2.resize(res_img, None, None, fx=im_scale, fy=im_scale, interpolation=cv2.INTER_CUBIC)
         if res_img.shape[0] == 480:
             im_scale = 600.0 / 480.0
-            res_img = cv2.resize(
-                res_img,
-                None,
-                None,
-                fx=im_scale,
-                fy=im_scale,
-                interpolation=cv2.INTER_CUBIC,
-            )
+            res_img = cv2.resize(res_img, None, None, fx=im_scale, fy=im_scale, interpolation=cv2.INTER_CUBIC)
         video_pose_mask_image.write(res_img)
 
     video_pose_mask_image.release()

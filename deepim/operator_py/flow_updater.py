@@ -37,9 +37,7 @@ class flowUpdaterOperator(mx.operator.CustomOp):
 
         R = np.array(Kinv * x2d.transpose())  # Kinv is np.matrix type
         self.R = R
-        self.batch_R = np.tile(
-            R.reshape((1, 3, height * width)), (self.batch_size, 1, 1)
-        )
+        self.batch_R = np.tile(R.reshape((1, 3, height * width)), (self.batch_size, 1, 1))
 
     def forward(self, is_train, req, in_data, out_data, aux):
         batch_size = in_data[0].shape[0]
@@ -56,8 +54,7 @@ class flowUpdaterOperator(mx.operator.CustomOp):
             self.batch_R = mx.nd.array(self.batch_R, ctx=ctx)
 
             w_ori, h_ori = np.meshgrid(
-                np.linspace(0, self.width - 1, self.width),
-                np.linspace(0, self.height - 1, self.height),
+                np.linspace(0, self.width - 1, self.width), np.linspace(0, self.height - 1, self.height)
             )
             self.w_ori = np.tile(w_ori.reshape((1, 1, -1)), (self.batch_size, 1, 1))
             self.h_ori = np.tile(h_ori.reshape((1, 1, -1)), (self.batch_size, 1, 1))
@@ -70,37 +67,18 @@ class flowUpdaterOperator(mx.operator.CustomOp):
         batch_se3 = mx.nd.array(batch_se3_m, ctx=ctx)
 
         batch_ones = mx.nd.ones((batch_size, 1, self.width * self.height), ctx=ctx)
-        X = mx.nd.broadcast_mul(
-            depth_src.reshape((self.batch_size, 1, self.width * self.height)),
-            self.batch_R,
-        )
+        X = mx.nd.broadcast_mul(depth_src.reshape((self.batch_size, 1, self.width * self.height)), self.batch_R)
         transform = mx.nd.batch_dot(self.batch_K, batch_se3)
         temp = mx.nd.concat(X, batch_ones, dim=1)
         Xp = mx.nd.batch_dot(transform, temp)
         w_proj, h_proj, z_proj = mx.nd.split(Xp, axis=1, num_outputs=3)
         z_proj = z_proj + 1e-15
-        pw = (
-            mx.nd.minimum(
-                mx.nd.maximum(mx.nd.round(w_proj / z_proj), 0), self.width - 1
-            )
-            .asnumpy()
-            .astype(np.int)
-        )
-        ph = (
-            mx.nd.minimum(
-                mx.nd.maximum(mx.nd.round(h_proj / z_proj), 0), self.height - 1
-            )
-            .asnumpy()
-            .astype(np.int)
-        )
+        pw = mx.nd.minimum(mx.nd.maximum(mx.nd.round(w_proj / z_proj), 0), self.width - 1).asnumpy().astype(np.int)
+        ph = mx.nd.minimum(mx.nd.maximum(mx.nd.round(h_proj / z_proj), 0), self.height - 1).asnumpy().astype(np.int)
         pz = z_proj.asnumpy()
-        valid_in_src = (
-            depth_src.reshape((self.batch_size, 1, self.height * self.width))
-        ).asnumpy() > 1e-10
+        valid_in_src = (depth_src.reshape((self.batch_size, 1, self.height * self.width))).asnumpy() > 1e-10
         depth_tgt = depth_tgt.asnumpy()
-        depth_mapping = np.array(
-            [depth_tgt[i, 0, ph[i], pw[i]] for i in range(self.batch_size)]
-        )
+        depth_mapping = np.array([depth_tgt[i, 0, ph[i], pw[i]] for i in range(self.batch_size)])
         visible_in_tgt = np.abs(depth_mapping - pz) < self.thresh
         valid_points = np.logical_and(valid_in_src, visible_in_tgt)
 
@@ -111,18 +89,12 @@ class flowUpdaterOperator(mx.operator.CustomOp):
         h_diff[valid_points == 0] = 0
         h_diff.reshape((self.batch_size, 1, self.height * self.width))
         if self.wh_rep:
-            flow = np.concatenate([w_diff, h_diff], axis=1).reshape(
-                (self.batch_size, 2, self.height, self.width)
-            )
+            flow = np.concatenate([w_diff, h_diff], axis=1).reshape((self.batch_size, 2, self.height, self.width))
         else:
-            flow = np.concatenate([h_diff, w_diff], axis=1).reshape(
-                (self.batch_size, 2, self.height, self.width)
-            )
+            flow = np.concatenate([h_diff, w_diff], axis=1).reshape((self.batch_size, 2, self.height, self.width))
         # print(flow)
         flow_nd = mx.nd.array(flow, ctx=ctx)
-        valid_points = valid_points.reshape(
-            (self.batch_size, 1, self.height, self.width)
-        )
+        valid_points = valid_points.reshape((self.batch_size, 1, self.height, self.width))
         flow_weights_nd = mx.nd.array(valid_points, ctx=ctx)
         flow_weights_nd = mx.nd.tile(flow_weights_nd, (1, 2, 1, 1))
 
@@ -176,9 +148,7 @@ class flowUpdaterProp(mx.operator.CustomOpProp):
         return input_type, output_type, []
 
     def create_operator(self, ctx, shapes, dtypes):
-        return flowUpdaterOperator(
-            self.K, self.thresh, self.batch_size, self.height, self.width, self.wh_rep
-        )
+        return flowUpdaterOperator(self.K, self.thresh, self.batch_size, self.height, self.width, self.wh_rep)
 
 
 if __name__ == "__main__":
@@ -200,18 +170,9 @@ if __name__ == "__main__":
     tgt_img_idx = ["{:06}".format(x * 100 + 31) for x in range(batch_size)]
     class_name = "035_power_drill"  # '002_master_chef_can'
     model_dir = os.path.join(cur_dir, "../../data/LOV/models/{}".format(class_name))
-    pose_path = os.path.join(
-        cur_dir,
-        "../../data/render_v5/data/render_real/%s/0006/{}-pose.txt" % (class_name),
-    )
-    color_path = os.path.join(
-        cur_dir,
-        "../../data/render_v5/data/render_real/%s/0006/{}-color.png" % (class_name),
-    )
-    depth_path = os.path.join(
-        cur_dir,
-        "../../data/render_v5/data/render_real/%s/0006/{}-depth.png" % (class_name),
-    )
+    pose_path = os.path.join(cur_dir, "../../data/render_v5/data/render_real/%s/0006/{}-pose.txt" % (class_name))
+    color_path = os.path.join(cur_dir, "../../data/render_v5/data/render_real/%s/0006/{}-color.png" % (class_name))
+    depth_path = os.path.join(cur_dir, "../../data/render_v5/data/render_real/%s/0006/{}-depth.png" % (class_name))
 
     # initialize layer
     depth_rendered = mx.sym.Variable("depth_rendered")
@@ -236,21 +197,13 @@ if __name__ == "__main__":
     # prepare input data
     v_depth_rendered = np.zeros((batch_size, 1, height, width), dtype=np.float32)
     v_depth_real = np.zeros((batch_size, 1, height, width), dtype=np.float32)
-    v_pose_src = np.array(
-        [np.loadtxt(pose_path.format(x), skiprows=1) for x in src_img_idx]
-    )
-    v_pose_tgt = np.array(
-        [np.loadtxt(pose_path.format(x), skiprows=1) for x in tgt_img_idx]
-    )
+    v_pose_src = np.array([np.loadtxt(pose_path.format(x), skiprows=1) for x in src_img_idx])
+    v_pose_tgt = np.array([np.loadtxt(pose_path.format(x), skiprows=1) for x in tgt_img_idx])
     for i in range(batch_size):
         v_depth_rendered[i, 0, :, :] = (
-            cv2.imread(depth_path.format(src_img_idx[i]), cv2.IMREAD_UNCHANGED)
-            / DEPTH_FACTOR
+            cv2.imread(depth_path.format(src_img_idx[i]), cv2.IMREAD_UNCHANGED) / DEPTH_FACTOR
         )
-        v_depth_real[i, 0, :, :] = (
-            cv2.imread(depth_path.format(tgt_img_idx[i]), cv2.IMREAD_UNCHANGED)
-            / DEPTH_FACTOR
-        )
+        v_depth_real[i, 0, :, :] = cv2.imread(depth_path.format(tgt_img_idx[i]), cv2.IMREAD_UNCHANGED) / DEPTH_FACTOR
 
     # bind
     exe1 = proj2d.simple_bind(
@@ -274,9 +227,7 @@ if __name__ == "__main__":
         print("using {:.2} seconds".format(time.time() - t))
 
         for j in range(batch_size):
-            img_rendered = cv2.imread(
-                color_path.format(src_img_idx[j]), cv2.IMREAD_COLOR
-            )
+            img_rendered = cv2.imread(color_path.format(src_img_idx[j]), cv2.IMREAD_COLOR)
             img_rendered = img_rendered[:, :, [2, 1, 0]]
             img_real = cv2.imread(color_path.format(tgt_img_idx[j]), cv2.IMREAD_COLOR)
             img_real = img_real[:, :, [2, 1, 0]]
@@ -300,22 +251,13 @@ if __name__ == "__main__":
                         )
                         img_tgt = cv2.line(
                             img_tgt,
-                            (
-                                np.round(w + cur_flow[1]).astype(int),
-                                np.round(h + cur_flow[0]).astype(int),
-                            ),
-                            (
-                                np.round(w + cur_flow[1]).astype(int),
-                                np.round(h + cur_flow[0]).astype(int),
-                            ),
+                            (np.round(w + cur_flow[1]).astype(int), np.round(h + cur_flow[0]).astype(int)),
+                            (np.round(w + cur_flow[1]).astype(int), np.round(h + cur_flow[0]).astype(int)),
                             (255, h * 255 / height, w * 255 / width),
                             5,
                         )
 
-            depth_rendered = (
-                cv2.imread(depth_path.format(src_img_idx[j]), cv2.IMREAD_UNCHANGED)
-                / DEPTH_FACTOR
-            )
+            depth_rendered = cv2.imread(depth_path.format(src_img_idx[j]), cv2.IMREAD_UNCHANGED) / DEPTH_FACTOR
 
             fig = plt.figure()
             fig.add_subplot(2, 3, 1)
