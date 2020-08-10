@@ -1,10 +1,13 @@
 ## Prepare data
 The `./toolkit` folder contains scripts to prepare data.
 ### LINEMOD(LM6D_REFINE) and LINEMOD synthetic data(LM6D_REFINE_SYN)
-Download the dataset from [http://ptak.felk.cvut.cz/6DB/public/datasets/hinterstoisser/](http://ptak.felk.cvut.cz/6DB/public/datasets/hinterstoisser/).
-More specifically, only `test` have to be downloaded.
+Download the dataset from [https://bop.felk.cvut.cz/datasets/](https://bop.felk.cvut.cz/datasets/).
+More specifically, only [All test images](http://ptak.felk.cvut.cz/6DB/public/bop_datasets/lm_test_all.zip)  of LM (Linemod) has to be downloaded.
 (Only the `test` folder contains real images which are used for training and testing in previous works, including ours)
-Extract the `test` files to folder `$(DeepIM_root)/data/LINEMOD_6D/LM6d_origin`
+Extract the `test` files to folder `$(DeepIM_root)/data/LINEMOD_6D/LM6d_origin/test`:
+```
+unzip path/to/lm_test_all.zip -d $(DeepIM_root)/data/LINEMOD_6D/LM6d_origin/
+```
 
 Run these commands successively to prepare `LM6d_refine`:
 

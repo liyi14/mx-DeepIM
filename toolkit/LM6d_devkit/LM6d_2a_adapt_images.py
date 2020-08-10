@@ -6,27 +6,23 @@
 from __future__ import print_function, division
 import sys
 import os
-
-cur_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(1, os.path.join(cur_dir, "../.."))
+import os.path as osp
+cur_dir = osp.dirname(osp.abspath(__file__))
+sys.path.insert(1, osp.join(cur_dir, "../.."))
 import numpy as np
-from lib.utils.mkdir_if_missing import mkdir_if_missing
+import mmcv
 import cv2
-import yaml
 from shutil import copyfile
 from tqdm import tqdm
 
-# from lib.utils import renderer, inout
-import matplotlib.pyplot as plt  # noqa:F401
-from lib.render_glumpy.render_py_multi import Render_Py
 import scipy.io as sio
 
-LM6d_origin_root = os.path.join(cur_dir, "../../data/LINEMOD_6D/LM6d_origin/test")
+LM6d_origin_root = osp.join(cur_dir, "../../data/LINEMOD_6D/LM6d_origin/test")
 # following previous works, part of the observed images are used for training and only images.
 
-LM6d_new_root = os.path.join(cur_dir, "../../data/LINEMOD_6D/LM6d_converted/LM6d_refine/data/observed")
-model_dir = os.path.join(cur_dir, "../../data/LINEMOD_6D/LM6d_converted/LM6d_refine/models")
-mkdir_if_missing(LM6d_new_root)
+LM6d_new_root = osp.join(cur_dir, "../../data/LINEMOD_6D/LM6d_converted/LM6d_refine/data/observed")
+model_dir = osp.join(cur_dir, "../../data/LINEMOD_6D/LM6d_converted/LM6d_refine/models")
+mmcv.mkdir_or_exist(LM6d_new_root)
 print("target path: {}".format(LM6d_new_root))
 
 idx2class = {
@@ -49,11 +45,7 @@ idx2class = {
 classes = idx2class.values()
 classes = sorted(classes)
 
-
-def class2idx(class_name, idx2class=idx2class):
-    for k, v in idx2class.items():
-        if v == class_name:
-            return k
+class2idx = {cls_name: cls_idx for cls_idx, cls_name in idx2class.items()}
 
 
 width = 640
@@ -63,28 +55,6 @@ ZNEAR = 0.25
 ZFAR = 6.0
 
 DEPTH_FACTOR = 1000
-
-
-def read_img(path, n_channel=3):
-    if n_channel == 3:
-        img = cv2.imread(path, cv2.IMREAD_COLOR)
-    elif n_channel == 1:
-        img = cv2.imread(path, cv2.IMREAD_UNCHANGED)
-    else:
-        raise Exception("Unsupported n_channel: {}".format(n_channel))
-    return img
-
-
-def load_info(info_path):
-    with open(info_path, "r") as f:
-        info_dict = yaml.load(f)
-    return info_dict
-
-
-def load_gt(gt_path):
-    with open(gt_path, "r") as f:
-        gt_dict = yaml.load(f)
-    return gt_dict
 
 
 def write_pose_file(pose_file, class_idx, pose_ori_m):
@@ -109,72 +79,56 @@ def write_pose_file(pose_file, class_idx, pose_ori_m):
 
 def main():
     sel_classes = classes
-    render_machine = Render_Py(model_dir, classes, K, width, height, ZNEAR, ZFAR)
     for cls_idx, cls_name in enumerate(classes):
+        obj_id = class2idx[cls_name]
         if cls_name not in sel_classes:
             continue
         print(cls_idx, cls_name)
         observed_indices = []
-        images = [
-            fn
-            for fn in os.listdir(os.path.join(LM6d_origin_root, "{:02d}".format(class2idx(cls_name)), "rgb"))
-            if ".png" in fn
-        ]
-        images = sorted(images)
 
-        gt_path = os.path.join(LM6d_origin_root, "{:02d}".format(class2idx(cls_name)), "gt.yml")
-        gt_dict = load_gt(gt_path)
+        gt_path = osp.join(LM6d_origin_root, "{:06d}".format(obj_id), "scene_gt.json")
+        gt_info_path = osp.join(LM6d_origin_root, "{:06d}".format(obj_id), "scene_gt_info.json")
+        gt_dict = mmcv.load(gt_path)
+        gt_info_dict = mmcv.load(gt_info_path)
 
-        # info_path = os.path.join(LM6d_origin_root, '{:02d}'.format(
-        #     class2idx(cls_name)), 'info.yml')
-        # info_dict = load_info(info_path)
-
-        for observed_img in tqdm(images):
-            old_color_path = os.path.join(
-                LM6d_origin_root, "{:02d}".format(class2idx(cls_name)), "rgb/{}".format(observed_img)
-            )
-            assert os.path.exists(old_color_path), old_color_path
-            old_depth_path = os.path.join(
-                LM6d_origin_root, "{:02d}".format(class2idx(cls_name)), "depth/{}".format(observed_img)
-            )
-            assert os.path.exists(old_depth_path), old_depth_path
-            img_id = int(observed_img.replace(".png", ""))
-            new_img_id = img_id + 1
-
-            # K
-            # K = np.array(info_dict[img_id]['cam_K']).reshape((3, 3))
-            # color_img = cv2.imread(old_color_path, cv2.IMREAD_COLOR)
+        for str_im_id in tqdm(gt_dict):
+            int_im_id = int(str_im_id)
+            old_color_path = osp.join(LM6d_origin_root, "{:06d}/rgb/{:06d}.png".format(obj_id, int_im_id))
+            assert osp.exists(old_color_path), old_color_path
+            old_depth_path = osp.join(LM6d_origin_root, "{:06d}/depth/{:06d}.png".format(obj_id, int_im_id))
+            assert osp.exists(old_depth_path), old_depth_path
+            new_img_id = int_im_id + 1
 
             # depth
-            # depth = read_img(old_depth_path, 1)
+            # depth = mmcv.imread(old_depth_path, "unchanged")
             # print(np.max(depth), np.min(depth))
 
             # print(color_img.shape)
 
-            new_color_path = os.path.join(
-                LM6d_new_root, "{:02d}".format(class2idx(cls_name)), "{:06d}-color.png".format(new_img_id)
+            new_color_path = osp.join(
+                LM6d_new_root, "{:02d}/{:06d}-color.png".format(obj_id, new_img_id)
             )
-            new_depth_path = os.path.join(
-                LM6d_new_root, "{:02d}".format(class2idx(cls_name)), "{:06d}-depth.png".format(new_img_id)
+            new_depth_path = osp.join(
+                LM6d_new_root, "{:02d}/{:06d}-depth.png".format(obj_id, new_img_id)
             )
-            mkdir_if_missing(os.path.dirname(new_color_path))
+            mmcv.mkdir_or_exist(osp.dirname(new_color_path))
 
             copyfile(old_color_path, new_color_path)
             copyfile(old_depth_path, new_depth_path)
 
             # meta and label
             meta_dict = {}
-            num_instance = len(gt_dict[img_id])
+            num_instance = len(gt_dict[str_im_id])
             meta_dict["cls_indexes"] = np.zeros((1, num_instance), dtype=np.int32)
             meta_dict["boxes"] = np.zeros((num_instance, 4), dtype="float32")
             meta_dict["poses"] = np.zeros((3, 4, num_instance), dtype="float32")
             distances = []
             label_dict = {}
-            for ins_id, instance in enumerate(gt_dict[img_id]):
-                obj_id = instance["obj_id"]
-                meta_dict["cls_indexes"][0, ins_id] = obj_id
-                obj_bb = np.array(instance["obj_bb"])
-                meta_dict["boxes"][ins_id, :] = obj_bb
+            for ins_id, instance in enumerate(gt_dict[str_im_id]):
+                cur_obj_id = instance["obj_id"]
+                meta_dict["cls_indexes"][0, ins_id] = cur_obj_id
+                bbox = np.array(gt_info_dict[str_im_id][ins_id]["bbox_visib"])
+                meta_dict["boxes"][ins_id, :] = bbox
                 # pose
                 pose = np.zeros((3, 4))
 
@@ -184,16 +138,13 @@ def main():
                 pose[:3, 3] = t
                 distances.append(t[2])
                 meta_dict["poses"][:, :, ins_id] = pose
-                image_gl, depth_gl = render_machine.render(obj_id - 1, pose[:3, :3], pose[:3, 3], r_type="mat")
-                image_gl = image_gl.astype("uint8")
-                label = np.zeros(depth_gl.shape)
-                label[depth_gl != 0] = 1
-                label_dict[obj_id] = label
-            meta_path = os.path.join(
-                LM6d_new_root, "{:02d}".format(class2idx(cls_name)), "{:06d}-meta.mat".format(new_img_id)
-            )
+                mask_path = osp.join(LM6d_origin_root, "{:06d}/mask/{:06d}_{:06d}.png".format(obj_id, int_im_id, ins_id))
+                label = mmcv.imread(mask_path, "unchanged")
+                label_dict[cur_obj_id] = label
+            meta_path = osp.join(LM6d_new_root, "{:02d}/{:06d}-meta.mat".format(obj_id, new_img_id))
             sio.savemat(meta_path, meta_dict)
 
+            # NOTE: for linemod, this is not necessary, because only one object is labeled in each image
             dis_inds = sorted(range(len(distances)), key=lambda k: -distances[k])  # put deeper objects first
             # label
             res_label = np.zeros((480, 640))
@@ -203,13 +154,11 @@ def main():
                 # label
                 res_label[tmp_label == 1] = cls_id
 
-            label_path = os.path.join(
-                LM6d_new_root, "{:02d}".format(class2idx(cls_name)), "{:06d}-label.png".format(new_img_id)
-            )
+            label_path = osp.join(LM6d_new_root, "{:02d}/{:06d}-label.png".format(obj_id, new_img_id))
             cv2.imwrite(label_path, res_label)
 
             # observed idx
-            observed_indices.append("{:02d}/{:06d}".format(class2idx(cls_name), new_img_id))
+            observed_indices.append("{:02d}/{:06d}".format(obj_id, new_img_id))
 
 
 if __name__ == "__main__":
