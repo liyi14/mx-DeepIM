@@ -139,7 +139,7 @@ def main():
                 distances.append(t[2])
                 meta_dict["poses"][:, :, ins_id] = pose
                 mask_path = osp.join(LM6d_origin_root, "{:06d}/mask/{:06d}_{:06d}.png".format(obj_id, int_im_id, ins_id))
-                label = mmcv.imread(mask_path, "unchanged")
+                label = mmcv.imread(mask_path, "unchanged").astype(np.bool).astype(np.uint8)
                 label_dict[cur_obj_id] = label
             meta_path = osp.join(LM6d_new_root, "{:02d}/{:06d}-meta.mat".format(obj_id, new_img_id))
             sio.savemat(meta_path, meta_dict)
