@@ -3,7 +3,9 @@ Yi Li, Gu Wang, Xiangyang Ji, Yu Xiang and Dieter Fox.
 In ECCV, 2018.
 [arXiv](https://arxiv.org/abs/1804.00175), [project page](https://rse-lab.cs.washington.edu/projects/deepim/)
 
-The major contributors of this repository include [Yi Li](https://github.com/liyi14) and [Gu Wang](https://github.com/wangg12).
+This is an official MXNet implementation mainly developed and maintained by [Yi Li](https://github.com/liyi14) and [Gu Wang](https://github.com/wangg12).
+
+**News** (2020-12-04): A PyTorch implementation of DeepIM by [Yu Xiang](https://github.com/yuxng) has been released ([here](https://github.com/NVlabs/DeepIM-PyTorch))!
 
 ### Citing DeepIM
 If you find DeepIM useful in your research, please consider citing:
